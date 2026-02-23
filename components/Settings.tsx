@@ -5,6 +5,12 @@ import {
   RefreshCcw, Search, ChevronDown, X
 } from 'lucide-react';
 import { AppContext } from '../App';
+import { AppView, PDFTool } from '../types';
+import { supabase } from '../lib/supabase';
+
+interface SettingsProps {
+  currentView: AppView;
+}
 
 type SettingsTab = 'general' | 'account' | 'workspace' | 'billing';
 
@@ -149,8 +155,16 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ value, onChange }) 
   );
 };
 
-export const Settings: React.FC = () => {
+export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+
+  // Sync activeTab with currentView from parent
+  useEffect(() => {
+    if (currentView === AppView.SETTINGS_GENERAL) setActiveTab('general');
+    if (currentView === AppView.SETTINGS_ACCOUNT) setActiveTab('account');
+    if (currentView === AppView.SETTINGS_WORKSPACE) setActiveTab('workspace');
+    if (currentView === AppView.SETTINGS_BILLING) setActiveTab('billing');
+  }, [currentView]);
 
   // Consume Global Context
   const { theme, setTheme, language, setLanguage, t } = useContext(AppContext);
@@ -164,6 +178,28 @@ export const Settings: React.FC = () => {
   // UI State
   const [isDirty, setIsDirty] = useState(false);
   const [showSaveMessage, setShowSaveMessage] = useState(false);
+
+  // User State
+  const [user, setUser] = useState<any>(null);
+
+  // Load user data
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        setUser(session?.user ?? null);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   // Load local preference settings
   useEffect(() => {
@@ -200,11 +236,13 @@ export const Settings: React.FC = () => {
     setIsDirty(false);
   };
 
-  const tabs = [
-    { id: 'general', label: t('General') || 'General', icon: Globe },
-    { id: 'account', label: t('Account') || 'Account', icon: User },
-    { id: 'workspace', label: t('Workspace') || 'Workspace', icon: Laptop },
-    { id: 'billing', label: t('Billing & Plans') || 'Billing & Plans', icon: CreditCard },
+  const menuGroups = [
+    {
+      title: 'Settings Features',
+      items: [
+        { id: 'general', label: t('General') || 'General', icon: Globe },
+      ]
+    }
   ];
 
   return (
@@ -212,45 +250,16 @@ export const Settings: React.FC = () => {
       {/* Background atmosphere */}
       <div className="bg-blob opacity-10 dark:opacity-[0.07] -top-40 right-0 pointer-events-none" />
 
-      {/* Settings Sidebar */}
-      <div className="w-64 glass-morphism border-r border-white/20 dark:border-white/5 flex flex-col pt-8 transition-colors duration-300 z-10 shrink-0">
-        <div className="px-6 mb-8">
-          <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{t('Settings')}</h2>
-          <p className="text-xs text-gray-400 font-medium mt-1 uppercase tracking-widest">Configuration</p>
-        </div>
-        <nav className="flex-1 px-4 space-y-1.5">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as SettingsTab)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 text-sm font-bold
-                ${activeTab === tab.id
-                  ? 'bg-brand-600 text-white shadow-xl shadow-brand-600/25'
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'
-                }`}
-            >
-              <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : ''}`} />
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-        <div className="p-4 mt-auto border-t border-white/20 dark:border-white/5">
-          <button className="w-full flex items-center gap-3 px-4 py-3 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-400/10 rounded-2xl transition-all duration-300 text-sm font-bold">
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </button>
-        </div>
-      </div>
-
+      {/* Remove the redundant Settings Sidebar as it's now in the main Sidebar */}
       {/* Settings Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8 lg:p-12 z-10">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-[1600px] mx-auto">
 
           {/* Header */}
           <div className="mb-10 flex justify-between items-end">
             <div>
               <h1 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight">
-                {tabs.find(tb => tb.id === activeTab)?.label}
+                {menuGroups.flatMap(g => g.items).find(tb => tb.id === activeTab)?.label}
               </h1>
               <p className="text-gray-400 text-sm font-medium mt-1">Manage your preferences and account details.</p>
             </div>
@@ -320,48 +329,65 @@ export const Settings: React.FC = () => {
           {/* ACCOUNT TAB */}
           {activeTab === 'account' && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-[#262636] rounded-xl border border-gray-200 dark:border-white/5 p-6 flex items-center gap-6 shadow-sm">
-                <div className="w-20 h-20 rounded-full bg-brand-600 flex items-center justify-center text-2xl font-bold text-white border-4 border-gray-50 dark:border-[#1e1e2e]">
-                  JD
+              <div className="bg-white dark:bg-[#262636] rounded-xl border border-gray-200 dark:border-white/5 p-6 flex flex-col md:flex-row items-center md:items-start gap-6 shadow-sm">
+                <div className="w-20 h-20 rounded-full bg-brand-600 flex items-center justify-center text-3xl font-black text-white border-4 border-gray-50 dark:border-[#1e1e2e] shadow-lg shrink-0 uppercase overflow-hidden">
+                  {(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? (
+                    <img
+                      src={user.user_metadata.avatar_url || user.user_metadata.picture}
+                      alt="Avatar"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    user?.user_metadata?.full_name ? user.user_metadata.full_name.substring(0, 2) : user?.email?.substring(0, 2) || 'JD'
+                  )}
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">John Doe</h3>
-                  <p className="text-gray-500 dark:text-gray-400">john.doe@example.com</p>
-                  <div className="mt-2 flex gap-2">
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{user?.user_metadata?.full_name || 'User'}</h3>
+                  <p className="text-gray-500 dark:text-gray-400 font-medium">{user?.email || 'Loading email...'}</p>
+                  <div className="mt-3 flex gap-2 justify-center md:justify-start">
                     <span className="px-2 py-1 bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 text-xs rounded-full border border-brand-200 dark:border-brand-500/20 font-medium">Pro Plan</span>
                     <span className="px-2 py-1 bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400 text-xs rounded-full border border-green-200 dark:border-green-500/20 font-medium">Verified</span>
                   </div>
-                </div>
-                <button className="px-4 py-2 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg text-sm font-medium transition-colors text-gray-700 dark:text-gray-300">
-                  Edit Profile
-                </button>
-              </div>
-
-              <div className="bg-white dark:bg-[#262636] rounded-xl border border-gray-200 dark:border-white/5 p-6 shadow-sm">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Security</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1e1e2e] rounded-lg border border-gray-200 dark:border-white/5">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-brand-100 dark:bg-brand-500/10 rounded-lg text-brand-600 dark:text-brand-400"><Shield className="w-5 h-5" /></div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">Two-Factor Authentication</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500">Add an extra layer of security to your account.</p>
-                      </div>
-                    </div>
-                    <div className="w-12 h-6 bg-brand-600 rounded-full relative cursor-pointer">
-                      <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm"></div>
-                    </div>
+                  <div className="flex flex-col gap-2 w-full md:w-auto mt-4 md:mt-0">
+                    <button className="px-5 py-2.5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-sm font-bold transition-colors text-gray-700 dark:text-gray-300 w-full md:w-auto">
+                      Edit Profile
+                    </button>
+                    <button
+                      onClick={async () => await supabase.auth.resetPasswordForEmail(user?.email || '')}
+                      className="px-5 py-2.5 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 border border-transparent rounded-xl text-sm font-bold transition-colors text-gray-600 dark:text-gray-400 w-full md:w-auto"
+                    >
+                      Reset Password
+                    </button>
                   </div>
+                </div>
 
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1e1e2e] rounded-lg border border-gray-200 dark:border-white/5">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-red-100 dark:bg-red-500/10 rounded-lg text-red-600 dark:text-red-400"><LogOut className="w-5 h-5" /></div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">Active Sessions</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500">You are logged in on 2 devices.</p>
+                <div className="bg-white dark:bg-[#262636] rounded-xl border border-gray-200 dark:border-white/5 p-6 shadow-sm">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Security</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1e1e2e] rounded-lg border border-gray-200 dark:border-white/5">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-brand-100 dark:bg-brand-500/10 rounded-lg text-brand-600 dark:text-brand-400"><Shield className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">Two-Factor Authentication</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-500">Add an extra layer of security to your account.</p>
+                        </div>
+                      </div>
+                      <div className="w-12 h-6 bg-brand-600 rounded-full relative cursor-pointer">
+                        <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm"></div>
                       </div>
                     </div>
-                    <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline">Manage</button>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1e1e2e] rounded-lg border border-gray-200 dark:border-white/5">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-100 dark:bg-red-500/10 rounded-lg text-red-600 dark:text-red-400"><LogOut className="w-5 h-5" /></div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">Active Sessions</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-500">You are logged in on 2 devices.</p>
+                        </div>
+                      </div>
+                      <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline">Manage</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -539,7 +565,6 @@ export const Settings: React.FC = () => {
               <Save className="w-4 h-4" /> Save Changes
             </button>
           </div>
-
         </div>
       </div>
     </div>

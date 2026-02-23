@@ -14,8 +14,11 @@ import { ESign } from './components/ESign';
 import { AILab } from './components/AILab';
 import { Analytics } from './components/Analytics';
 import { Settings } from './components/Settings';
+import { History } from './components/History';
+import { Login } from './components/Login';
 import { AppView, PDFTool, ToolCategory, UploadedFile } from './types';
 import { processFiles } from './services/pdfService';
+import { supabase } from './lib/supabase';
 import { MergePDF } from './components/MergePDF';
 import { SplitPDF } from './components/SplitPDF';
 import { DeletePages } from './components/DeletePages';
@@ -1721,9 +1724,24 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState('dark');
   const [language, setLanguage] = useState('en');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   // State to bridge RightDock buttons with Workspace actions
   const [editAction, setEditAction] = useState<{ type: 'undo' | 'redo' | 'delete' | null, timestamp: number }>({ type: null, timestamp: 0 });
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -1879,6 +1897,27 @@ const App: React.FC = () => {
     }
   };
 
+  if (isAuthenticated === null) {
+    return null;
+  }
+
+  const protectedViews = [
+    AppView.AI_LAB,
+    AppView.HISTORY,
+    AppView.SETTINGS_ACCOUNT,
+    AppView.SETTINGS_WORKSPACE,
+    AppView.SETTINGS_BILLING
+  ];
+
+  if (!isAuthenticated && protectedViews.includes(currentView as AppView)) {
+    return <Login onBack={() => setCurrentView(AppView.DASHBOARD)} />;
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setCurrentView(AppView.DASHBOARD);
+  };
+
   return (
     <AppContext.Provider value={{ theme, setTheme, language, setLanguage, t }}>
       <div className="flex h-screen w-screen bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white overflow-hidden font-sans transition-colors duration-300">
@@ -1887,6 +1926,7 @@ const App: React.FC = () => {
           setView={setCurrentView}
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
+          onLogout={handleLogout}
         />
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
@@ -2036,8 +2076,12 @@ const App: React.FC = () => {
               <ESign />
             )}
 
-            {currentView === AppView.SETTINGS && (
-              <Settings />
+            {currentView === AppView.HISTORY && (
+              <History />
+            )}
+
+            {(currentView === AppView.SETTINGS || currentView.startsWith('SETTINGS_')) && (
+              <Settings currentView={currentView} />
             )}
           </main>
         </div>

@@ -188,7 +188,48 @@ export const AILab: React.FC = () => {
                 <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[80px] translate-y-1/4 -translate-x-1/4" />
             </div>
 
-            <div className="w-full h-full max-w-7xl mx-auto flex flex-col relative z-10">
+            {/* Premium Live Ticker */}
+            <div className="w-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-100 dark:border-white/5 py-2.5 overflow-hidden sticky top-0 z-50">
+                <div className="max-w-[1600px] mx-auto flex items-center px-6 md:px-10">
+                    <div className="flex items-center gap-2 pr-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl z-10 shrink-0">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Lab Status</span>
+                        <div className="h-4 w-px bg-gray-200 dark:bg-white/10 mx-2" />
+                    </div>
+
+                    <div className="relative flex-1 overflow-hidden">
+                        <motion.div
+                            initial={{ x: "0%" }}
+                            animate={{ x: "-50%" }}
+                            transition={{
+                                duration: 40,
+                                repeat: Infinity,
+                                ease: "linear"
+                            }}
+                            className="flex whitespace-nowrap gap-12 items-center"
+                        >
+                            {[1, 2].map((i) => (
+                                <div key={i} className="flex gap-12 items-center">
+                                    {[
+                                        { label: "NEURAL ENGINE", val: "NPU 3.0 Stabilized", type: "success" },
+                                        { label: "AI MODEL", val: "Gemini Pro 1.5 Ultra", type: "info" },
+                                        { label: "LATENCY", val: "9.2ms Real-time", type: "warning" },
+                                        { label: "QUANTIZATION", val: "INT8 High-Precision", type: "success" },
+                                        { label: "SYSTEM", val: "Nodal Grid Active", type: "info" }
+                                    ].map((msg, idx) => (
+                                        <div key={idx} className="flex items-center gap-3">
+                                            <span className="text-[9px] font-black bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 dark:border-white/10">{msg.label}</span>
+                                            <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 tracking-tight">{msg.val}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                        </motion.div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="w-full h-full max-w-[1600px] mx-auto flex flex-col relative z-10">
                 {/* Seamless Integrated Header */}
                 <header className="px-6 py-8 border-b border-gray-100 dark:border-white/10">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -236,8 +277,8 @@ export const AILab: React.FC = () => {
                                     {chatHistory.map((msg) => (
                                         <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                             <div className={`max-w-[85%] md:max-w-[70%] p-5 rounded-2xl ${msg.role === 'user'
-                                                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-br-none shadow-lg'
-                                                    : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-bl-none border border-gray-100 dark:border-white/5 shadow-sm'
+                                                ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-br-none shadow-lg'
+                                                : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-bl-none border border-gray-100 dark:border-white/5 shadow-sm'
                                                 }`}>
                                                 <p className="text-sm font-medium leading-relaxed">{msg.content}</p>
                                                 <div className={`mt-2 text-[9px] font-black uppercase tracking-widest opacity-30 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>

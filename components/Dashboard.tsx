@@ -104,7 +104,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f8fafc] dark:bg-[#020617] relative scroll-smooth overflow-x-hidden">
       {/* Premium Live Ticker */}
       <div className="w-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-100 dark:border-white/5 py-2.5 overflow-hidden sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex items-center px-4 md:px-8">
+        <div className="max-w-[1600px] mx-auto flex items-center px-6 md:px-10">
           <div className="flex items-center gap-2 pr-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl z-10 shrink-0">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Live Status</span>
@@ -149,7 +149,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
         <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-indigo-500/5 dark:bg-indigo-500/5 rounded-full blur-[100px] translate-x-1/4" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 relative z-10">
+      <div className="max-w-[1600px] mx-auto px-6 md:px-10 lg:px-12 py-12 md:py-16 relative z-10">
         {/* Balanced Hero Section */}
         <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-8 mb-12 md:mb-16">
           <div className="flex flex-col items-center md:items-start text-center md:text-left max-w-2xl">

@@ -1,7 +1,9 @@
-import React, { useContext } from 'react';
-import { Home, Settings, Bot, Layers, Command, LayoutGrid, TrendingUp, UserCheck, LogOut, ShieldCheck, Sparkles } from 'lucide-react';
+import React, { useContext, useState, useEffect } from 'react';
+import { Settings, Bot, Layers, Command, LayoutGrid, TrendingUp, UserCheck, LogOut, ShieldCheck, Sparkles, History, ChevronDown, User } from 'lucide-react';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { AppView } from '../types';
 import { AppContext } from '../App';
+import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface SidebarProps {
@@ -9,10 +11,36 @@ interface SidebarProps {
   setView: (view: AppView) => void;
   isOpen?: boolean;
   onClose?: () => void;
+  onLogout?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, onClose }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, onClose, onLogout }) => {
   const { t } = useContext(AppContext);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
+  const [isUserFeaturesExpanded, setIsUserFeaturesExpanded] = useState(false);
+
+  // User Profile State
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        setUser(session?.user ?? null);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const navItems = [
     { id: AppView.DASHBOARD, icon: LayoutGrid, label: t('All Tools'), color: 'text-indigo-500' },
@@ -20,31 +48,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
     { id: AppView.AI_LAB, icon: Bot, label: t('AI Lab'), color: 'text-emerald-500' },
     { id: AppView.ANALYTICS, icon: TrendingUp, label: t('Analytics'), color: 'text-amber-500' },
     { id: AppView.E_SIGN, icon: UserCheck, label: t('E-Sign'), color: 'text-rose-500' },
-    { id: AppView.SETTINGS, icon: Settings, label: t('Settings'), color: 'text-gray-500' },
+    { id: AppView.HISTORY, icon: History, label: t('History'), color: 'text-blue-500' },
+    {
+      id: 'USER_FEATURES',
+      icon: Command,
+      label: t('User Features'),
+      color: 'text-brand-500',
+      subItems: [
+        { id: AppView.SETTINGS_ACCOUNT, label: t('Account') },
+        { id: AppView.SETTINGS_WORKSPACE, label: t('Workspace') },
+        { id: AppView.SETTINGS_BILLING, label: t('Billing & Plans') },
+      ]
+    },
+    {
+      id: AppView.SETTINGS,
+      icon: Settings,
+      label: t('Settings'),
+      color: 'text-gray-500',
+    },
   ];
 
-  const containerVariants = {
-    hidden: { x: -100, opacity: 0 },
-    visible: {
-      x: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 20,
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { x: -20, opacity: 0 },
-    visible: { x: 0, opacity: 1 }
-  };
+  const sidebarWidth = (isHovered || isOpen) ? 260 : 88;
 
   return (
     <>
-      {/* Mobile Backdrop Overlay - High Fidelity */}
+      {/* Mobile Backdrop Overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -58,144 +86,229 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
       </AnimatePresence>
 
       <motion.aside
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className={`fixed inset-y-0 left-0 z-[70] w-[88px] flex flex-col items-center py-6 transition-all duration-700
-          bg-white/80 dark:bg-slate-900/90 backdrop-blur-2xl border-r border-gray-100 dark:border-white/5 shadow-[20px_0_40px_rgba(0,0,0,0.02)]
-          lg:relative lg:translate-x-0 ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}`}
+        initial={false}
+        animate={{ width: sidebarWidth }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => {
+          setIsHovered(false);
+          setIsSettingsExpanded(false);
+        }}
+        className={`fixed inset-y-0 left-0 z-[70] flex flex-col py-6 
+          bg-white/90 dark:bg-[#0c0c14]/95 backdrop-blur-2xl border-r border-gray-100 dark:border-white/5 shadow-[20px_0_40px_rgba(0,0,0,0.02)]
+          lg:relative lg:translate-x-0 transition-opacity duration-300
+          ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Dynamic Logo Section */}
-        <div className="mb-10 relative group px-2">
-          <motion.div
-            whileHover={{ scale: 1.05, rotate: 5 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setView(AppView.DASHBOARD)}
-            className="w-14 h-14 bg-gradient-to-tr from-brand-600 to-indigo-600 rounded-[1.25rem] shadow-2xl shadow-brand-500/30 text-white flex items-center justify-center cursor-pointer relative overflow-hidden ring-4 ring-brand-500/10"
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.2),transparent)]" />
-            <Command className="w-7 h-7 relative z-10" />
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center shadow-md">
-              <Sparkles className="w-3 h-3 text-brand-600" />
+        <div className={`mb-10 px-2 flex items-center h-20`}>
+          <div className="relative shrink-0 flex-none w-16 flex justify-center">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setView(AppView.DASHBOARD)}
+              className="w-14 h-14 rounded-xl cursor-pointer relative overflow-hidden flex items-center justify-center p-0"
+            >
+              <DotLottieReact
+                src="https://lottie.host/daa1f232-6d5d-4fe3-8f24-cfce746869a9/aQCuSzLOPd.lottie"
+                loop
+                autoplay
+                className="w-full h-full scale-[1.5]"
+              />
+            </motion.div>
+            <div className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500 border-2 border-white dark:border-[#0c0c14]"></span>
             </div>
-          </motion.div>
-
-          {/* Pulsating Indicator for "Online/Live" */}
-          <div className="absolute -top-1 -right-1 flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-white dark:border-slate-900"></span>
           </div>
+
+          <AnimatePresence>
+            {(isHovered || isOpen) && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="-ml-1 whitespace-nowrap overflow-hidden flex-1"
+              >
+                <h3 className="text-sm font-black dark:text-white leading-tight tracking-tight">OmniPDF <span className="text-brand-600">AI</span></h3>
+                <p className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-500">Live Status</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* High Fidelity Navigation */}
-        <nav className="flex-1 flex flex-col gap-4 w-full px-3">
+        <nav className="flex-1 flex flex-col gap-1.5 w-full px-4 overflow-y-auto no-scrollbar">
           {navItems.map((item) => {
-            const isActive = currentView === item.id;
+            const isSettings = item.id === AppView.SETTINGS;
+            const isMainActive = currentView === item.id || (isSettings && currentView.startsWith('SETTINGS_'));
+
             return (
-              <motion.button
-                key={item.id}
-                variants={itemVariants}
-                onClick={() => {
-                  setView(item.id);
-                  if (window.innerWidth < 1024 && onClose) onClose();
-                }}
-                className={`group relative flex flex-col items-center justify-center w-full py-4 rounded-2xl transition-all duration-300
-                  ${isActive
-                    ? 'text-brand-600 dark:text-brand-400'
-                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-                  }`}
-              >
-                {/* Active "Liquid" Indicator */}
-                <AnimatePresence>
-                  {isActive && (
+              <div key={item.id} className="w-full">
+                <button
+                  onClick={() => {
+                    const isUserFeatures = item.id === 'USER_FEATURES';
+                    if (isSettings) {
+                      setView(AppView.SETTINGS_GENERAL);
+                    } else if (isUserFeatures) {
+                      if (isHovered || isOpen) {
+                        setIsUserFeaturesExpanded(!isUserFeaturesExpanded);
+                      }
+                    } else {
+                      setView(item.id as AppView);
+                    }
+                    if (window.innerWidth < 1024 && onClose && !isUserFeatures) onClose();
+                  }}
+                  className={`group relative flex items-center w-full h-11 rounded-xl transition-all duration-300
+                    ${isMainActive
+                      ? 'text-brand-600 dark:text-brand-400 bg-brand-500/10 shadow-inner'
+                      : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-white/5'
+                    }`}
+                >
+                  <div className={`shrink-0 w-10 flex justify-center transition-all duration-300 ${isMainActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                    <item.icon className={`w-4.5 h-4.5 ${isMainActive ? `drop-shadow-[0_0_8px_currentColor]` : ''}`} />
+                  </div>
+
+                  <AnimatePresence>
+                    {(isHovered || isOpen) && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -5 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -5 }}
+                        className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] whitespace-nowrap flex-1 text-left"
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+
+                  {(isHovered || isOpen) && (item.id === 'USER_FEATURES') && (
                     <motion.div
-                      layoutId="active-nav-bg"
-                      className="absolute inset-0 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl z-0"
-                      transition={{ type: "spring", bounce: 0.25, duration: 0.6 }}
-                      initial={false}
+                      animate={{ rotate: isUserFeaturesExpanded ? 180 : 0 }}
+                      className="mr-3"
+                    >
+                      <ChevronDown className="w-3 h-3 text-brand-400 opacity-50" />
+                    </motion.div>
+                  )}
+
+                  {isMainActive && !isSettingsExpanded && (
+                    <motion.div
+                      layoutId="active-indicator"
+                      className="absolute right-2.5 w-1 h-1 rounded-full bg-brand-600 dark:bg-brand-500 shadow-lg shadow-brand-500/40"
                     />
                   )}
+                </button>
+
+                {/* Sub-menu rendering */}
+                <AnimatePresence>
+                  {(isHovered || isOpen) && item.id === 'USER_FEATURES' && isUserFeaturesExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden flex flex-col ml-6 mt-1 gap-1 border-l border-gray-100 dark:border-white/5 shadow-sm rounded-r-xl"
+                    >
+                      {item.subItems?.map((sub) => {
+                        const isSubActive = currentView === sub.id;
+                        return (
+                          <button
+                            key={sub.id}
+                            onClick={() => {
+                              setView(sub.id);
+                              if (window.innerWidth < 1024 && onClose) onClose();
+                            }}
+                            className={`flex items-center w-full h-9 pl-6 pr-4 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200
+                              ${isSubActive
+                                ? 'text-brand-600 dark:text-brand-400 bg-brand-500/5'
+                                : 'text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                          >
+                            {sub.label}
+                            {isSubActive && (
+                              <div className="ml-auto w-1 h-1 rounded-full bg-brand-500" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
                 </AnimatePresence>
-
-                <div className="relative z-10 flex flex-col items-center">
-                  <motion.div
-                    animate={isActive ? { scale: [1, 1.2, 1] } : {}}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <item.icon className={`w-5 h-5 mb-1.5 transition-all duration-300 
-                      ${isActive ? `drop-shadow-[0_0_8px_currentColor]` : 'group-hover:scale-110'}`}
-                    />
-                  </motion.div>
-                  <span className={`text-[8px] font-black uppercase tracking-[0.1em] transition-all duration-300
-                    ${isActive ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`}>
-                    {item.label}
-                  </span>
-                </div>
-
-                {/* Left Accent Strip */}
-                {isActive && (
-                  <motion.div
-                    layoutId="accent-strip"
-                    className="absolute -left-1 w-1.5 h-8 bg-brand-600 dark:bg-brand-500 rounded-r-full shadow-lg shadow-brand-500/40"
-                  />
-                )}
-
-                {/* Premium Hover Card (Tooltip) */}
-                <div className="hidden lg:block absolute left-full ml-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0 pointer-events-none z-[100]">
-                  <div className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl shadow-2xl border border-white/10 dark:border-black/5 whitespace-nowrap flex items-center gap-3">
-                    <item.icon className={`w-3.5 h-3.5 ${item.color}`} />
-                    {item.label}
-                  </div>
-                  {/* Tooltip Chevron */}
-                  <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-white rotate-45" />
-                </div>
-              </motion.button>
+              </div>
             );
           })}
         </nav>
 
-        {/* User Workspace Section */}
-        <div className="mt-auto pt-6 flex flex-col items-center gap-6 w-full px-2">
-          <div className="h-px w-10 bg-gray-100 dark:bg-white/5" />
+        <div className="mt-auto pt-6 flex flex-col w-full px-4">
+          <div className="h-px w-full bg-gray-100 dark:bg-white/5 mb-6" />
 
-          <motion.div
-            whileHover={{ scale: 1.1 }}
-            className="relative group cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-500 to-indigo-500 p-[1.5px] shadow-xl">
-              <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-900 overflow-hidden border-2 border-transparent">
-                <img
-                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=Abir"
-                  alt="User"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-
-            {/* Status Indicator */}
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full flex items-center justify-center">
-              <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-            </div>
-
-            {/* Account Tooltip */}
-            <div className="hidden lg:block absolute bottom-0 left-full ml-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0 pointer-events-none z-[100]">
-              <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-gray-100 dark:border-white/10 w-48">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-wider">Premium Access</h4>
-                    <p className="text-[8px] font-bold text-gray-400">Pro Account Active</p>
+          {user ? (
+            <div className={`relative group flex items-center h-14`}>
+              <div className="shrink-0 w-10 flex justify-center">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-500 to-indigo-500 p-[1.5px] shadow-xl">
+                  <div className="w-full h-full rounded-xl bg-white dark:bg-slate-900 overflow-hidden flex items-center justify-center font-bold text-gray-800 dark:text-white uppercase text-xs">
+                    {(user.user_metadata?.avatar_url || user.user_metadata?.picture) ? (
+                      <img
+                        src={user.user_metadata.avatar_url || user.user_metadata.picture}
+                        alt="User"
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user.user_metadata?.full_name?.substring(0, 2) || user.email?.substring(0, 2)
+                    )}
                   </div>
                 </div>
-                <button className="w-full py-2 bg-gray-50 dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-500 hover:text-red-500 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors">
-                  <LogOut className="w-3 h-3" />
-                  {t('Logout') || 'Log Out'}
-                </button>
               </div>
+
+              <AnimatePresence>
+                {(isHovered || isOpen) && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -2 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -2 }}
+                    className="ml-1 overflow-hidden flex-1"
+                  >
+                    <h4 className="text-[9px] font-black text-gray-900 dark:text-white uppercase tracking-widest truncate">{user.user_metadata?.full_name || 'User'}</h4>
+                    <p className="text-[7px] font-bold text-emerald-500 uppercase tracking-widest truncate">{user.email}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {(isHovered || isOpen) && (
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onLogout}
+                    title="Log Out"
+                    className="p-1.5 ml-1 hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded-lg transition-colors shrink-0"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </div>
-          </motion.div>
+          ) : (
+            <div className={`relative group flex items-center h-14`}>
+              <div className="shrink-0 w-10 flex justify-center">
+                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-white/5 flex items-center justify-center text-gray-400">
+                  <User className="w-4 h-4" />
+                </div>
+              </div>
+              <AnimatePresence>
+                {(isHovered || isOpen) && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -2 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -2 }}
+                    className="ml-1 overflow-hidden flex-1"
+                  >
+                    <h4 className="text-[9px] font-black text-gray-900 dark:text-white uppercase tracking-widest truncate">Guest Account</h4>
+                    <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">Sign in to save</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
       </motion.aside>
     </>
