@@ -1,0 +1,7 @@
+{
+  "name": "OmniPDF AI",
+  "description": "Next-generation PDF platform featuring advanced AI tools, client-side processing, and a modern workflow interface.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
