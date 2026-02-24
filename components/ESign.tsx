@@ -26,7 +26,7 @@ export const ESign: React.FC = () => {
     ];
 
     return (
-        <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-[#020617] relative scroll-smooth flex flex-col p-8">
+        <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f3f1ea] dark:bg-[#020617] relative scroll-smooth flex flex-col p-8">
             {/* Background Blobs */}
             <div className="bg-blob -top-40 -left-40 opacity-20 dark:opacity-10 pointer-events-none" />
             <div className="bg-blob bg-blob-2 -bottom-40 -right-40 opacity-20 dark:opacity-10 pointer-events-none" />
@@ -76,14 +76,14 @@ export const ESign: React.FC = () => {
                             <input
                                 type="text"
                                 placeholder="Search by document name, email or status..."
-                                className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                                className="w-full pl-11 pr-4 py-3 bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
                             />
                         </div>
                         <div className="flex items-center gap-3">
-                            <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 transition-all border border-gray-200 dark:border-white/10">
+                            <button className="flex items-center gap-2 px-4 py-2.5 bg-[#f3f1ea] dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 transition-all border border-gray-200 dark:border-white/10">
                                 <Filter className="w-4 h-4" /> Filters
                             </button>
-                            <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 transition-all border border-gray-200 dark:border-white/10">
+                            <button className="flex items-center gap-2 px-4 py-2.5 bg-[#f3f1ea] dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 transition-all border border-gray-200 dark:border-white/10">
                                 <History className="w-4 h-4" /> Export Audit Log
                             </button>
                         </div>
@@ -92,7 +92,7 @@ export const ESign: React.FC = () => {
                     <div className="flex-1 overflow-auto custom-scrollbar">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5">
+                                <tr className="border-b border-gray-100 dark:border-white/5 bg-[#f3f1ea]/50 dark:bg-white/5">
                                     <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Document</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recipient</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>

@@ -41,7 +41,7 @@ export const Analytics: React.FC = () => {
     };
 
     return (
-        <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-[#020617] relative scroll-smooth">
+        <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f3f1ea] dark:bg-[#020617] relative scroll-smooth">
             {/* Background Blobs */}
             <div className="bg-blob -top-40 -left-40 opacity-20 dark:opacity-10 pointer-events-none" />
             <div className="bg-blob bg-blob-2 -bottom-40 -right-40 opacity-20 dark:opacity-10 pointer-events-none" />
@@ -60,7 +60,7 @@ export const Analytics: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-500 hover:bg-gray-50 dark:hover:bg-white/10 transition-all">
+                        <button className="flex items-center gap-2 px-5 py-2.5 bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-500 hover:bg-gray-50 dark:hover:bg-white/10 transition-all">
                             <Calendar className="w-4 h-4" />
                             Last 30 Days
                         </button>
@@ -80,7 +80,7 @@ export const Analytics: React.FC = () => {
                     >
                         <div className="relative">
                             <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-brand-500 to-purple-600 p-1">
-                                <div className="w-full h-full rounded-full bg-white dark:bg-[#1e1e2e] flex items-center justify-center overflow-hidden border-4 border-white dark:border-[#262636]">
+                                <div className="w-full h-full rounded-full bg-[#f3f1ea] dark:bg-[#1e1e2e] flex items-center justify-center overflow-hidden border-4 border-[#f3f1ea] dark:border-[#262636]">
                                     <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" alt="Avatar" className="w-full h-full object-cover" />
                                 </div>
                             </div>
@@ -92,11 +92,11 @@ export const Analytics: React.FC = () => {
                             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Alex Riverside</h2>
                             <p className="text-brand-600 dark:text-brand-400 font-semibold">Pro Subscriber</p>
                             <div className="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
-                                <div className="px-4 py-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                                <div className="px-4 py-2 rounded-xl bg-[#f3f1ea] dark:bg-white/5 border border-gray-100 dark:border-white/5">
                                     <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Member Since</p>
                                     <p className="text-sm font-semibold">Jan 2024</p>
                                 </div>
-                                <div className="px-4 py-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                                <div className="px-4 py-2 rounded-xl bg-[#f3f1ea] dark:bg-white/5 border border-gray-100 dark:border-white/5">
                                     <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Total Processed</p>
                                     <p className="text-sm font-semibold">1,248 Files</p>
                                 </div>

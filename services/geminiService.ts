@@ -58,7 +58,7 @@ export const generateAudioOverview = async (text: string, voiceName: string = 'K
         },
       },
     });
-    
+
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     return base64Audio || null;
   } catch (error) {
@@ -68,18 +68,18 @@ export const generateAudioOverview = async (text: string, voiceName: string = 'K
 };
 
 export const chatWithPDF = async (query: string, documentContext: string) => {
-    try {
-        const ai = getAiClient();
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `You are an intelligent PDF assistant. 
+  try {
+    const ai = getAiClient();
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `You are an intelligent PDF assistant. 
             Context of the document: ${documentContext.substring(0, 20000)}...
             
             User Query: ${query}`,
-        });
-        return response.text;
-    } catch (e) {
-        console.error(e);
-        return "I encountered an error analyzing the document.";
-    }
+    });
+    return response.text;
+  } catch (e) {
+    console.error(e);
+    return "I encountered an error analyzing the document.";
+  }
 }

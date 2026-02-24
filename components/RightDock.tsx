@@ -37,7 +37,7 @@ const StyledSelect = ({ value, onChange, options }: { value: any, onChange: (e: 
         <select
             value={value}
             onChange={onChange}
-            className="w-full appearance-none bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
+            className="w-full appearance-none bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
         >
             {options.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
         </select>
@@ -50,7 +50,7 @@ const StyledSelect = ({ value, onChange, options }: { value: any, onChange: (e: 
 const StyledInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input
         {...props}
-        className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
+        className="w-full bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
     />
 );
 
@@ -61,7 +61,7 @@ const ToolButton = ({ icon: Icon, active, onClick, label }: { icon: any, active:
         className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200
           ${active
                 ? 'bg-brand-600 border-brand-600 text-white shadow-md scale-105'
-                : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-brand-400 dark:hover:border-brand-500/50 hover:bg-brand-50 dark:hover:bg-brand-900/20'}`}
+                : 'bg-[#f3f1ea] dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-brand-400 dark:hover:border-brand-500/50 hover:bg-brand-50 dark:hover:bg-brand-900/20'}`}
         title={label}
     >
         <Icon className="w-5 h-5 mb-1" />
@@ -129,7 +129,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                             <button
                                 onClick={() => onTriggerEditAction?.('undo')}
                                 onMouseDown={preventFocusSteal}
-                                className="flex-1 flex items-center justify-center gap-2 p-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-brand-300 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 transition-all shadow-sm"
+                                className="flex-1 flex items-center justify-center gap-2 p-3 bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-[#f3f1ea]/50 dark:hover:bg-white/10 hover:border-brand-300 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 transition-all shadow-sm"
                                 title="Undo (Ctrl+Z)"
                             >
                                 <Undo className="w-4 h-4" /> Undo
@@ -137,7 +137,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                             <button
                                 onClick={() => onTriggerEditAction?.('redo')}
                                 onMouseDown={preventFocusSteal}
-                                className="flex-1 flex items-center justify-center gap-2 p-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-brand-300 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 transition-all shadow-sm"
+                                className="flex-1 flex items-center justify-center gap-2 p-3 bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-[#f3f1ea]/50 dark:hover:bg-white/10 hover:border-brand-300 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 transition-all shadow-sm"
                                 title="Redo (Ctrl+Shift+Z)"
                             >
                                 <Redo className="w-4 h-4" /> Redo
@@ -1243,7 +1243,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.2 }}
-                        className="p-8 border-b border-gray-200 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 backdrop-blur-sm"
+                        className="p-8 border-b border-gray-200 dark:border-white/5 bg-[#f3f1ea]/50 dark:bg-white/5 backdrop-blur-sm"
                     >
                         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Tools Panel</h2>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Select a tool to configure options.</p>
@@ -1277,7 +1277,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                 <button
                                     key={tool.id}
                                     onClick={() => onToolSelect(tool)}
-                                    className="flex flex-col items-center justify-center p-4 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/5 hover:border-brand-500 hover:shadow-lg transition-all group"
+                                    className="flex flex-col items-center justify-center p-4 rounded-2xl border border-gray-200 dark:border-white/5 bg-[#f3f1ea] dark:bg-white/5 hover:border-brand-500 hover:shadow-lg transition-all group"
                                 >
                                     <tool.icon className="w-6 h-6 mb-3 text-gray-400 group-hover:text-brand-500 dark:text-gray-500 dark:group-hover:text-brand-400 transition-colors" />
                                     <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 group-hover:text-brand-600 dark:group-hover:text-brand-400 text-center">{t(tool.name)}</span>

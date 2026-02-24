@@ -423,7 +423,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
     // ── Render ───────────────────────────────────────────────────────────────
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-gray-50 dark:bg-[#1e1e2e] overflow-hidden relative">
+        <div className="flex-1 flex flex-col h-full bg-[#f3f1ea] dark:bg-[#1e1e2e] overflow-hidden relative">
 
             {/* ── Toast Portal ── */}
             <div className="fixed top-6 right-6 z-[200] flex flex-col gap-2 items-end pointer-events-none">
@@ -489,7 +489,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
             </AnimatePresence>
 
             {/* ── Header ── */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-white dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack}
@@ -666,7 +666,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                 </div>
 
                 {/* ── RIGHT: Options + Action ── */}
-                <div className="w-80 shrink-0 flex flex-col border-l border-gray-100 dark:border-white/5 bg-white dark:bg-[#262636] overflow-y-auto">
+                <div className="w-80 shrink-0 flex flex-col border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto">
 
                     {/* File summary */}
                     {file && totalPages > 0 && (

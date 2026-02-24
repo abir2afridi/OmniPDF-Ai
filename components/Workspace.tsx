@@ -62,7 +62,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-[2.5rem] transition-all duration-500 m-8 relative overflow-hidden group
           ${isDragging
           ? 'border-brand-500 bg-brand-500/10 scale-[0.98]'
-          : 'border-gray-200 dark:border-white/5 bg-white dark:bg-[#11111b]'}`}
+          : 'border-gray-200 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#11111b]'}`}
     >
       {/* Background Glows */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-500/10 rounded-full blur-[120px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
@@ -127,14 +127,14 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onClear}
-            className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all border border-transparent hover:border-red-500/20"
+            className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 dark:hover:bg-red-500/10 rounded-xl transition-all border border-transparent hover:border-red-500/20"
           >
             Purge Session
           </button>
 
           <div className="h-8 w-px bg-gray-200 dark:bg-white/10 mx-2" />
 
-          <label className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:border-brand-500 dark:hover:border-brand-500/50 rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95">
+          <label className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:border-brand-500 dark:hover:border-brand-500/50 rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95">
             <Plus className="w-3.5 h-3.5" /> Import More
             <input ref={addMoreInputRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && onUpload(Array.from(e.target.files))} />
           </label>
@@ -150,7 +150,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
 
       <div className="flex-1 grid grid-cols-1 xl:grid-cols-4 gap-6 overflow-hidden">
         {/* Sidebar List */}
-        <div className="xl:col-span-1 bg-white/50 dark:bg-[#11111b]/50 backdrop-blur-xl rounded-[1.5rem] border border-gray-200 dark:border-white/5 flex flex-col overflow-hidden shadow-2xl shadow-black/5">
+        <div className="xl:col-span-1 bg-[#f3f1ea]/50 dark:bg-[#11111b]/50 backdrop-blur-xl rounded-[1.5rem] border border-gray-200 dark:border-white/5 flex flex-col overflow-hidden shadow-2xl shadow-black/5">
           <div className="p-5 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 flex items-center justify-between">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Object Queue</span>
             {activeTool?.id === 'merge' && files.length > 1 && (
@@ -321,7 +321,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
           </div>
 
           {/* Premium Status Bar */}
-          <div className="h-16 border-t border-gray-100 dark:border-white/5 flex items-center justify-between px-10 bg-white/50 dark:bg-[#0a0a0f]/50 backdrop-blur-xl">
+          <div className="h-16 border-t border-gray-100 dark:border-white/5 flex items-center justify-between px-10 bg-[#f3f1ea]/50 dark:bg-[#0a0a0f]/50 backdrop-blur-xl">
             <div className="flex items-center gap-10">
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -368,7 +368,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   );
 
   return (
-    <div className="flex-1 bg-gray-50 dark:bg-[#1e1e2e] flex flex-col h-full overflow-hidden transition-colors duration-300">
+    <div className="flex-1 bg-[#f3f1ea] dark:bg-[#1e1e2e] flex flex-col h-full overflow-hidden transition-colors duration-300">
       {files.length === 0 ? renderEmptyState() : renderFileGrid()}
     </div>
   );

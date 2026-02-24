@@ -3,8 +3,7 @@ import {
     Bot, Wand2, Languages, Mic, FileText, Play, Loader2,
     Send, Copy, Volume2, RefreshCw, ArrowRight, Check, Sparkles, BrainCircuit, Zap, Globe2, Ear
 } from 'lucide-react';
-import { generateRefinedFilename, generateAudioOverview, chatWithPDF } from '../services/geminiService';
-import { chatWithAI, translateText } from '../services/aiService';
+import { chatWithAI, translateText, generateRefinedFilename, generateAudioOverview, chatWithPDF } from '../services/aiService';
 import { AppContext } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -95,7 +94,7 @@ export const AILab: React.FC = () => {
             const errorMsg: ChatMessage = {
                 id: (Date.now() + 1).toString(),
                 role: 'ai',
-                content: "Network error in the lab. Please check your connection and try again.",
+                content: `Error: ${err.message || "Network error in the lab. Please check your connection and try again."}`,
                 timestamp: Date.now()
             };
             setChatHistory(prev => [...prev, errorMsg]);
@@ -125,9 +124,13 @@ export const AILab: React.FC = () => {
             const b64 = await generateAudioOverview(ttsInput, ttsVoice);
             if (b64) {
                 setAudioUrl(`data:audio/mp3;base64,${b64}`);
+            } else {
+                // Show message that TTS is not available
+                alert('Text-to-Speech is not available with the current AI provider. This feature requires a dedicated TTS service.');
             }
         } catch (err) {
             console.error(err);
+            alert('Text-to-Speech service is currently unavailable.');
         } finally {
             setIsLoading(false);
         }
@@ -181,7 +184,7 @@ export const AILab: React.FC = () => {
     ];
 
     return (
-        <div className="flex-1 bg-white dark:bg-[#020617] h-full overflow-hidden flex flex-col relative transition-colors duration-300">
+        <div className="flex-1 bg-[#f3f1ea] dark:bg-[#020617] h-full overflow-hidden flex flex-col relative transition-colors duration-300">
             {/* Ambient Background Atmosphere */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-500/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/4" />
@@ -189,9 +192,9 @@ export const AILab: React.FC = () => {
             </div>
 
             {/* Premium Live Ticker */}
-            <div className="w-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-100 dark:border-white/5 py-2.5 overflow-hidden sticky top-0 z-50">
+            <div className="w-full bg-[#f3f1ea]/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-100 dark:border-white/5 py-2.5 overflow-hidden sticky top-0 z-50">
                 <div className="max-w-[1600px] mx-auto flex items-center px-6 md:px-10">
-                    <div className="flex items-center gap-2 pr-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl z-10 shrink-0">
+                    <div className="flex items-center gap-2 pr-4 bg-[#f3f1ea]/80 dark:bg-slate-900/80 backdrop-blur-xl z-10 shrink-0">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Lab Status</span>
                         <div className="h-4 w-px bg-gray-200 dark:bg-white/10 mx-2" />
@@ -319,7 +322,7 @@ export const AILab: React.FC = () => {
                                 className="absolute inset-0 p-8 flex flex-col gap-8"
                             >
                                 <div className="flex items-center justify-center gap-6">
-                                    <div className="flex items-center gap-3 px-4 py-2 bg-gray-100 dark:bg-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                    <div className="flex items-center gap-3 px-4 py-2 bg-[#f3f1ea] dark:bg-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500">
                                         Source: Detect
                                     </div>
                                     <div className="w-10 h-px bg-gray-100 dark:bg-white/10" />
@@ -328,7 +331,7 @@ export const AILab: React.FC = () => {
                                         <select
                                             value={targetLang}
                                             onChange={(e) => setTargetLang(e.target.value)}
-                                            className="pl-10 pr-10 py-2.5 bg-white dark:bg-slate-800 border-2 border-brand-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-brand-600 dark:text-brand-400 outline-none hover:border-brand-500/40 transition-all cursor-pointer shadow-sm"
+                                            className="pl-10 pr-10 py-2.5 bg-[#f3f1ea] dark:bg-slate-800 border-2 border-brand-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-brand-600 dark:text-brand-400 outline-none hover:border-brand-500/40 transition-all cursor-pointer shadow-sm"
                                         >
                                             {LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
                                         </select>
@@ -337,7 +340,7 @@ export const AILab: React.FC = () => {
 
                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 min-h-0">
                                     <div className="flex flex-col">
-                                        <div className="px-5 py-3 bg-gray-50 dark:bg-white/5 border border-b-0 border-gray-100 dark:border-white/10 rounded-t-3xl flex items-center gap-2">
+                                        <div className="px-5 py-3 bg-[#f3f1ea] dark:bg-white/5 border border-b-0 border-gray-100 dark:border-white/10 rounded-t-3xl flex items-center gap-2">
                                             <div className="w-2 h-2 rounded-full bg-gray-300 animate-pulse" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Input Stream</span>
                                         </div>
@@ -345,7 +348,7 @@ export const AILab: React.FC = () => {
                                             value={translateInput}
                                             onChange={(e) => setTranslateInput(e.target.value)}
                                             placeholder="Paste document text here..."
-                                            className="flex-1 resize-none bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-b-3xl p-8 text-sm font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/5 transition-all custom-scrollbar"
+                                            className="flex-1 resize-none bg-[#f3f1ea] dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-b-3xl p-8 text-sm font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/5 transition-all custom-scrollbar"
                                         />
                                     </div>
                                     <div className="flex flex-col relative">
@@ -365,7 +368,7 @@ export const AILab: React.FC = () => {
                                                 readOnly
                                                 value={translateOutput}
                                                 placeholder="Result will appear here..."
-                                                className="w-full h-full resize-none bg-white dark:bg-slate-900 border border-brand-500/20 rounded-b-3xl p-8 text-sm font-medium text-gray-900 dark:text-gray-300 outline-none custom-scrollbar"
+                                                className="w-full h-full resize-none bg-[#f3f1ea] dark:bg-slate-900 border border-brand-500/20 rounded-b-3xl p-8 text-sm font-medium text-gray-900 dark:text-gray-300 outline-none custom-scrollbar"
                                             />
                                             {isLoading && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-slate-900/60 backdrop-blur-[1px] rounded-b-3xl">
@@ -398,7 +401,7 @@ export const AILab: React.FC = () => {
                             >
                                 <div className="w-full max-w-3xl space-y-10">
                                     <div className="flex flex-col">
-                                        <div className="px-6 py-3 bg-gray-50 dark:bg-white/5 border border-b-0 border-gray-100 dark:border-white/10 rounded-t-[2.5rem] flex items-center justify-between">
+                                        <div className="px-6 py-3 bg-[#f3f1ea] dark:bg-white/5 border border-b-0 border-gray-100 dark:border-white/10 rounded-t-[2.5rem] flex items-center justify-between">
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Voice Synthesis Input</span>
                                             <Ear className="w-4 h-4 text-gray-400" />
                                         </div>
@@ -406,13 +409,13 @@ export const AILab: React.FC = () => {
                                             value={ttsInput}
                                             onChange={(e) => setTtsInput(e.target.value)}
                                             placeholder="Paste the target text for AI synthesis..."
-                                            className="w-full h-56 resize-none bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-b-[2.5rem] p-10 text-sm font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/5 transition-all custom-scrollbar"
+                                            className="w-full h-56 resize-none bg-[#f3f1ea] dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-b-[2.5rem] p-10 text-sm font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/5 transition-all custom-scrollbar"
                                         />
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="bg-gray-50/50 dark:bg-white/5 p-5 rounded-2xl border border-gray-100 dark:border-white/10 flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shadow-sm">
+                                        <div className="bg-[#f3f1ea]/50 dark:bg-white/5 p-5 rounded-2xl border border-gray-100 dark:border-white/10 flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-[#f3f1ea] dark:bg-slate-800 rounded-xl flex items-center justify-center shadow-sm">
                                                 <Mic className="w-6 h-6 text-brand-500" />
                                             </div>
                                             <div className="flex-1">
@@ -469,7 +472,7 @@ export const AILab: React.FC = () => {
                                 exit={{ opacity: 0 }}
                                 className="absolute inset-0 p-10 flex flex-col items-center justify-center"
                             >
-                                <div className="w-full max-w-2xl bg-white dark:bg-slate-900/50 p-12 rounded-[3.5rem] border border-gray-100 dark:border-white/10 shadow-2xl shadow-gray-200/20 dark:shadow-none">
+                                <div className="w-full max-w-2xl bg-[#f3f1ea] dark:bg-slate-900/50 p-12 rounded-[3.5rem] border border-gray-100 dark:border-white/10 shadow-2xl shadow-gray-200/20 dark:shadow-none">
                                     <div className="flex items-center gap-5 mb-10">
                                         <div className="w-14 h-14 bg-gray-900 dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-gray-900 shadow-xl">
                                             <RefreshCw className="w-7 h-7" />
@@ -489,7 +492,7 @@ export const AILab: React.FC = () => {
                                                     type="text"
                                                     value={renameOriginal}
                                                     onChange={(e) => setRenameOriginal(e.target.value)}
-                                                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-white/5 rounded-[1.5rem] pl-14 pr-6 py-4 text-sm font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gray-900/5 transition-all"
+                                                    className="w-full bg-[#f3f1ea] dark:bg-slate-900 border border-gray-100 dark:border-white/5 rounded-[1.5rem] pl-14 pr-6 py-4 text-sm font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gray-900/5 transition-all"
                                                 />
                                             </div>
                                         </div>

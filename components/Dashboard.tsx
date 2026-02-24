@@ -1,6 +1,6 @@
 import React, { useContext, useState, useMemo } from 'react';
 import { PDFTool, ToolCategory } from '../types';
-import { ArrowRight, Sparkles, Search, X, LayoutGrid, Files, PenTool, Shield, Zap } from 'lucide-react';
+import { ArrowRight, Sparkles, Search, X, LayoutGrid, Files, PenTool, Shield, Zap, Sun, Moon } from 'lucide-react';
 import { AppContext } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -10,7 +10,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => {
-  const { t } = useContext(AppContext);
+  const { t, theme, setTheme } = useContext(AppContext);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<ToolCategory | 'all'>('all');
 
@@ -80,10 +80,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
 
       <div className="relative z-10 flex flex-col h-full">
         <div className="flex justify-between items-start mb-4">
-          <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${tool.color} bg-opacity-10 dark:bg-opacity-20 shadow-sm group-hover:scale-105 transition-transform duration-500 ring-1 ring-white/10`}>
-            <tool.icon className={`w-5 h-5 ${tool.color.replace('bg-', 'text-')}`} />
+          <div className={`${tool.toImageUrl ? 'h-12 w-auto px-2' : 'w-12 h-12'} rounded-xl flex items-center justify-center ${tool.color} bg-opacity-10 dark:bg-opacity-20 shadow-sm group-hover:scale-105 transition-transform duration-500 ring-1 ring-white/10 overflow-hidden gap-1.5`}>
+            {tool.imageUrl ? (
+              <>
+                <img src={tool.imageUrl} alt={tool.name} className="w-8 h-8 object-contain" />
+                {tool.toImageUrl && (
+                  <>
+                    <ArrowRight className={`w-3 h-3 ${tool.color.replace('bg-', 'text-')} opacity-60`} />
+                    <img src={tool.toImageUrl} alt="To" className="w-8 h-8 object-contain" />
+                  </>
+                )}
+              </>
+            ) : (
+              <tool.icon className={`w-5 h-5 ${tool.color.replace('bg-', 'text-')}`} />
+            )}
           </div>
-          <div className="p-1.5 rounded-lg bg-gray-50 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-brand-600 dark:text-brand-400">
+          <div className="p-1.5 rounded-lg bg-[#f3f1ea] dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-brand-600 dark:text-brand-400">
             <ArrowRight className="w-4 h-4" />
           </div>
         </div>
@@ -101,11 +113,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
   );
 
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f8fafc] dark:bg-[#020617] relative scroll-smooth overflow-x-hidden">
+    <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f3f1ea] dark:bg-[#020617] relative scroll-smooth overflow-x-hidden">
       {/* Premium Live Ticker */}
-      <div className="w-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-100 dark:border-white/5 py-2.5 overflow-hidden sticky top-0 z-50">
+      <div className="w-full bg-[#f3f1ea]/80 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-200/50 dark:border-white/5 py-2.5 overflow-hidden sticky top-0 z-50">
         <div className="max-w-[1600px] mx-auto flex items-center px-6 md:px-10">
-          <div className="flex items-center gap-2 pr-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl z-10 shrink-0">
+          <div className="flex items-center gap-2 pr-4 bg-[#f3f1ea]/90 dark:bg-slate-900/80 backdrop-blur-xl z-10 shrink-0">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Live Status</span>
             <div className="h-4 w-px bg-gray-200 dark:bg-white/10 mx-2" />
@@ -132,13 +144,45 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
                     { label: "SYSTEM", val: "All Nodes Operational", type: "info" }
                   ].map((msg, idx) => (
                     <div key={idx} className="flex items-center gap-3">
-                      <span className="text-[9px] font-black bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 dark:border-white/10">{msg.label}</span>
+                      <span className="text-[9px] font-black bg-[#f3f1ea] dark:bg-white/5 text-gray-400 dark:text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 dark:border-white/10">{msg.label}</span>
                       <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 tracking-tight">{msg.val}</span>
                     </div>
                   ))}
                 </div>
               ))}
             </motion.div>
+          </div>
+
+          <div className="flex items-center gap-2 ml-4">
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="group relative flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-brand-500/50 transition-all duration-300 overflow-hidden"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              <AnimatePresence mode="wait">
+                {theme === 'dark' ? (
+                  <motion.div
+                    key="sun"
+                    initial={{ y: 20, opacity: 0, rotate: -45 }}
+                    animate={{ y: 0, opacity: 1, rotate: 0 }}
+                    exit={{ y: -20, opacity: 0, rotate: 45 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Sun className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="moon"
+                    initial={{ y: 20, opacity: 0, rotate: -45 }}
+                    animate={{ y: 0, opacity: 1, rotate: 0 }}
+                    exit={{ y: -20, opacity: 0, rotate: 45 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Moon className="w-3.5 h-3.5 text-indigo-500 group-hover:scale-110 transition-transform" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </button>
           </div>
         </div>
       </div>
@@ -156,7 +200,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 shadow-sm mb-6"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f3f1ea]/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm mb-6"
             >
               <div className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
               <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
@@ -190,8 +234,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
               transition={{ delay: 0.2 }}
               className="relative group"
             >
-              <div className="relative flex items-center bg-white dark:bg-slate-900/90 border border-gray-200 dark:border-white/10 rounded-2xl p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-brand-500/20 transition-all">
-                <div className="flex items-center justify-center w-10 h-10 bg-gray-50 dark:bg-white/5 rounded-xl ml-1 text-gray-400">
+              <div className="relative flex items-center bg-[#f3f1ea]/60 dark:bg-slate-900/90 border border-gray-200 dark:border-white/10 rounded-2xl p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-brand-500/20 transition-all">
+                <div className="flex items-center justify-center w-10 h-10 bg-[#f3f1ea] dark:bg-white/5 rounded-xl ml-1 text-gray-400">
                   <Search className="w-5 h-5" />
                 </div>
                 <input
@@ -226,7 +270,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
               onClick={() => setActiveCategory('all')}
               className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${activeCategory === 'all'
                 ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900'
-                : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500'
+                : 'bg-[#f3f1ea]/50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500'
                 }`}
             >
               {t('All')}
@@ -237,7 +281,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
                 onClick={() => setActiveCategory(cat)}
                 className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${activeCategory === cat
                   ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900'
-                  : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500 hover:border-gray-300'
+                  : 'bg-[#f3f1ea]/50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500 hover:border-gray-300'
                   }`}
               >
                 {t(cat)}

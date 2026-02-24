@@ -246,7 +246,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
   ];
 
   return (
-    <div className="flex-1 overflow-hidden flex bg-gray-50 dark:bg-[#020617] transition-colors duration-300 relative">
+    <div className="flex-1 overflow-hidden flex bg-[#f3f1ea] dark:bg-[#020617] transition-colors duration-300 relative">
       {/* Background atmosphere */}
       <div className="bg-blob opacity-10 dark:opacity-[0.07] -top-40 right-0 pointer-events-none" />
 

@@ -3,12 +3,14 @@ import {
   Files, Scissors, ArrowRightLeft, FileText, Image,
   Lock, Wand2, PenTool, Search, Type, Grid, Shield,
   Unlock, Eraser, RotateCw, Hammer, Layers, FileSpreadsheet,
-  Presentation, FileJson, FileCode, BookOpen, Printer, Monitor, Loader2, Menu, X
+  Presentation, FileJson, FileCode, BookOpen, Printer, Monitor, Loader2, Menu, X, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sidebar } from './components/Sidebar';
 import { RightDock } from './components/RightDock';
 import { Dashboard } from './components/Dashboard';
+import { About } from './components/About';
+import { Contact } from './components/Contact';
 import { Workspace } from './components/Workspace';
 import { ESign } from './components/ESign';
 import { AILab } from './components/AILab';
@@ -29,6 +31,14 @@ import { PowerPointToPDF } from './components/PowerPointToPDF';
 import { PDFToJPG } from './components/PDFToJPG';
 import { JPGToPDF } from './components/JPGToPDF';
 import { PDFToWord } from './components/PDFToWord';
+import { PDFToExcel } from './components/PDFToExcel';
+import { PDFToPPT } from './components/PDFToPPT';
+import { ExtractImages } from './components/ExtractImages';
+import { CompressPDF } from './components/CompressPDF';
+import { OCRPDF } from './components/OCRPDF';
+import { ProtectPDF } from './components/ProtectPDF';
+import { SignPDF } from './components/SignPDF';
+import { AISummary } from './components/AISummary';
 
 // --- Context Setup ---
 interface AppContextType {
@@ -1806,44 +1816,47 @@ const App: React.FC = () => {
 
   // Define Tools
   const tools: PDFTool[] = useMemo(() => [
-    // Organize
-    { id: 'merge', name: 'Merge PDF', description: 'Combine multiple PDFs into one unified document.', icon: Files, category: ToolCategory.ORGANIZE, color: 'bg-red-500' },
-    { id: 'split', name: 'Split PDF', description: 'Extract pages or split into separate files.', icon: Scissors, category: ToolCategory.ORGANIZE, color: 'bg-red-500' },
-    { id: 'delete-pages', name: 'Delete Pages', description: 'Remove unwanted pages from your PDF.', icon: Eraser, category: ToolCategory.ORGANIZE, color: 'bg-red-500' },
-    { id: 'rotate', name: 'Rotate PDF', description: 'Rotate your PDF pages permanently.', icon: RotateCw, category: ToolCategory.ORGANIZE, color: 'bg-red-500' },
+    // Conversion Pairs (Conversion Category)
+    { id: 'word-to-pdf', name: 'Word to PDF', description: 'Convert DOC & DOCX to PDF.', icon: FileText, imageUrl: 'https://img.icons8.com/fluency/96/microsoft-word-2019.png', toImageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', category: ToolCategory.CONVERT, color: 'bg-blue-500' },
+    { id: 'pdf-to-word', name: 'PDF to Word', description: 'Convert PDF to editable Word documents.', icon: FileText, imageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', toImageUrl: 'https://img.icons8.com/fluency/96/microsoft-word-2019.png', category: ToolCategory.CONVERT, color: 'bg-blue-600' },
 
-    // Convert To PDF
-    { id: 'word-to-pdf', name: 'Word to PDF', description: 'Convert DOC & DOCX to PDF.', icon: FileText, category: ToolCategory.CONVERT, color: 'bg-blue-500' },
-    { id: 'excel-to-pdf', name: 'Excel to PDF', description: 'Convert XLS & XLSX spreadsheets to PDF.', icon: FileSpreadsheet, category: ToolCategory.CONVERT, color: 'bg-green-500' },
-    { id: 'ppt-to-pdf', name: 'PowerPoint to PDF', description: 'Convert PPT & PPTX slideshows to PDF.', icon: Presentation, category: ToolCategory.CONVERT, color: 'bg-orange-500' },
-    { id: 'jpg-to-pdf', name: 'JPG to PDF', description: 'Convert JPG, PNG, BMP, TIFF images to PDF.', icon: Image, category: ToolCategory.CONVERT, color: 'bg-yellow-500' },
-    { id: 'openoffice-to-pdf', name: 'OpenOffice to PDF', description: 'Convert ODT, ODS, ODP to PDF.', icon: Monitor, category: ToolCategory.CONVERT, color: 'bg-gray-600' },
+    { id: 'excel-to-pdf', name: 'Excel to PDF', description: 'Convert XLS & XLSX spreadsheets to PDF.', icon: FileSpreadsheet, imageUrl: 'https://img.icons8.com/fluency/96/microsoft-excel-2019.png', toImageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', category: ToolCategory.CONVERT, color: 'bg-green-500' },
+    { id: 'pdf-to-excel', name: 'PDF to Excel', description: 'Convert PDF tables to Excel spreadsheets.', icon: FileSpreadsheet, imageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', toImageUrl: 'https://img.icons8.com/fluency/96/microsoft-excel-2019.png', category: ToolCategory.CONVERT, color: 'bg-green-600' },
 
-    // Convert From PDF
-    { id: 'pdf-to-word', name: 'PDF to Word', description: 'Convert PDF to editable Word documents.', icon: FileText, category: ToolCategory.CONVERT, color: 'bg-blue-600' },
-    { id: 'pdf-to-excel', name: 'PDF to Excel', description: 'Convert PDF tables to Excel spreadsheets.', icon: FileSpreadsheet, category: ToolCategory.CONVERT, color: 'bg-green-600' },
-    { id: 'pdf-to-ppt', name: 'PDF to Powerpoint', description: 'Convert PDF to PowerPoint slides.', icon: Presentation, category: ToolCategory.CONVERT, color: 'bg-orange-600' },
-    { id: 'pdf-to-jpg', name: 'PDF to JPG', description: 'Convert PDF pages to images.', icon: Image, category: ToolCategory.CONVERT, color: 'bg-yellow-600' },
-    { id: 'extract-images', name: 'Extract PDF Images', description: 'Scrape all images from a PDF file.', icon: Image, category: ToolCategory.CONVERT, color: 'bg-purple-500' },
+    { id: 'ppt-to-pdf', name: 'PowerPoint to PDF', description: 'Convert PPT & PPTX slideshows to PDF.', icon: Presentation, imageUrl: 'https://img.icons8.com/fluency/96/microsoft-powerpoint-2019.png', toImageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', category: ToolCategory.CONVERT, color: 'bg-orange-500' },
+    { id: 'pdf-to-ppt', name: 'PDF to Powerpoint', description: 'Convert PDF to PowerPoint slides.', icon: Presentation, imageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', toImageUrl: 'https://img.icons8.com/fluency/96/microsoft-powerpoint-2019.png', category: ToolCategory.CONVERT, color: 'bg-orange-600' },
 
-    // Edit
-    { id: 'edit', name: 'Edit PDF', description: 'Add text, shapes, and annotations to PDF.', icon: PenTool, category: ToolCategory.EDIT, color: 'bg-indigo-500' },
-    { id: 'ocr', name: 'OCR PDF', description: 'Make scanned PDFs searchable and selectable.', icon: Search, category: ToolCategory.EDIT, color: 'bg-teal-500' },
-    { id: 'compress', name: 'Compress PDF', description: 'Reduce file size while maintaining quality.', icon: Grid, category: ToolCategory.EDIT, color: 'bg-pink-500' },
+    { id: 'jpg-to-pdf', name: 'JPG to PDF', description: 'Convert JPG, PNG, BMP, TIFF images to PDF.', icon: Image, imageUrl: 'https://img.icons8.com/fluency/96/image.png', toImageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', category: ToolCategory.CONVERT, color: 'bg-yellow-500' },
+    { id: 'pdf-to-jpg', name: 'PDF to JPG', description: 'Convert PDF pages to images.', icon: Image, imageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', toImageUrl: 'https://img.icons8.com/fluency/96/jpg.png', category: ToolCategory.CONVERT, color: 'bg-yellow-600' },
 
-    // Security
-    { id: 'protect', name: 'Protect PDF', description: 'Encrypt your PDF with a password.', icon: Lock, category: ToolCategory.SECURITY, color: 'bg-gray-800' },
-    { id: 'unlock', name: 'Unlock PDF', description: 'Remove password security from PDF.', icon: Unlock, category: ToolCategory.SECURITY, color: 'bg-gray-500' },
-    { id: 'sign', name: 'Sign PDF', description: 'Add your signature to documents.', icon: PenTool, category: ToolCategory.SECURITY, color: 'bg-blue-800' },
+    // Organization Pairs (Organize Category)
+    { id: 'merge', name: 'Merge PDF', description: 'Combine multiple PDFs into one unified document.', icon: Files, imageUrl: 'https://img.icons8.com/?size=96&id=K13M6xNI3LfW&format=png', category: ToolCategory.ORGANIZE, color: 'bg-red-500' },
+    { id: 'split', name: 'Split PDF', description: 'Extract pages or split into separate files.', icon: Scissors, imageUrl: 'https://img.icons8.com/fluency/96/cut.png', category: ToolCategory.ORGANIZE, color: 'bg-red-500' },
 
-    // AI
-    { id: 'ai-summary', name: 'AI Summary', description: 'Get concise summaries using Gemini AI.', icon: Wand2, category: ToolCategory.AI, color: 'bg-fuchsia-600' },
-  ], []);
+    // Security Pairs (Security Category)
+    { id: 'protect', name: 'Protect PDF', description: 'Encrypt your PDF with a password.', icon: Lock, imageUrl: 'https://img.icons8.com/?size=160&id=POttxllhrOvO&format=png', category: ToolCategory.SECURITY, color: 'bg-gray-800' },
+    { id: 'unlock', name: 'Unlock PDF', description: 'Remove password security from PDF.', icon: Unlock, imageUrl: 'https://img.icons8.com/?size=160&id=iGidkirNyDn6&format=png', category: ToolCategory.SECURITY, color: 'bg-gray-500' },
+
+    // Management & AI
+    { id: 'edit', name: 'Edit PDF', description: 'Add text, shapes, and annotations to PDF.', icon: PenTool, imageUrl: 'https://img.icons8.com/fluency/96/edit.png', category: ToolCategory.EDIT, color: 'bg-indigo-500' },
+    { id: 'ocr', name: 'OCR PDF', description: 'Make scanned PDFs searchable and selectable.', icon: Search, imageUrl: 'https://img.icons8.com/?size=160&id=RElHr_DScWK4&format=png', category: ToolCategory.EDIT, color: 'bg-teal-500' },
+    { id: 'compress', name: 'Compress PDF', description: 'Reduce file size while maintaining quality.', icon: Grid, imageUrl: 'https://img.icons8.com/fluency/96/shrink.png', category: ToolCategory.EDIT, color: 'bg-pink-500' },
+    { id: 'ai-summary', name: 'AI Summary', description: 'Get concise summaries using Gemini AI.', icon: Sparkles, imageUrl: 'https://img.icons8.com/fluency/96/artificial-intelligence.png', category: ToolCategory.AI, color: 'bg-fuchsia-600' },
+    { id: 'sign', name: 'Sign PDF', description: 'Add your signature to documents.', icon: PenTool, imageUrl: 'https://img.icons8.com/fluency/96/signature.png', category: ToolCategory.SECURITY, color: 'bg-blue-800' },
+    { id: 'delete-pages', name: 'Delete Pages', description: 'Remove unwanted pages from your PDF.', icon: Eraser, imageUrl: 'https://img.icons8.com/fluency/96/delete-forever.png', category: ToolCategory.ORGANIZE, color: 'bg-red-500' },
+    { id: 'rotate', name: 'Rotate PDF', description: 'Rotate your PDF pages permanently.', icon: RotateCw, imageUrl: 'https://img.icons8.com/fluency/96/refresh.png', category: ToolCategory.ORGANIZE, color: 'bg-red-500' },
+    { id: 'extract-images', name: 'Extract PDF Images', description: 'Scrape all images from a PDF file.', icon: Image, imageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', toImageUrl: 'https://img.icons8.com/fluency/96/gallery.png', category: ToolCategory.CONVERT, color: 'bg-purple-500' },
+    { id: 'openoffice-to-pdf', name: 'OpenOffice to PDF', description: 'Convert ODT, ODS, ODP to PDF.', icon: Monitor, imageUrl: 'https://img.icons8.com/fluency/96/monitor.png', toImageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', category: ToolCategory.CONVERT, color: 'bg-gray-600' },
+  ], [t]);
 
   const handleToolSelect = (tool: PDFTool | null) => {
     setActiveTool(tool);
     if (tool) {
-      setCurrentView(AppView.WORKSPACE);
+      if (tool.id === 'ai-summary') {
+        setCurrentView(AppView.AI_SUMMARY);
+      } else {
+        setCurrentView(AppView.WORKSPACE);
+      }
     }
   };
 
@@ -1920,7 +1933,7 @@ const App: React.FC = () => {
 
   return (
     <AppContext.Provider value={{ theme, setTheme, language, setLanguage, t }}>
-      <div className="flex h-screen w-screen bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white overflow-hidden font-sans transition-colors duration-300">
+      <div className="flex h-screen w-screen bg-[#f3f1ea] dark:bg-slate-900 text-gray-900 dark:text-white overflow-hidden font-sans transition-colors duration-300">
         <Sidebar
           currentView={currentView}
           setView={setCurrentView}
@@ -1931,7 +1944,7 @@ const App: React.FC = () => {
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           {/* Mobile Header */}
-          <header className="lg:hidden h-16 glass-morphism dark:bg-slate-900/60 flex items-center justify-between px-6 z-40 border-b border-white/10 shrink-0">
+          <header className={`lg:hidden h-16 ${theme === 'dark' ? 'bg-slate-900/60' : 'bg-[#f3f1ea]/80'} glass-morphism flex items-center justify-between px-6 z-40 border-b border-white/10 shrink-0`}>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-black text-xs">OP</div>
               <span className="font-black tracking-tighter text-lg">{t('OmniPDF AI Suite')}</span>
@@ -1989,7 +2002,35 @@ const App: React.FC = () => {
               <PDFToWord onBack={() => handleToolSelect(null)} />
             )}
 
-            {currentView === AppView.WORKSPACE && activeTool?.id !== 'merge' && activeTool?.id !== 'split' && activeTool?.id !== 'delete' && activeTool?.id !== 'rotate' && activeTool?.id !== 'word-to-pdf' && activeTool?.id !== 'excel-to-pdf' && activeTool?.id !== 'ppt-to-pdf' && activeTool?.id !== 'pdf-to-jpg' && activeTool?.id !== 'jpg-to-pdf' && activeTool?.id !== 'pdf-to-word' && (
+            {currentView === AppView.WORKSPACE && activeTool?.id === 'pdf-to-excel' && (
+              <PDFToExcel onBack={() => handleToolSelect(null)} />
+            )}
+
+            {currentView === AppView.WORKSPACE && activeTool?.id === 'pdf-to-ppt' && (
+              <PDFToPPT onBack={() => handleToolSelect(null)} />
+            )}
+
+            {currentView === AppView.WORKSPACE && activeTool?.id === 'extract-images' && (
+              <ExtractImages onBack={() => handleToolSelect(null)} />
+            )}
+
+            {currentView === AppView.WORKSPACE && activeTool?.id === 'compress' && (
+              <CompressPDF onBack={() => handleToolSelect(null)} />
+            )}
+
+            {currentView === AppView.WORKSPACE && activeTool?.id === 'ocr' && (
+              <OCRPDF onBack={() => handleToolSelect(null)} />
+            )}
+
+            {currentView === AppView.WORKSPACE && activeTool?.id === 'protect' && (
+              <ProtectPDF onBack={() => handleToolSelect(null)} />
+            )}
+
+            {currentView === AppView.WORKSPACE && (activeTool?.id === 'sign' || activeTool?.id === 'esign') && (
+              <SignPDF onBack={() => handleToolSelect(null)} />
+            )}
+
+            {currentView === AppView.WORKSPACE && activeTool?.id !== 'merge' && activeTool?.id !== 'split' && activeTool?.id !== 'delete' && activeTool?.id !== 'rotate' && activeTool?.id !== 'word-to-pdf' && activeTool?.id !== 'excel-to-pdf' && activeTool?.id !== 'ppt-to-pdf' && activeTool?.id !== 'pdf-to-jpg' && activeTool?.id !== 'jpg-to-pdf' && activeTool?.id !== 'pdf-to-word' && activeTool?.id !== 'pdf-to-excel' && activeTool?.id !== 'pdf-to-ppt' && activeTool?.id !== 'extract-images' && activeTool?.id !== 'compress' && activeTool?.id !== 'ocr' && activeTool?.id !== 'protect' && activeTool?.id !== 'sign' && activeTool?.id !== 'esign' && (
               <div className="flex flex-1 overflow-hidden">
                 <Workspace
                   activeTool={activeTool}
@@ -2068,6 +2109,10 @@ const App: React.FC = () => {
               <AILab />
             )}
 
+            {currentView === AppView.AI_SUMMARY && (
+              <AISummary />
+            )}
+
             {currentView === AppView.ANALYTICS && (
               <Analytics />
             )}
@@ -2082,6 +2127,14 @@ const App: React.FC = () => {
 
             {(currentView === AppView.SETTINGS || currentView.startsWith('SETTINGS_')) && (
               <Settings currentView={currentView} />
+            )}
+
+            {currentView === AppView.ABOUT && (
+              <About />
+            )}
+
+            {currentView === AppView.CONTACT && (
+              <Contact />
             )}
           </main>
         </div>

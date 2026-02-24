@@ -1,0 +1,39 @@
+// Test API directly
+const testAPI = async () => {
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer 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',
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://omnifdf-ai.com',
+        'X-Title': 'OmniPDF AI',
+      },
+      body: JSON.stringify({
+        model: 'meta-llama/llama-3.2-3b-instruct:free',
+        messages: [
+          {
+            role: 'user',
+            content: 'Hello, how are you?'
+          }
+        ],
+        max_tokens: 100,
+        temperature: 0.7,
+      }),
+    });
+
+    console.log('Response status:', response.status);
+    const data = await response.json();
+    console.log('Response data:', data);
+    
+    if (response.ok) {
+      console.log('SUCCESS:', data.choices[0]?.message?.content);
+    } else {
+      console.error('ERROR:', data);
+    }
+  } catch (error) {
+    console.error('CATCH ERROR:', error);
+  }
+};
+
+testAPI();

@@ -12,7 +12,7 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
     return (
-        <div className="flex-1 bg-white dark:bg-[#0f0f1a] overflow-y-auto custom-scrollbar">
+        <div className="flex-1 bg-[#f3f1ea] dark:bg-[#0f0f1a] overflow-y-auto custom-scrollbar">
             {/* Hero Section */}
             <section className="relative pt-20 pb-32 overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-brand-500/10 rounded-full blur-[120px] pointer-events-none" />
@@ -68,7 +68,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             </section>
 
             {/* Feature Grid */}
-            <section className="py-24 bg-gray-50 dark:bg-[#161625]">
+            <section className="py-24 bg-[#f3f1ea] dark:bg-[#161625]">
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="text-center mb-16">
                         <h2 className="text-4xl font-bold dark:text-white mb-4">Powerful Tools for Every Workflow</h2>

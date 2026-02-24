@@ -30,7 +30,7 @@ export const History: React.FC = () => {
     );
 
     return (
-        <div className="flex-1 bg-[#f8fafc] dark:bg-[#020617] h-full overflow-y-auto custom-scrollbar relative transition-colors duration-300">
+        <div className="flex-1 bg-[#f3f1ea] dark:bg-[#020617] h-full overflow-y-auto custom-scrollbar relative transition-colors duration-300">
             {/* Ambient background atmosphere */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-500/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4" />
@@ -38,9 +38,9 @@ export const History: React.FC = () => {
             </div>
 
             {/* Premium Live Ticker */}
-            <div className="w-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-100 dark:border-white/5 py-2.5 overflow-hidden sticky top-0 z-50">
+            <div className="w-full bg-[#f3f1ea]/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-100 dark:border-white/5 py-2.5 overflow-hidden sticky top-0 z-50">
                 <div className="max-w-[1600px] mx-auto flex items-center px-6 md:px-10">
-                    <div className="flex items-center gap-2 pr-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl z-10 shrink-0">
+                    <div className="flex items-center gap-2 pr-4 bg-[#f3f1ea]/80 dark:bg-slate-900/80 backdrop-blur-xl z-10 shrink-0">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">History Core</span>
                         <div className="h-4 w-px bg-gray-200 dark:bg-white/10 mx-2" />

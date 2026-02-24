@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { Settings, Bot, Layers, Command, LayoutGrid, TrendingUp, UserCheck, LogOut, ShieldCheck, Sparkles, History, ChevronDown, User } from 'lucide-react';
+import { Settings, Bot, Layers, Command, LayoutGrid, TrendingUp, UserCheck, LogOut, ShieldCheck, Sparkles, History, ChevronDown, User, Info, PhoneCall, HelpCircle, CreditCard } from 'lucide-react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { AppView } from '../types';
 import { AppContext } from '../App';
@@ -20,6 +20,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
 
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
   const [isUserFeaturesExpanded, setIsUserFeaturesExpanded] = useState(false);
+  const [isSupportExpanded, setIsSupportExpanded] = useState(false);
 
   // User Profile State
   const [user, setUser] = useState<any>(null);
@@ -55,9 +56,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
       label: t('User Features'),
       color: 'text-brand-500',
       subItems: [
-        { id: AppView.SETTINGS_ACCOUNT, label: t('Account') },
-        { id: AppView.SETTINGS_WORKSPACE, label: t('Workspace') },
-        { id: AppView.SETTINGS_BILLING, label: t('Billing & Plans') },
+        { id: AppView.SETTINGS_ACCOUNT, label: t('Account'), icon: User },
+        { id: AppView.SETTINGS_WORKSPACE, label: t('Workspace'), icon: ShieldCheck },
+        { id: AppView.SETTINGS_BILLING, label: t('Billing & Plans'), icon: CreditCard },
       ]
     },
     {
@@ -65,6 +66,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
       icon: Settings,
       label: t('Settings'),
       color: 'text-gray-500',
+    },
+    {
+      id: 'SUPPORT',
+      icon: HelpCircle,
+      label: t('About & Support'),
+      color: 'text-brand-400',
+      subItems: [
+        { id: AppView.ABOUT, label: t('About'), icon: Info },
+        { id: AppView.CONTACT, label: t('Contact'), icon: PhoneCall },
+      ]
     },
   ];
 
@@ -95,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
           setIsSettingsExpanded(false);
         }}
         className={`fixed inset-y-0 left-0 z-[70] flex flex-col py-6 
-          bg-white/90 dark:bg-[#0c0c14]/95 backdrop-blur-2xl border-r border-gray-100 dark:border-white/5 shadow-[20px_0_40px_rgba(0,0,0,0.02)]
+          bg-[#210c6e] dark:bg-[#210c6e] backdrop-blur-2xl border-r border-white/10 shadow-[20px_0_40px_rgba(0,0,0,0.02)]
           lg:relative lg:translate-x-0 transition-opacity duration-300
           ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}`}
       >
@@ -117,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
             </motion.div>
             <div className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500 border-2 border-white dark:border-[#0c0c14]"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500 border-2 border-[#210c6e]"></span>
             </div>
           </div>
 
@@ -129,7 +140,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                 exit={{ opacity: 0, x: -10 }}
                 className="-ml-1 whitespace-nowrap overflow-hidden flex-1"
               >
-                <h3 className="text-sm font-black dark:text-white leading-tight tracking-tight">OmniPDF <span className="text-brand-600">AI</span></h3>
+                <h3 className="text-sm font-black text-white leading-tight tracking-tight">OmniPDF <span className="text-brand-400">AI</span></h3>
                 <p className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-500">Live Status</p>
               </motion.div>
             )}
@@ -147,25 +158,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                 <button
                   onClick={() => {
                     const isUserFeatures = item.id === 'USER_FEATURES';
+                    const isSupport = item.id === 'SUPPORT';
                     if (isSettings) {
                       setView(AppView.SETTINGS_GENERAL);
                     } else if (isUserFeatures) {
                       if (isHovered || isOpen) {
                         setIsUserFeaturesExpanded(!isUserFeaturesExpanded);
                       }
+                    } else if (isSupport) {
+                      if (isHovered || isOpen) {
+                        setIsSupportExpanded(!isSupportExpanded);
+                      }
                     } else {
                       setView(item.id as AppView);
                     }
-                    if (window.innerWidth < 1024 && onClose && !isUserFeatures) onClose();
+                    if (window.innerWidth < 1024 && onClose && !isUserFeatures && !isSupport) onClose();
                   }}
                   className={`group relative flex items-center w-full h-11 rounded-xl transition-all duration-300
                     ${isMainActive
-                      ? 'text-brand-600 dark:text-brand-400 bg-brand-500/10 shadow-inner'
-                      : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-white/5'
+                      ? 'text-white bg-white/15 shadow-inner'
+                      : 'text-white/50 hover:text-white hover:bg-white/5'
                     }`}
                 >
                   <div className={`shrink-0 w-10 flex justify-center transition-all duration-300 ${isMainActive ? 'scale-110' : 'group-hover:scale-110'}`}>
-                    <item.icon className={`w-4.5 h-4.5 ${isMainActive ? `drop-shadow-[0_0_8px_currentColor]` : ''}`} />
+                    <item.icon className={`w-4.5 h-4.5 ${isMainActive ? `text-brand-400 drop-shadow-[0_0_8px_currentColor]` : ''}`} />
                   </div>
 
                   <AnimatePresence>
@@ -181,9 +197,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                     )}
                   </AnimatePresence>
 
-                  {(isHovered || isOpen) && (item.id === 'USER_FEATURES') && (
+                  {(isHovered || isOpen) && (item.id === 'USER_FEATURES' || item.id === 'SUPPORT') && (
                     <motion.div
-                      animate={{ rotate: isUserFeaturesExpanded ? 180 : 0 }}
+                      animate={{ rotate: (item.id === 'USER_FEATURES' ? isUserFeaturesExpanded : isSupportExpanded) ? 180 : 0 }}
                       className="mr-3"
                     >
                       <ChevronDown className="w-3 h-3 text-brand-400 opacity-50" />
@@ -193,7 +209,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                   {isMainActive && !isSettingsExpanded && (
                     <motion.div
                       layoutId="active-indicator"
-                      className="absolute right-2.5 w-1 h-1 rounded-full bg-brand-600 dark:bg-brand-500 shadow-lg shadow-brand-500/40"
+                      className="absolute right-2.5 w-1 h-1 rounded-full bg-brand-400 shadow-lg shadow-brand-400/40"
                     />
                   )}
                 </button>
@@ -205,7 +221,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden flex flex-col ml-6 mt-1 gap-1 border-l border-gray-100 dark:border-white/5 shadow-sm rounded-r-xl"
+                      className="overflow-hidden flex flex-col ml-6 mt-1 gap-1 border-l border-white/10 shadow-sm rounded-r-xl"
                     >
                       {item.subItems?.map((sub) => {
                         const isSubActive = currentView === sub.id;
@@ -216,14 +232,49 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                               setView(sub.id);
                               if (window.innerWidth < 1024 && onClose) onClose();
                             }}
-                            className={`flex items-center w-full h-9 pl-6 pr-4 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200
+                            className={`flex items-center w-full h-9 pl-4 pr-4 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200 gap-3
                               ${isSubActive
-                                ? 'text-brand-600 dark:text-brand-400 bg-brand-500/5'
-                                : 'text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                                ? 'text-brand-400 bg-white/5'
+                                : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                           >
-                            {sub.label}
+                            {sub.icon && <sub.icon className="w-3 h-3" />}
+                            <span className="flex-1 text-left">{sub.label}</span>
                             {isSubActive && (
-                              <div className="ml-auto w-1 h-1 rounded-full bg-brand-500" />
+                              <div className="w-1 h-1 rounded-full bg-brand-500" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                  {(isHovered || isOpen) && item.id === 'SUPPORT' && isSupportExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden flex flex-col ml-6 mt-1 gap-1 border-l border-white/10 shadow-sm rounded-r-xl"
+                    >
+                      {item.subItems?.map((sub) => {
+                        const isSubActive = currentView === sub.id;
+                        return (
+                          <button
+                            key={sub.id}
+                            onClick={() => {
+                              setView(sub.id);
+                              if (window.innerWidth < 1024 && onClose) onClose();
+                            }}
+                            className={`flex items-center w-full h-9 pl-4 pr-4 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200 gap-3
+                              ${isSubActive
+                                ? 'text-brand-400 bg-white/5'
+                                : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                          >
+                            {sub.icon && <sub.icon className="w-3 h-3" />}
+                            <span className="flex-1 text-left">{sub.label}</span>
+                            {isSubActive && (
+                              <div className="w-1 h-1 rounded-full bg-brand-500" />
                             )}
                           </button>
                         );
@@ -237,13 +288,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
         </nav>
 
         <div className="mt-auto pt-6 flex flex-col w-full px-4">
-          <div className="h-px w-full bg-gray-100 dark:bg-white/5 mb-6" />
+          <div className="h-px w-full bg-white/10 mb-6" />
 
           {user ? (
             <div className={`relative group flex items-center h-14`}>
               <div className="shrink-0 w-10 flex justify-center">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-500 to-indigo-500 p-[1.5px] shadow-xl">
-                  <div className="w-full h-full rounded-xl bg-white dark:bg-slate-900 overflow-hidden flex items-center justify-center font-bold text-gray-800 dark:text-white uppercase text-xs">
+                  <div className="w-full h-full rounded-xl bg-[#210c6e] overflow-hidden flex items-center justify-center font-bold text-white uppercase text-xs">
                     {(user.user_metadata?.avatar_url || user.user_metadata?.picture) ? (
                       <img
                         src={user.user_metadata.avatar_url || user.user_metadata.picture}
@@ -266,7 +317,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                     exit={{ opacity: 0, x: -2 }}
                     className="ml-1 overflow-hidden flex-1"
                   >
-                    <h4 className="text-[9px] font-black text-gray-900 dark:text-white uppercase tracking-widest truncate">{user.user_metadata?.full_name || 'User'}</h4>
+                    <h4 className="text-[9px] font-black text-white uppercase tracking-widest truncate">{user.user_metadata?.full_name || 'User'}</h4>
                     <p className="text-[7px] font-bold text-emerald-500 uppercase tracking-widest truncate">{user.email}</p>
                   </motion.div>
                 )}
@@ -280,7 +331,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                     exit={{ opacity: 0 }}
                     onClick={onLogout}
                     title="Log Out"
-                    className="p-1.5 ml-1 hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded-lg transition-colors shrink-0"
+                    className="p-1.5 ml-1 hover:bg-red-500/10 text-white/40 hover:text-red-400 rounded-lg transition-colors shrink-0"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                   </motion.button>
@@ -302,7 +353,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                     exit={{ opacity: 0, x: -2 }}
                     className="ml-1 overflow-hidden flex-1"
                   >
-                    <h4 className="text-[9px] font-black text-gray-900 dark:text-white uppercase tracking-widest truncate">Guest Account</h4>
+                    <h4 className="text-[9px] font-black text-white uppercase tracking-widest truncate">Guest Account</h4>
                     <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest">Sign in to save</p>
                   </motion.div>
                 )}

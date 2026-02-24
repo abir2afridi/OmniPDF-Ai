@@ -9,9 +9,12 @@ export enum AppView {
   SETTINGS_WORKSPACE = 'SETTINGS_WORKSPACE',
   SETTINGS_BILLING = 'SETTINGS_BILLING',
   AI_LAB = 'AI_LAB',
+  AI_SUMMARY = 'AI_SUMMARY',
   ANALYTICS = 'ANALYTICS',
   E_SIGN = 'E_SIGN',
-  HISTORY = 'HISTORY'
+  HISTORY = 'HISTORY',
+  ABOUT = 'ABOUT',
+  CONTACT = 'CONTACT'
 }
 
 export enum ToolCategory {
@@ -27,6 +30,8 @@ export interface PDFTool {
   name: string;
   description: string;
   icon: LucideIcon;
+  imageUrl?: string;
+  toImageUrl?: string;
   category: ToolCategory;
   color: string;
 }
