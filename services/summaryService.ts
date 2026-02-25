@@ -34,7 +34,7 @@ if (GlobalWorkerOptions) {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const OPENROUTER_API_KEY = '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';
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const SUMMARY_MODEL = 'z-ai/glm-4.5-air:free';
 

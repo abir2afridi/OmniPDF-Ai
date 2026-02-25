@@ -18,8 +18,8 @@ interface ChatResponse {
   usage?: any;
 }
 
-// Use environment variable for Vercel deployment
-const OPENROUTER_API_KEY = (process.env.OPENROUTER_API_KEY as string) || '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';
+// Use environment variable for Supabase Edge Function integration
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
 export const chatWithAI = async (
   messages: ChatMessage[],
