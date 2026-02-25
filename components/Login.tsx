@@ -100,11 +100,11 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                                 <input type="checkbox" name="checkbox" id="checkbox" />
                                 <label htmlFor="checkbox">Remember me</label>
                             </div>
-                            <div className="pass-link">
-                                <a href="#">Forgot password?</a>
-                            </div>
                         </div>
                         <button type="submit">Login</button>
+                        <div className="pass-link">
+                            <a href="#">Forgot password?</a>
+                        </div>
                         <span>or use your account</span>
                         <div className="social-container">
                             <a href="#" className="social" onClick={handleGoogleLogin}><i className="lni lni-google"></i></a>
