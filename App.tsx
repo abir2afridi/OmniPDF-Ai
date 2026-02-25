@@ -1826,8 +1826,8 @@ const App: React.FC = () => {
     { id: 'ppt-to-pdf', name: 'PowerPoint to PDF', description: 'Convert PPT & PPTX slideshows to PDF.', icon: Presentation, imageUrl: 'https://img.icons8.com/fluency/96/microsoft-powerpoint-2019.png', toImageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', category: ToolCategory.CONVERT, color: 'bg-orange-500' },
     { id: 'pdf-to-ppt', name: 'PDF to Powerpoint', description: 'Convert PDF to PowerPoint slides.', icon: Presentation, imageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', toImageUrl: 'https://img.icons8.com/fluency/96/microsoft-powerpoint-2019.png', category: ToolCategory.CONVERT, color: 'bg-orange-600' },
 
-    { id: 'jpg-to-pdf', name: 'JPG to PDF', description: 'Convert JPG, PNG, BMP, TIFF images to PDF.', icon: Image, imageUrl: 'https://img.icons8.com/fluency/96/image.png', toImageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', category: ToolCategory.CONVERT, color: 'bg-yellow-500' },
-    { id: 'pdf-to-jpg', name: 'PDF to JPG', description: 'Convert PDF pages to images.', icon: Image, imageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', toImageUrl: 'https://img.icons8.com/fluency/96/jpg.png', category: ToolCategory.CONVERT, color: 'bg-yellow-600' },
+    { id: 'jpg-to-pdf', name: 'JPG to PDF', description: 'Convert JPG, PNG, BMP, TIFF images to PDF.', icon: Image, imageUrl: 'https://img.icons8.com/?size=160&id=PX8VBUTtDe2v&format=png', toImageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', category: ToolCategory.CONVERT, color: 'bg-yellow-500' },
+    { id: 'pdf-to-jpg', name: 'PDF to JPG', description: 'Convert PDF pages to images.', icon: Image, imageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', toImageUrl: 'https://img.icons8.com/?size=160&id=PX8VBUTtDe2v&format=png', category: ToolCategory.CONVERT, color: 'bg-yellow-600' },
 
     // Organization Pairs (Organize Category)
     { id: 'merge', name: 'Merge PDF', description: 'Combine multiple PDFs into one unified document.', icon: Files, imageUrl: 'https://img.icons8.com/?size=96&id=K13M6xNI3LfW&format=png', category: ToolCategory.ORGANIZE, color: 'bg-red-500' },
@@ -1841,12 +1841,12 @@ const App: React.FC = () => {
     { id: 'edit', name: 'Edit PDF', description: 'Add text, shapes, and annotations to PDF.', icon: PenTool, imageUrl: 'https://img.icons8.com/fluency/96/edit.png', category: ToolCategory.EDIT, color: 'bg-indigo-500' },
     { id: 'ocr', name: 'OCR PDF', description: 'Make scanned PDFs searchable and selectable.', icon: Search, imageUrl: 'https://img.icons8.com/?size=160&id=RElHr_DScWK4&format=png', category: ToolCategory.EDIT, color: 'bg-teal-500' },
     { id: 'compress', name: 'Compress PDF', description: 'Reduce file size while maintaining quality.', icon: Grid, imageUrl: 'https://img.icons8.com/fluency/96/shrink.png', category: ToolCategory.EDIT, color: 'bg-pink-500' },
-    { id: 'ai-summary', name: 'AI Summary', description: 'Get concise summaries using Gemini AI.', icon: Sparkles, imageUrl: 'https://img.icons8.com/fluency/96/artificial-intelligence.png', category: ToolCategory.AI, color: 'bg-fuchsia-600' },
+    { id: 'ai-summary', name: 'AI Summary', description: 'Get concise summaries using Gemini AI.', icon: Sparkles, imageUrl: 'https://img.icons8.com/?size=96&id=POBc2SrrhhnF&format=png', category: ToolCategory.AI, color: 'bg-fuchsia-600' },
     { id: 'sign', name: 'Sign PDF', description: 'Add your signature to documents.', icon: PenTool, imageUrl: 'https://img.icons8.com/fluency/96/signature.png', category: ToolCategory.SECURITY, color: 'bg-blue-800' },
     { id: 'delete-pages', name: 'Delete Pages', description: 'Remove unwanted pages from your PDF.', icon: Eraser, imageUrl: 'https://img.icons8.com/fluency/96/delete-forever.png', category: ToolCategory.ORGANIZE, color: 'bg-red-500' },
     { id: 'rotate', name: 'Rotate PDF', description: 'Rotate your PDF pages permanently.', icon: RotateCw, imageUrl: 'https://img.icons8.com/fluency/96/refresh.png', category: ToolCategory.ORGANIZE, color: 'bg-red-500' },
-    { id: 'extract-images', name: 'Extract PDF Images', description: 'Scrape all images from a PDF file.', icon: Image, imageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', toImageUrl: 'https://img.icons8.com/fluency/96/gallery.png', category: ToolCategory.CONVERT, color: 'bg-purple-500' },
-    { id: 'openoffice-to-pdf', name: 'OpenOffice to PDF', description: 'Convert ODT, ODS, ODP to PDF.', icon: Monitor, imageUrl: 'https://img.icons8.com/fluency/96/monitor.png', toImageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', category: ToolCategory.CONVERT, color: 'bg-gray-600' },
+    { id: 'extract-images', name: 'Extract PDF Images', description: 'Scrape all images from a PDF file.', icon: Image, imageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', toImageUrl: 'https://img.icons8.com/?size=160&id=TA1dhLHUqFQV&format=png', category: ToolCategory.CONVERT, color: 'bg-purple-500' },
+    { id: 'openoffice-to-pdf', name: 'OpenOffice to PDF', description: 'Convert ODT, ODS, ODP to PDF.', icon: Monitor, imageUrl: 'https://img.icons8.com/?size=96&id=VVTnjccwbmPK&format=png', toImageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', category: ToolCategory.CONVERT, color: 'bg-gray-600' },
   ], [t]);
 
   const handleToolSelect = (tool: PDFTool | null) => {

@@ -380,7 +380,7 @@ export async function unlockPdf(
 
     const unlockedBytes = await newDoc.save({ useObjectStreams: true, addDefaultPage: false });
     const baseName = sanitizeName(opts.outputName ?? file.name.replace(/\.pdf$/i, ''));
-    const blob = new Blob([unlockedBytes], { type: 'application/pdf' });
+    const blob = new Blob([new Uint8Array(unlockedBytes)], { type: 'application/pdf' });
 
     opts.onProgress?.(100);
 

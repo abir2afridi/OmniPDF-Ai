@@ -341,27 +341,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
           )}
         </div>
 
-        {/* Scaled Down CTA CTA */}
-        <div className="mt-24 mb-12">
-          <div className="relative rounded-3xl overflow-hidden p-8 md:p-12 text-center bg-gray-900 dark:bg-black group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/20 rounded-full blur-[80px]" />
-            <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
-              <Sparkles className="w-8 h-8 text-yellow-400 mb-6" />
-              <h2 className="text-2xl md:text-3xl font-black text-white mb-4 tracking-tight">
-                {t('Ready to Upgrade?')}
-              </h2>
-              <p className="text-gray-400 text-sm md:text-base mb-8 font-medium">
-                {t('Join 50K+ professionals using OmniPDF AI.')}
-              </p>
-              <button
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="inline-flex items-center gap-2 px-8 py-3 bg-white text-gray-900 rounded-xl font-bold text-sm hover:scale-105 transition-transform"
-              >
-                {t('Get Started')} <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
       </div >
     </div >
   );

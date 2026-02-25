@@ -270,7 +270,7 @@ export async function visualSignPdf(
     const resultBytes = await doc.save({ addDefaultPage: false });
     opts.onProgress?.(100);
 
-    return new Blob([resultBytes], { type: 'application/pdf' });
+    return new Blob([new Uint8Array(resultBytes)], { type: 'application/pdf' });
 }
 
 // ── Parse P12 certificate ─────────────────────────────────────────────────────
@@ -460,7 +460,7 @@ export async function digitalSignPdf(
     opts.onProgress?.(100);
 
     const baseName = sanitizeName(opts.outputName ?? file.name.replace(/\.pdf$/i, ''));
-    const blob = new Blob([resultBytes], { type: 'application/pdf' });
+    const blob = new Blob([new Uint8Array(resultBytes)], { type: 'application/pdf' });
 
     return {
         blob, certInfo, signatureB64, timestamp,

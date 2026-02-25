@@ -34,9 +34,9 @@ if (GlobalWorkerOptions) {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const OPENROUTER_API_KEY = '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';
+const OPENROUTER_API_KEY = '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';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const SUMMARY_MODEL = 'arcee-ai/trinity-large-preview:free';
+const SUMMARY_MODEL = 'z-ai/glm-4.5-air:free';
 
 const MAX_FILE_MB = 50;
 const MIN_TEXT_CHARS = 120;     // below this → try OCR

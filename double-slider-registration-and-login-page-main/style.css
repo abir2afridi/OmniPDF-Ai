@@ -16,7 +16,7 @@ body {
 body {
   height: 100vh;
   width: 100%;
-  background: url("image/hero-bg.jpg") center/cover no-repeat;
+  background: url("image/login-background1.jpg") center/cover no-repeat;
 }
 
 h1 {
@@ -315,4 +315,13 @@ input {
 
 .social-container a:hover {
   border: 1px solid #4bb6b7;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  button {
+    padding: 10px 40px;
+    font-size: 14px;
+    margin: 8px;
+  }
 }
