@@ -1,0 +1,3 @@
+≡ƒÜÇ Invoking updated ai-chat Edge Function with debug...
+Status: 404
+Response Body: {"error":"API Error: 404 - {\"error\":{\"message\":\"No endpoints found for google/gemini-2.0-flash-exp:free.\",\"code\":404},\"user_id\":\"user_33SxuXjqucSo1Ih74p8AawTZssJ\"}"}

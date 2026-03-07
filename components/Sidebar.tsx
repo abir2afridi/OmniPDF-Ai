@@ -5,6 +5,7 @@ import { AppView } from '../types';
 import { AppContext } from '../App';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
+import { getCurrentOrigin, shouldStayInCurrentEnvironment } from '../lib/config';
 
 interface SidebarProps {
   currentView: AppView;
@@ -18,12 +19,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
   const { t } = useContext(AppContext);
   const [isHovered, setIsHovered] = useState(false);
 
+  // Environment debugging
+  useEffect(() => {
+    const currentOrigin = getCurrentOrigin();
+    const isDev = currentOrigin.includes('localhost');
+    
+    console.log('🌍 Sidebar Navigation Debug:');
+    console.log('📍 Current Origin:', currentOrigin);
+    console.log('🔧 Environment:', isDev ? 'Development' : 'Production');
+    console.log('🎯 AI Lab navigation should stay within:', currentOrigin);
+  }, []);
+
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
   const [isUserFeaturesExpanded, setIsUserFeaturesExpanded] = useState(false);
   const [isSupportExpanded, setIsSupportExpanded] = useState(false);
 
   // User Profile State
   const [user, setUser] = useState<any>(null);
+
+  // Safe navigation handler
+  const handleSafeNavigation = (view: AppView) => {
+    const currentOrigin = getCurrentOrigin();
+    console.log('🔄 Navigation Request:', view);
+    console.log('📍 Staying in environment:', currentOrigin);
+    setView(view);
+  };
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -160,7 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                     const isUserFeatures = item.id === 'USER_FEATURES';
                     const isSupport = item.id === 'SUPPORT';
                     if (isSettings) {
-                      setView(AppView.SETTINGS_GENERAL);
+                      handleSafeNavigation(AppView.SETTINGS_GENERAL);
                     } else if (isUserFeatures) {
                       if (isHovered || isOpen) {
                         setIsUserFeaturesExpanded(!isUserFeaturesExpanded);
@@ -170,7 +190,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                         setIsSupportExpanded(!isSupportExpanded);
                       }
                     } else {
-                      setView(item.id as AppView);
+                      handleSafeNavigation(item.id as AppView);
                     }
                     if (window.innerWidth < 1024 && onClose && !isUserFeatures && !isSupport) onClose();
                   }}
@@ -229,7 +249,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                           <button
                             key={sub.id}
                             onClick={() => {
-                              setView(sub.id);
+                              handleSafeNavigation(sub.id);
                               if (window.innerWidth < 1024 && onClose) onClose();
                             }}
                             className={`flex items-center w-full h-9 pl-4 pr-4 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200 gap-3
@@ -263,7 +283,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                           <button
                             key={sub.id}
                             onClick={() => {
-                              setView(sub.id);
+                              handleSafeNavigation(sub.id);
                               if (window.innerWidth < 1024 && onClose) onClose();
                             }}
                             className={`flex items-center w-full h-9 pl-4 pr-4 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200 gap-3

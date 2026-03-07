@@ -17,7 +17,11 @@ interface ChatMessage {
 const VOICES = ['Puck', 'Charon', 'Kore', 'Fenrir', 'Zephyr'];
 const LANGUAGES = ['Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Dutch', 'Russian', 'Chinese', 'Japanese', 'Bangla', 'Hindi', 'Arabic'];
 
-export const AILab: React.FC = () => {
+export interface AILabProps {
+    onToolSelect?: (toolId: string) => void;
+}
+
+export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
     const { t } = useContext(AppContext);
     const [activeTab, setActiveTab] = useState<'chat' | 'translate' | 'tts' | 'rename' | 'rewrite'>('chat');
     const [isLoading, setIsLoading] = useState(false);
@@ -316,12 +320,35 @@ export const AILab: React.FC = () => {
                         {activeTab === 'translate' && (
                             <motion.div
                                 key="translate"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="absolute inset-0 p-8 flex flex-col gap-8"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="absolute inset-0 p-6 md:p-10 flex flex-col h-full"
                             >
-                                <div className="flex items-center justify-center gap-6">
+                                {/* Full Document Translation Banner */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mb-8 p-5 bg-indigo-600/10 border border-indigo-600/20 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-4"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
+                                            <Globe2 className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Full Document Translation</h4>
+                                            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-tighter">Translate entire PDF architectures while preserving structures.</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => onToolSelect?.('translate-pdf')}
+                                        className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl shadow-indigo-600/20"
+                                    >
+                                        Start PDF Translation
+                                    </button>
+                                </motion.div>
+
+                                <div className="flex items-center justify-center gap-6 mb-8">
                                     <div className="flex items-center gap-3 px-4 py-2 bg-[#f3f1ea] dark:bg-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500">
                                         Source: Detect
                                     </div>
@@ -379,7 +406,7 @@ export const AILab: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex justify-center pt-2">
+                                <div className="flex justify-center pt-8">
                                     <button
                                         onClick={handleTranslate}
                                         disabled={isLoading || !translateInput.trim()}

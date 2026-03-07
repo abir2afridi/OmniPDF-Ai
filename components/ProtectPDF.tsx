@@ -27,12 +27,8 @@ import {
 } from '../services/protectService';
 import { downloadBlob } from '../services/pdfService';
 import JSZip from 'jszip';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
-}
+import { getDocument } from 'pdfjs-dist';
+// Worker is already configured in protectService.ts (imported above)
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -51,7 +47,7 @@ interface ManagedFile {
 }
 
 interface Toast { id: string; type: 'success' | 'error' | 'info' | 'warn'; message: string; }
-interface Props { onBack?: () => void; }
+interface Props { onBack?: () => void; initialTab?: Tab; }
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const ACCEPT = '.pdf,application/pdf';
@@ -240,6 +236,10 @@ const FileCard: React.FC<FileCardProps> = ({
                             {entry.status === 'done' && r && !isProtectResult(r) && (
                                 <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold">
                                     🔓 Unlocked · {fmtSize((r as UnlockResult).unlockedSize)}
+                                    {(r as UnlockResult).detectedEncryption !== 'unknown' && (
+                                        <> · was {(r as UnlockResult).detectedEncryption.toUpperCase()}</>
+                                    )}
+                                    {' · '}{(r as UnlockResult).pageCount}p
                                 </span>
                             )}
                             {entry.status === 'error' && (
@@ -309,8 +309,8 @@ const FileCard: React.FC<FileCardProps> = ({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export const ProtectPDF: React.FC<Props> = ({ onBack }) => {
-    const [tab, setTab] = useState<Tab>('protect');
+export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) => {
+    const [tab, setTab] = useState<Tab>(initialTab);
     const [files, setFiles] = useState<ManagedFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const [toasts, setToasts] = useState<Toast[]>([]);
@@ -443,7 +443,7 @@ export const ProtectPDF: React.FC<Props> = ({ onBack }) => {
             const name = f.outputName.endsWith('.pdf') ? f.outputName : `${f.outputName}.pdf`;
             zip.file(name, blob);
         }
-        downloadBlob(await zip.generateAsync({ type: 'blob' }), 'OmniPDF_Protected.zip');
+        downloadBlob(await zip.generateAsync({ type: 'blob' }), tab === 'unlock' ? 'OmniPDF_Unlocked.zip' : 'OmniPDF_Protected.zip');
     };
 
     const removeFile = (id: string) => setFiles(p => p.filter(f => f.id !== id));

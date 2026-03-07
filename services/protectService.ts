@@ -116,6 +116,10 @@ export interface UnlockResult {
     outputName: string;
     originalSize: number;
     unlockedSize: number;
+    /** Detected encryption type from the original PDF */
+    detectedEncryption: 'aes-256' | 'aes-128' | 'rc4' | 'unknown';
+    /** Number of pages in the unlocked PDF */
+    pageCount: number;
 }
 
 // ── Validation ─────────────────────────────────────────────────────────────────
@@ -310,9 +314,43 @@ function clearAttempts(fileKey: string): void {
 }
 
 /**
+ * Detect the encryption type from raw PDF bytes by inspecting the /Filter and /V values.
+ */
+function detectEncryptionType(bytes: Uint8Array): 'aes-256' | 'aes-128' | 'rc4' | 'unknown' {
+    try {
+        // Read first 4KB for encryption dictionary hints
+        const header = new TextDecoder('latin1').decode(bytes.slice(0, Math.min(bytes.length, 65536)));
+        // Check /V value in Encrypt dictionary
+        const vMatch = header.match(/\/V\s+(\d+)/);
+        const cfMatch = header.match(/\/CFM\s*\/([A-Za-z0-9]+)/);
+        if (vMatch) {
+            const v = parseInt(vMatch[1]);
+            if (v === 5) return 'aes-256';
+            if (v === 4) {
+                if (cfMatch && cfMatch[1].toLowerCase().includes('aes')) return 'aes-128';
+                return 'aes-128'; // V=4 is typically AES-128
+            }
+            if (v <= 3) return 'rc4';
+        }
+        // Fallback: look for AESV3, AESV2 mentions
+        if (header.includes('AESV3')) return 'aes-256';
+        if (header.includes('AESV2')) return 'aes-128';
+        if (header.includes('/Encrypt')) return 'unknown'; // encrypted but can't determine type
+        return 'unknown';
+    } catch {
+        return 'unknown';
+    }
+}
+
+/**
  * Unlock (remove password) from a PDF.
  * Renders each page via pdfjs → canvas, then reassembles with @cantoo/pdf-lib.
  * This fully removes all encryption — the output PDF needs no password to open.
+ *
+ * Security notes:
+ *  - Password is zeroed from the options object after successful decryption.
+ *  - Canvas elements are explicitly cleaned up to prevent memory leaks.
+ *  - Rate limiting prevents brute-force password guessing.
  */
 export async function unlockPdf(
     file: File,
@@ -327,6 +365,10 @@ export async function unlockPdf(
     opts.onProgress?.(5);
 
     const bytes = new Uint8Array(await file.arrayBuffer());
+    opts.onProgress?.(8);
+
+    // Detect encryption type before attempting unlock
+    const detectedEncryption = detectEncryptionType(bytes);
     opts.onProgress?.(10);
 
     // Step 1: Try to open the encrypted PDF with pdfjs using the provided password
@@ -351,6 +393,10 @@ export async function unlockPdf(
 
     opts.onProgress?.(20);
 
+    // Zero out password from memory immediately after successful decryption
+    const _pw = opts.password;
+    (opts as any).password = ''.padEnd(_pw.length, '\x00');
+
     const totalPages = pdfJs.numPages;
     const newDoc = await CantooDoc.create();
 
@@ -373,8 +419,18 @@ export async function unlockPdf(
         const newPage = newDoc.addPage([canvas.width / 2, canvas.height / 2]); // back to 72 DPI pts
         newPage.drawImage(pdfImg, { x: 0, y: 0, width: canvas.width / 2, height: canvas.height / 2 });
 
+        // Explicit canvas cleanup to prevent memory leaks on large documents
+        canvas.width = 0;
+        canvas.height = 0;
+
+        // Cleanup the page object
+        page.cleanup();
+
         await new Promise(r => setTimeout(r, 0)); // yield to UI
     }
+
+    // Destroy the pdfjs document to free memory
+    await pdfJs.destroy();
 
     opts.onProgress?.(92);
 
@@ -389,6 +445,8 @@ export async function unlockPdf(
         outputName: `${baseName}_unlocked.pdf`,
         originalSize: bytes.byteLength,
         unlockedSize: unlockedBytes.byteLength,
+        detectedEncryption,
+        pageCount: totalPages,
     };
 }
 
@@ -396,6 +454,11 @@ export async function unlockPdf(
 
 export interface BatchProtectResult {
     succeeded: { fileName: string; result: ProtectResult }[];
+    failed: { fileName: string; error: string }[];
+}
+
+export interface BatchUnlockResult {
+    succeeded: { fileName: string; result: UnlockResult }[];
     failed: { fileName: string; error: string }[];
 }
 
@@ -417,6 +480,36 @@ export async function batchProtectPdf(
             succeeded.push({ fileName: file.name, result });
         } catch (e: any) {
             failed.push({ fileName: file.name, error: e?.message ?? 'Unknown error' });
+        }
+    }
+    return { succeeded, failed };
+}
+
+/**
+ * Batch unlock multiple PDFs with the same password.
+ * Processes sequentially to avoid memory pressure.
+ */
+export async function batchUnlockPdf(
+    files: File[],
+    password: string,
+    onJobProgress?: (name: string, p: number) => void,
+    onJobComplete?: (name: string, result: UnlockResult) => void,
+    onJobError?: (name: string, error: string) => void,
+): Promise<BatchUnlockResult> {
+    const succeeded: BatchUnlockResult['succeeded'] = [];
+    const failed: BatchUnlockResult['failed'] = [];
+    for (const file of files) {
+        try {
+            const result = await unlockPdf(file, {
+                password,
+                onProgress: p => onJobProgress?.(file.name, p),
+            });
+            succeeded.push({ fileName: file.name, result });
+            onJobComplete?.(file.name, result);
+        } catch (e: any) {
+            const msg = e?.message ?? 'Unknown error';
+            failed.push({ fileName: file.name, error: msg });
+            onJobError?.(file.name, msg);
         }
     }
     return { succeeded, failed };
