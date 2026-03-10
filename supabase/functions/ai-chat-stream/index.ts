@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,20 +16,18 @@ interface ChatRequest {
   messages: ChatMessage[];
   model?: string;
   max_tokens?: number;
-  temperature?: number;
-  reasoning?: { enabled: boolean };
+  stream?: boolean;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { messages, model = 'z-ai/glm-4.5-air:free', max_tokens = 800, temperature = 0.7, reasoning = { enabled: true } }: ChatRequest = await req.json()
+    const { messages, model = 'meta-llama/llama-3.2-1b-instruct:free', max_tokens = 800, stream = false }: ChatRequest = await req.json()
 
-    console.log('🚀 Edge Function: Starting AI chat request with model:', model)
+    console.log('🌊 Edge Function: Starting streaming AI chat request with model:', model)
 
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY')
 
@@ -64,17 +61,7 @@ Always be helpful, professional, and mention that you're part of OmniPDF AI suit
     const allMessages = [systemMessage, ...messages]
     console.log('📝 Edge Function: Messages prepared:', allMessages.length)
 
-    // Try primary model first (z-ai/glm-4.5-air:free)
-    let selectedModel = model;
-    let enableReasoning = reasoning.enabled;
-
-    // If model is not specified and we have conversation history, prefer stepfun for reasoning
-    if (model === 'z-ai/glm-4.5-air:free' && messages.length > 1) {
-      selectedModel = 'stepfun/step-3.5-flash:free';
-      console.log('🎯 Using stepfun model for conversation continuity with reasoning');
-    }
-
-    // Use direct OpenRouter API call
+    // Use direct OpenRouter API call for streaming
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -84,61 +71,21 @@ Always be helpful, professional, and mention that you're part of OmniPDF AI suit
         'X-Title': 'OmniPDF AI',
       },
       body: JSON.stringify({
-        model: selectedModel,
+        model,
         messages: allMessages,
         max_tokens,
-        temperature,
-        ...(enableReasoning && selectedModel === 'stepfun/step-3.5-flash:free' ? { reasoning: { enabled: true } } : {})
+        temperature: 0.7,
+        stream: false, // We'll handle chunking client-side for now
       }),
     })
 
     console.log('📡 Edge Function: API Response status:', response.status)
 
     if (!response.ok) {
-      // If primary model fails, try the other confirmed working model
-      if (selectedModel === 'z-ai/glm-4.5-air:free') {
-        console.log('🔄 Primary model failed, trying stepfun model...');
-        const fallbackResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://omni2pdf-ai.vercel.app',
-            'X-Title': 'OmniPDF AI',
-          },
-          body: JSON.stringify({
-            model: 'stepfun/step-3.5-flash:free',
-            messages: allMessages,
-            max_tokens,
-            temperature,
-            reasoning: { enabled: true }
-          }),
-        })
-
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json()
-          console.log('✅ Edge Function: Fallback model successful')
-
-          const fallbackMessage = fallbackData.choices[0]?.message || { content: 'No response generated' }
-
-          const fallbackResult = {
-            message: fallbackMessage.content,
-            reasoning_details: fallbackMessage.reasoning_details,
-            usage: fallbackData.usage
-          }
-
-          return new Response(
-            JSON.stringify(fallbackResult),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
-      }
-
-      // Both models failed
       const errorText = await response.text()
-      console.error('❌ Edge Function: Both models failed:', errorText)
+      console.error('❌ Edge Function: OpenRouter API error:', errorText)
       return new Response(
-        JSON.stringify({ error: `AI service temporarily unavailable: ${response.status}` }),
+        JSON.stringify({ error: `API Error: ${response.status} - ${errorText}` }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -146,11 +93,34 @@ Always be helpful, professional, and mention that you're part of OmniPDF AI suit
     const data = await response.json()
     console.log('✅ Edge Function: API Response received')
 
-    const message = data.choices[0]?.message || { content: 'No response generated' }
+    const message = data.choices[0]?.message?.content || 'No response generated'
 
+    // For streaming, break the response into chunks
+    if (stream) {
+      const chunks = message.split(' ').reduce((acc: string[], word, index) => {
+        if (index % 3 === 0) {
+          acc.push(word + ' ')
+        } else {
+          acc[acc.length - 1] += word + ' '
+        }
+        return acc
+      }, [''])
+
+      return new Response(
+        JSON.stringify({
+          chunks,
+          message,
+          reasoning_details: data.choices[0]?.message?.reasoning_details,
+          usage: data.usage
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Regular response
     const result = {
-      message: message.content,
-      reasoning_details: message.reasoning_details,
+      message,
+      reasoning_details: data.choices[0]?.message?.reasoning_details,
       usage: data.usage
     }
 

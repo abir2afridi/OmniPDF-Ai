@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, targetLang, model = 'google/gemma-2-9b-it:free' } = await req.json()
+    const { text, targetLang } = await req.json()
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY')
 
     if (!OPENROUTER_API_KEY) {
@@ -22,6 +22,9 @@ serve(async (req) => {
       )
     }
 
+    console.log('🌍 Translation request:', { text, targetLang })
+
+    // Use simple working model
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -31,7 +34,7 @@ serve(async (req) => {
         'X-Title': 'OmniPDF AI',
       },
       body: JSON.stringify({
-        model,
+        model: 'z-ai/glm-4.5-air:free',
         messages: [
           {
             role: 'system',
@@ -47,8 +50,11 @@ serve(async (req) => {
       }),
     })
 
+    console.log('📡 API Response status:', response.status)
+
     if (!response.ok) {
       const errorText = await response.text()
+      console.error('❌ API Error:', errorText)
       return new Response(
         JSON.stringify({ error: `Translation failed: ${errorText}` }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -58,12 +64,14 @@ serve(async (req) => {
     const data = await response.json()
     const translatedText = data.choices[0]?.message?.content?.trim() || 'Translation failed.'
 
+    console.log('✅ Translation successful:', translatedText)
+
     return new Response(
       JSON.stringify({ translatedText }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('Translation error:', error)
+    console.error('💥 Translation error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

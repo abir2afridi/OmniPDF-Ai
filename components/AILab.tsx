@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import {
     Bot, Wand2, Languages, Mic, FileText, Play, Loader2,
-    Send, Copy, Volume2, RefreshCw, ArrowRight, Check, Sparkles, BrainCircuit, Zap, Globe2, Ear
+    Send, Copy, Volume2, RefreshCw, ArrowRight, Check, Sparkles, BrainCircuit, Zap, Globe2, Ear,
+    ChevronDown, Settings
 } from 'lucide-react';
 import { chatWithAI, translateText, generateRefinedFilename, generateAudioOverview, chatWithPDF } from '../services/aiService';
 import { AppContext } from '../App';
@@ -25,6 +26,51 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
     const { t } = useContext(AppContext);
     const [activeTab, setActiveTab] = useState<'chat' | 'translate' | 'tts' | 'rename' | 'rewrite'>('chat');
     const [isLoading, setIsLoading] = useState(false);
+    const [currentModel, setCurrentModel] = useState<string>('Auto mode active');
+    const [selectedModel, setSelectedModel] = useState<'glm' | 'stepfun'>('glm');
+    const [isAutoMode, setIsAutoMode] = useState<boolean>(true); // Default to auto mode
+
+    const modelOptions = [
+        { id: 'glm' as const, name: 'GLM (Fast)', fullName: 'z-ai/glm-4.5-air:free', description: 'Fast responses, general purpose' },
+        { id: 'stepfun' as const, name: 'StepFun (Reasoning)', fullName: 'stepfun/step-3.5-flash:free', description: 'Advanced reasoning, conversation continuity' }
+    ];
+
+    // Intelligent model selection based on context
+    const selectBestModel = (messages: any[], taskType: string = 'chat') => {
+        const conversationLength = messages.length;
+        const lastMessage = messages[messages.length - 1]?.content?.toLowerCase() || '';
+
+        // For translation tasks, use GLM for speed
+        if (taskType === 'translate') {
+            return 'z-ai/glm-4.5-air:free';
+        }
+
+        // For simple greetings or basic questions, use fast model
+        const simpleQueries = ['hello', 'hi', 'help', 'what can you do', 'how are you'];
+        if (simpleQueries.some(query => lastMessage.includes(query))) {
+            return 'z-ai/glm-4.5-air:free';
+        }
+
+        // For ongoing conversations (more than 3 exchanges), use reasoning model
+        if (conversationLength > 6) { // 3 user + 3 AI messages
+            return 'stepfun/step-3.5-flash:free';
+        }
+
+        // For complex questions (containing keywords), use reasoning model
+        const complexKeywords = ['explain', 'analyze', 'compare', 'why', 'how', 'what if', 'reasoning', 'logic'];
+        if (complexKeywords.some(keyword => lastMessage.includes(keyword))) {
+            return 'stepfun/step-3.5-flash:free';
+        }
+
+        // For questions about PDFs or technical topics, use reasoning model
+        const technicalTopics = ['pdf', 'document', 'file', 'convert', 'merge', 'split', 'ocr', 'extract'];
+        if (technicalTopics.some(topic => lastMessage.includes(topic))) {
+            return 'stepfun/step-3.5-flash:free';
+        }
+
+        // Default to fast model for general queries
+        return 'z-ai/glm-4.5-air:free';
+    };
 
     // Smart Rewrite State
     const [rewriteInput, setRewriteInput] = useState('');
@@ -73,9 +119,9 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
             const messages = [
                 {
                     role: 'system' as const,
-                    content: 'You are an AI assistant in the OmniPDF AI Lab. You help with document intelligence, PDF analysis, and productivity workflows.'
+                    content: 'You are an AI assistant for OmniPDF AI, a PDF management and analysis platform. Always be helpful, professional, and mention that you\'re part of OmniPDF AI suite when appropriate.'
                 },
-                ...chatHistory.map(msg => ({
+                ...chatHistory.slice(-10).map(msg => ({ // Keep last 10 messages for context
                     role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
                     content: msg.content
                 })),
@@ -85,7 +131,27 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                 }
             ];
 
-            const response = await chatWithAI(messages);
+            // Determine which model to use
+            let modelToUse: string;
+            let modelDisplayName: string;
+
+            if (isAutoMode) {
+                // Auto mode: intelligent selection
+                modelToUse = selectBestModel(messages, 'chat');
+                const selectedOption = modelOptions.find(m => m.fullName === modelToUse);
+                modelDisplayName = `${selectedOption?.name || 'Auto'} (auto-selected)`;
+            } else {
+                // Manual mode: use selected model
+                const selectedModelOption = modelOptions.find(m => m.id === selectedModel);
+                modelToUse = selectedModelOption?.fullName || 'z-ai/glm-4.5-air:free';
+                modelDisplayName = `${selectedModelOption?.name || 'GLM (Fast)'} (manual)`;
+            }
+
+            const response = await chatWithAI(messages, modelToUse);
+            
+            // Update current model display
+            setCurrentModel(modelDisplayName);
+            
             const aiMsg: ChatMessage = {
                 id: (Date.now() + 1).toString(),
                 role: 'ai',
@@ -108,13 +174,39 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
     };
 
     const handleTranslate = async () => {
-        if (!translateInput.trim()) return;
+        if (!translateInput.trim() || isLoading) return;
         setIsLoading(true);
         try {
-            const res = await translateText(translateInput, targetLang);
-            setTranslateOutput(res);
+            // Determine which model to use for translation
+            let modelToUse: string;
+            let modelDisplayName: string;
+
+            if (isAutoMode) {
+                // Auto mode: always use GLM for translation (faster)
+                modelToUse = 'z-ai/glm-4.5-air:free';
+                modelDisplayName = 'GLM (Fast) (auto-selected for translation)';
+            } else {
+                // Manual mode: use selected model
+                const selectedModelOption = modelOptions.find(m => m.id === selectedModel);
+                modelToUse = selectedModelOption?.fullName || 'z-ai/glm-4.5-air:free';
+                modelDisplayName = `${selectedModelOption?.name || 'GLM (Fast)'} (manual)`;
+            }
+            
+            setCurrentModel(modelDisplayName);
+            const result = await translateText(translateInput, targetLang, modelToUse);
+            setTranslateOutput(result);
+            
+            // Reset display after completion
+            if (isAutoMode) {
+                setCurrentModel('Auto mode active');
+            } else {
+                const selectedOption = modelOptions.find(m => m.id === selectedModel);
+                setCurrentModel(`${selectedOption?.name || 'GLM (Fast)'} (${selectedModel === 'stepfun' ? 'reasoning' : 'fast'})`);
+            }
         } catch (err) {
-            console.error(err);
+            console.error('Translation error:', err);
+            setTranslateOutput('Translation service temporarily unavailable. Please try again in a few minutes.');
+            setCurrentModel('Service unavailable');
         } finally {
             setIsLoading(false);
         }
@@ -266,6 +358,43 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                 </button>
                             ))}
                         </nav>
+
+                        {/* Model Indicator */}
+                        <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-gray-400">
+                            <Zap className="w-3 h-3" />
+                            <span>Using: {currentModel}</span>
+                        </div>
+
+                        {/* Mode and Model Selector */}
+                        <div className="flex items-center gap-2">
+                            {/* Auto/Manual Mode Toggle */}
+                            <button
+                                onClick={() => setIsAutoMode(!isAutoMode)}
+                                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${
+                                    isAutoMode 
+                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                }`}
+                                title={`Currently in ${isAutoMode ? 'Auto' : 'Manual'} mode. Click to switch.`}
+                            >
+                                {isAutoMode ? '🤖 Auto' : '🎛️ Manual'}
+                            </button>
+
+                            {/* Model Selector (only show in manual mode) */}
+                            {!isAutoMode && (
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setSelectedModel(selectedModel === 'glm' ? 'stepfun' : 'glm')}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-100/50 dark:bg-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-all"
+                                        title={`Switch to ${selectedModel === 'glm' ? 'StepFun (Reasoning)' : 'GLM (Fast)'}`}
+                                    >
+                                        <Settings className="w-3 h-3" />
+                                        <span>{selectedModel === 'glm' ? 'GLM' : 'StepFun'}</span>
+                                        <ChevronDown className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </header>
 
