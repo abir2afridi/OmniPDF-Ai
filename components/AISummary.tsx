@@ -90,6 +90,8 @@ export const AISummary: React.FC = () => {
     const [inclKeywords, setInclKeywords] = useState(true);
     const [inclTopics, setInclTopics] = useState(true);
     const [inclActions, setInclActions] = useState(false);
+    const [selectedModel, setSelectedModel] = useState<string>('auto');
+    const [currentModelInUse, setCurrentModelInUse] = useState<string>('auto');
 
     // Processing
     const [isProcessing, setIsProcessing] = useState(false);
@@ -139,39 +141,42 @@ export const AISummary: React.FC = () => {
     // ── Generate summary ───────────────────────────────────────────────────────
 
     const handleGenerate = async () => {
-        const source = inputMode === 'file' ? uploadedFile : pastedText.trim();
-        if (!source) { toast('error', inputMode === 'file' ? 'Upload a file first.' : 'Paste some text first.'); return; }
-        if (summaryType === 'custom' && !customPrompt.trim()) { toast('warn', 'Enter your custom prompt.'); return; }
+        if (!pastedText && !uploadedFile) {
+            toast('error', 'Please upload a file or paste text');
+            return;
+        }
 
-        setIsProcessing(true); setProgress(0); setProgressStage('Initializing…'); setResult(null);
+        setIsProcessing(true);
+        setProgress(0);
+        setProgressStage('Initializing…');
 
         try {
-            const opts: SummaryOptions = {
-                type: summaryType,
-                tone,
-                length,
-                customPrompt,
-                includeKeywords: inclKeywords,
-                includeTopics: inclTopics,
-                includeActionItems: inclActions,
-                onProgress: (pct, stage) => { setProgress(pct); setProgressStage(stage); },
-            };
+            const result = await summariseDocument(
+                uploadedFile || pastedText,
+                {
+                    type: summaryType,
+                    tone,
+                    length,
+                    customPrompt: customPrompt || undefined,
+                    includeKeywords: inclKeywords,
+                    includeTopics: inclTopics,
+                    includeActionItems: inclActions,
+                    model: selectedModel,
+                    onProgress: (pct, stage) => {
+                        setProgress(pct);
+                        setProgressStage(stage);
+                    },
+                    onModelUsed: (model) => {
+                        setCurrentModelInUse(model);
+                    }
+                }
+            );
 
-            const res = await summariseDocument(source, opts);
-            setResult(res);
-
-            // Save to history
-            const entry: HistoryEntry = {
-                id: uid(),
-                filename: typeof source === 'string' ? 'Pasted Text' : source.name,
-                type: summaryType,
-                result: res,
-                timestamp: Date.now(),
-            };
-            setHistory(p => [entry, ...p].slice(0, 5));
-            toast('success', `✅ Summary generated in ${(res.processingMs / 1000).toFixed(1)}s`);
-        } catch (e: any) {
-            toast('error', e?.message ?? 'Summarization failed. Check your connection.');
+            setResult(result);
+            toast('success', 'Summary generated successfully!');
+        } catch (error: any) {
+            console.error('Summary generation failed:', error);
+            toast('error', error.message || 'Failed to generate summary');
         } finally {
             setIsProcessing(false);
         }
@@ -275,6 +280,29 @@ export const AISummary: React.FC = () => {
                             )}
                         </div>
                     )}
+
+                    {/* Model Selection */}
+                    <div className="p-5 border-b border-gray-100 dark:border-white/5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">AI Model</p>
+                        <div className="flex gap-2">
+                            {[
+                                { id: 'auto', label: '🤖 Auto Select', desc: currentModelInUse === 'auto' ? 'Auto (Using GLM-4.5)' : 'Auto (Choosing best model)' },
+                                { id: 'z-ai/glm-4.5-air:free', label: 'GLM-4.5 Air', desc: currentModelInUse === 'z-ai/glm-4.5-air:free' ? 'GLM-4.5 (In Use)' : 'Primary - Good performance' },
+                                { id: 'stepfun/step-3.5-flash:free', label: 'Step-3.5 Flash', desc: currentModelInUse === 'stepfun/step-3.5-flash:free' ? 'Step-3.5 (In Use)' : 'Secondary - Reasoning support' }
+                            ].map(model => (
+                                <button key={model.id} onClick={() => setSelectedModel(model.id)}
+                                    className={`flex-1 py-2 px-3 text-[10px] font-black border transition-colors rounded-xl
+                      ${selectedModel === model.id 
+                          ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                          : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'}`}>
+                                    <div className="text-left">
+                                        <div className="font-bold">{model.label}</div>
+                                        <div className="text-[9px] text-gray-400 mt-0.5">{model.desc}</div>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
                     {/* Text paste */}
                     {inputMode === 'text' && (
@@ -516,7 +544,7 @@ export const AISummary: React.FC = () => {
                                     <div className="flex items-center gap-2 px-5 py-3.5 border-b border-gray-100 dark:border-white/5 bg-amber-50/50 dark:bg-amber-900/10">
                                         <Sparkles className="w-4 h-4 text-amber-500" />
                                         <p className="text-xs font-black text-amber-700 dark:text-amber-300 uppercase tracking-widest">
-                                            {SUMMARY_TYPES.find(t => t.id === summaryType)?.label ?? 'Summary'}
+                                            {SUMMARY_TYPES.find(t => t.id === summaryType)?.label ?? 'Summary'} · {selectedModel === 'auto' ? 'Auto' : selectedModel.split(':')[0]}
                                         </p>
                                         <span className="ml-auto text-[10px] text-gray-400 capitalize">{tone} · {length}</span>
                                     </div>

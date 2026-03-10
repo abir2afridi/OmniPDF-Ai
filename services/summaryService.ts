@@ -34,14 +34,59 @@ if (GlobalWorkerOptions) {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+const OPENROUTER_API_KEY = import.meta.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const SUMMARY_MODEL = 'z-ai/glm-4.5-air:free';
+
+// Fallback models in order of preference (free tier models with different rate limits)
+const FALLBACK_MODELS = [
+    'z-ai/glm-4.5-air:free',           // Primary - good performance
+    'stepfun/step-3.5-flash:free',     // Secondary - reasoning support  
+    'meta-llama/llama-3.2-1b-instruct:free', // Fast - for simple tasks
+    'google/gemma-2-9b-it:free',       // Alternative
+    'microsoft/phi-3-mini-128k-instruct:free' // Last resort
+];
 
 const MAX_FILE_MB = 50;
 const MIN_TEXT_CHARS = 120;     // below this → try OCR
 const CHUNK_CHARS = 12_000;  // chars per chunk
 const CHUNK_OVERLAP = 400;     // overlap between chunks to preserve context
+
+// ── Client-side caching ─────────────────────────────────────────────────────
+
+interface CacheEntry {
+    response: string;
+    timestamp: number;
+    modelUsed: string;
+}
+
+const responseCache = new Map<string, CacheEntry>();
+const CACHE_DURATION = 1000 * 60 * 10; // 10 minutes
+const MAX_CACHE_SIZE = 100; // Limit cache size
+
+// Request queue to prevent simultaneous calls
+let requestQueue: Promise<any> = Promise.resolve();
+
+function getCacheKey(prompt: string, systemPrompt: string, maxTokens: number): string {
+    return `${prompt.slice(0, 100)}_${systemPrompt.slice(0, 50)}_${maxTokens}`;
+}
+
+function cleanCache(): void {
+    const now = Date.now();
+    for (const [key, entry] of responseCache.entries()) {
+        if (now - entry.timestamp > CACHE_DURATION) {
+            responseCache.delete(key);
+        }
+    }
+    
+    // Remove oldest entries if cache is too large
+    if (responseCache.size > MAX_CACHE_SIZE) {
+        const entries = Array.from(responseCache.entries())
+            .sort((a, b) => a[1].timestamp - b[1].timestamp);
+        
+        const toDelete = entries.slice(0, responseCache.size - MAX_CACHE_SIZE);
+        toDelete.forEach(([key]) => responseCache.delete(key));
+    }
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -54,10 +99,12 @@ export interface SummaryOptions {
     tone: SummaryTone;
     length: SummaryLength;
     customPrompt?: string;      // used when type === 'custom'
-    includeKeywords?: boolean;
-    includeTopics?: boolean;
-    includeActionItems?: boolean;
+    includeKeywords: boolean;
+    includeTopics: boolean;
+    includeActionItems: boolean;
+    model?: string;         // optional model override
     onProgress?: (pct: number, stage: string) => void;
+    onModelUsed?: (model: string) => void;
 }
 
 export interface SummaryResult {
@@ -333,57 +380,144 @@ function buildExtrasPrompt(text: string, type: 'keywords' | 'topics' | 'actions'
     return `Extract clear, actionable action items or recommendations from the following text. Format as a bullet list with • . Return only genuine action items — if none exist, say "No explicit action items found."\n\nTEXT:\n"""\n${text.slice(0, 8000)}\n"""\n\nACTION ITEMS:`;
 }
 
-// ── OpenRouter API call ───────────────────────────────────────────────────────
+// ── Smart Model Selection ─────────────────────────────────────────────────────
+
+function selectBestModel(availableModels: string[]): string {
+    // Check which models are currently available by testing them
+    // For now, return the first available model (prioritize GLM-4.5)
+    return availableModels.find(model => FALLBACK_MODELS.includes(model)) || availableModels[0];
+}
 
 async function callAI(
     userPrompt: string,
     systemPrompt: string,
     maxTokens = 1500,
     temperature = 0.3,
-    retries = 2,
-): Promise<string> {
-    for (let attempt = 0; attempt <= retries; attempt++) {
-        try {
-            const res = await fetch(OPENROUTER_URL, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': 'https://omnipdf-ai.com',
-                    'X-Title': 'OmniPDF AI Summary',
-                },
-                body: JSON.stringify({
-                    model: SUMMARY_MODEL,
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userPrompt },
-                    ],
-                    max_tokens: maxTokens,
-                    temperature,
-                }),
-                signal: AbortSignal.timeout(60_000),
-            });
+    retries = 4,
+    preferredModel?: string,
+    onModelUsed?: (model: string) => void,
+): Promise<{ response: string; modelUsed: string }> {
+    // Use provided model or auto-select best available model
+    let modelsToTry: string[];
 
-            if (!res.ok) {
-                const errText = await res.text();
-                if (res.status === 429 && attempt < retries) {
-                    await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
-                    continue;
-                }
-                throw new Error(`API error ${res.status}: ${errText.slice(0, 200)}`);
-            }
-
-            const data = await res.json();
-            return (data.choices?.[0]?.message?.content ?? '').trim();
-        } catch (e: any) {
-            if (attempt === retries) throw e;
-            await new Promise(r => setTimeout(r, 1500));
-        }
+    if (preferredModel === 'auto') {
+        // Smart selection: try models in order of preference
+        modelsToTry = FALLBACK_MODELS;
+    } else if (preferredModel) {
+        // Use specific model
+        modelsToTry = [preferredModel];
+    } else {
+        // Default to first available model
+        modelsToTry = FALLBACK_MODELS;
     }
-    throw new Error('AI service unavailable after retries.');
-}
 
-// ── Main summarise function ───────────────────────────────────────────────────
+    // Check cache first
+    const cacheKey = getCacheKey(userPrompt, systemPrompt, maxTokens);
+    cleanCache(); // Clean expired entries
+
+    const cached = responseCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+        console.log('⚡ Using cached response from model:', cached.modelUsed);
+        return { response: cached.response, modelUsed: cached.modelUsed };
+    }
+
+    // Queue the request to prevent simultaneous calls
+    const requestPromise = requestQueue.then(async () => {
+        for (const model of modelsToTry) {
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                try {
+                    const res = await fetch(OPENROUTER_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                            'Content-Type': 'application/json',
+                            'HTTP-Referer': 'https://omnipdf-ai.com',
+                            'X-Title': 'OmniPDF AI Summary',
+                        },
+                        body: JSON.stringify({
+                            model,
+                            messages: [
+                                { role: 'system', content: systemPrompt },
+                                { role: 'user', content: userPrompt },
+                            ],
+                            max_tokens: maxTokens,
+                            temperature,
+                        }),
+                        signal: AbortSignal.timeout(90_000),
+                    });
+
+                    if (!res.ok) {
+                        const errText = await res.text();
+
+                        if (res.status === 429) {
+                            if (attempt < retries) {
+                                const waitTime = Math.min(1000 * Math.pow(2, attempt), 15000);
+                                console.log(
+                                    `🚦 Rate limited (429) on ${model}, retry ${attempt + 1}/${retries} in ${waitTime}ms...`,
+                                );
+                                await new Promise(r => setTimeout(r, waitTime));
+                                continue;
+                            }
+
+                            console.log(`🚦 Model ${model} rate limited, trying next model...`);
+                            break;
+                        }
+
+                        console.error(`❌ Model ${model} error ${res.status}: ${errText.slice(0, 100)}`);
+                        break;
+                    }
+
+                    const data = await res.json();
+                    const response = (data.choices?.[0]?.message?.content ?? '').trim();
+
+                    if (response) {
+                        console.log(`✅ Success with model: ${model}`);
+
+                        if (onModelUsed) {
+                            onModelUsed(model);
+                        }
+
+                        responseCache.set(cacheKey, {
+                            response,
+                            timestamp: Date.now(),
+                            modelUsed: model,
+                        });
+
+                        return { response, modelUsed: model };
+                    }
+
+                    console.warn(`⚠️ Empty response from ${model}, trying next model...`);
+                    break;
+                } catch (e: any) {
+                    if (e.message?.includes('Rate limit exceeded')) {
+                        throw e;
+                    }
+
+                    // For other errors, retry if we have attempts left
+                    if (attempt === retries) {
+                        console.error(`💥 All retries failed for model ${model}:`, e.message);
+                        break;
+                    }
+
+                    const waitTime = Math.min(1000 * Math.pow(1.5, attempt), 8000);
+                    console.log(
+                        `⚠️ Error on ${model} attempt ${attempt + 1}, retrying in ${waitTime}ms:`,
+                        e.message,
+                    );
+                    await new Promise(r => setTimeout(r, waitTime));
+                }
+            }
+        }
+
+        throw new Error(
+            'All AI models are currently rate limited or unavailable. Please try again in a few minutes.',
+        );
+    });
+
+    requestQueue = requestPromise.catch(() => { });
+
+    return requestPromise;
+}
 
 export async function summariseDocument(
     source: File | string,
@@ -393,94 +527,161 @@ export async function summariseDocument(
     const progressFn = opts.onProgress ?? (() => { });
     const systemPrompt = buildSystemPrompt();
 
-    // ── Step 1: Extract text ────────────────────────────────────────────────
-    progressFn(5, 'Extracting text…');
-    const { text, pageCount, method } = await extractText(source, (p, stage) =>
-        progressFn(Math.round(p * 0.4), stage),
-    );
+    try {
+        // ── Step 1: Extract text ────────────────────────────────────────────────
+        progressFn(5, 'Extracting text…');
+        const { text, pageCount, method } = await extractText(source, (p, stage) =>
+            progressFn(Math.round(p * 0.4), stage),
+        );
 
-    if (!text || text.length < 20) {
-        throw new Error('Could not extract readable text from this document. It may be image-only — try uploading a text-based PDF or pasting text directly.');
-    }
-
-    progressFn(42, `Text extracted (${text.length.toLocaleString()} chars). Chunking…`);
-
-    // ── Step 2: Chunk ────────────────────────────────────────────────────────
-    const chunks = chunkText(text);
-    const numChunks = chunks.length;
-
-    // ── Step 3: Per-chunk summarization ─────────────────────────────────────
-    let summaries: string[] = [];
-
-    if (numChunks === 1) {
-        progressFn(50, 'Generating summary…');
-        const prompt = buildSummaryPrompt(chunks[0], opts, false);
-        const raw = await callAI(prompt, systemPrompt, tokensForLength(opts.length));
-        summaries = [raw];
-        progressFn(80, 'Summary generated.');
-    } else {
-        // Multiple chunks — summarize each then merge
-        for (let i = 0; i < numChunks; i++) {
-            const pct = 45 + Math.round((i / numChunks) * 35);
-            progressFn(pct, `Summarizing chunk ${i + 1}/${numChunks}…`);
-            const prompt = buildSummaryPrompt(chunks[i], opts, true, i, numChunks);
-            const raw = await callAI(prompt, systemPrompt, 600, 0.3);
-            summaries.push(raw);
+        if (!text || text.length < 20) {
+            throw new Error(
+                'Could not extract readable text from this document. It may be image-only — try uploading a text-based PDF or pasting text directly.',
+            );
         }
-        progressFn(82, 'Merging chunk summaries…');
-        const mergePrompt = buildMergePrompt(summaries, opts);
-        const merged = await callAI(mergePrompt, systemPrompt, tokensForLength(opts.length));
-        summaries = [merged];
+
+        progressFn(42, `Text extracted (${text.length.toLocaleString()} chars). Chunking…`);
+
+        // ── Step 2: Chunk ───────────────────────────────────────────────────────
+        const chunks = chunkText(text);
+        const numChunks = chunks.length;
+
+        // ── Step 3: Per-chunk summarization ─────────────────────────────────────
+        let summaries: string[] = [];
+        let modelUsed = opts.model || FALLBACK_MODELS[0];
+
+        if (numChunks === 1) {
+            progressFn(50, 'Generating summary…');
+            const prompt = buildSummaryPrompt(chunks[0], opts, false);
+            const result = await callAI(
+                prompt,
+                systemPrompt,
+                tokensForLength(opts.length),
+                0.3,
+                4,
+                opts.model,
+                opts.onModelUsed,
+            );
+            summaries = [result.response];
+            modelUsed = result.modelUsed;
+            progressFn(80, 'Summary generated.');
+        } else {
+            for (let i = 0; i < numChunks; i++) {
+                const pct = 45 + Math.round((i / numChunks) * 35);
+                progressFn(pct, `Summarizing chunk ${i + 1}/${numChunks}…`);
+                const prompt = buildSummaryPrompt(chunks[i], opts, true, i, numChunks);
+                const result = await callAI(prompt, systemPrompt, 600, 0.3, 4, opts.model, opts.onModelUsed);
+                summaries.push(result.response);
+                modelUsed = result.modelUsed;
+            }
+            progressFn(82, 'Merging chunk summaries…');
+            const mergePrompt = buildMergePrompt(summaries, opts);
+            const result = await callAI(
+                mergePrompt,
+                systemPrompt,
+                tokensForLength(opts.length),
+                0.3,
+                4,
+                opts.model,
+                opts.onModelUsed,
+            );
+            summaries = [result.response];
+            modelUsed = result.modelUsed;
+        }
+
+        const summary = summaries[0].trim();
+
+        // ── Step 4: Extras ───────────────────────────────────────────────────────
+        let keywords: string[] | undefined;
+        let topics: string[] | undefined;
+        let actionItems: string[] | undefined;
+        const extrasText = text.slice(0, 8000);
+
+        if (opts.includeKeywords) {
+            progressFn(86, 'Extracting keywords…');
+            try {
+                const result = await callAI(buildExtrasPrompt(extrasText, 'keywords'), systemPrompt, 200, 0.2, 4, opts.model, opts.onModelUsed);
+                keywords = result.response
+                    .split(',')
+                    .map(k => k.trim())
+                    .filter(k => k.length > 1 && k.length < 60);
+                modelUsed = result.modelUsed;
+            } catch { keywords = []; }
+        }
+
+        if (opts.includeTopics) {
+            progressFn(90, 'Identifying topics…');
+            try {
+                const result = await callAI(buildExtrasPrompt(extrasText, 'topics'), systemPrompt, 150, 0.2, 4, opts.model, opts.onModelUsed);
+                topics = result.response
+                    .split(',')
+                    .map(t => t.trim())
+                    .filter(t => t.length > 1 && t.length < 60);
+                modelUsed = result.modelUsed;
+            } catch { topics = []; }
+        }
+
+        if (opts.includeActionItems) {
+            progressFn(94, 'Extracting action items…');
+            try {
+                const result = await callAI(buildExtrasPrompt(extrasText, 'actions'), systemPrompt, 400, 0.2, 4, opts.model, opts.onModelUsed);
+                actionItems = result.response
+                    .split('\n')
+                    .map(l => l.replace(/^[•\-*]\s*/, '').trim())
+                    .filter(l => l.length > 5);
+                modelUsed = result.modelUsed;
+            } catch { actionItems = []; }
+        }
+
+        progressFn(100, 'Complete!');
+
+        return {
+            summary,
+            keywords,
+            topics,
+            actionItems,
+            wordCount: countWords(summary),
+            charCount: summary.length,
+            pageCount,
+            chunkCount: numChunks,
+            modelUsed,
+            extractMethod: method,
+            processingMs: Date.now() - t0,
+        };
+    } catch (error: any) {
+        if (error.message?.includes('Rate limit exceeded') || error.message?.includes('429')) {
+            throw new Error(
+                '🚦 **AI Service Rate Limited**\n\n' +
+                'The AI service is temporarily busy due to high demand. This usually resolves within a few minutes.\n\n' +
+                '**Try these solutions:**\n' +
+                '• Wait 2-3 minutes and try again\n' +
+                '• Refresh the page and retry\n' +
+                '• Use a smaller document or extract key text only\n\n' +
+                'This is a temporary limitation and not a permanent issue.',
+            );
+        }
+
+        if (error.message?.includes('API key') || error.message?.includes('401')) {
+            throw new Error(
+                '🔑 **API Configuration Error**\n\n' +
+                'The AI service is not properly configured. Please contact support.\n\n' +
+                'Error: ' + error.message,
+            );
+        }
+
+        if (error.message?.includes('timeout')) {
+            throw new Error(
+                '⏱️ **Request Timeout**\n\n' +
+                'The AI service took too long to respond. This can happen with large documents.\n\n' +
+                '**Try:**\n' +
+                '• Using a smaller document\n' +
+                '• Trying again in a moment\n' +
+                '• Checking your internet connection',
+            );
+        }
+
+        throw error;
     }
-
-    const summary = summaries[0].trim();
-
-    // ── Step 4: Extras ───────────────────────────────────────────────────────
-    let keywords: string[] | undefined;
-    let topics: string[] | undefined;
-    let actionItems: string[] | undefined;
-
-    const extrasText = text.slice(0, 8000);
-
-    if (opts.includeKeywords) {
-        progressFn(86, 'Extracting keywords…');
-        try {
-            const raw = await callAI(buildExtrasPrompt(extrasText, 'keywords'), systemPrompt, 200, 0.2);
-            keywords = raw.split(',').map(k => k.trim()).filter(k => k.length > 1 && k.length < 60);
-        } catch { keywords = []; }
-    }
-
-    if (opts.includeTopics) {
-        progressFn(90, 'Identifying topics…');
-        try {
-            const raw = await callAI(buildExtrasPrompt(extrasText, 'topics'), systemPrompt, 150, 0.2);
-            topics = raw.split(',').map(t => t.trim()).filter(t => t.length > 1 && t.length < 60);
-        } catch { topics = []; }
-    }
-
-    if (opts.includeActionItems) {
-        progressFn(94, 'Extracting action items…');
-        try {
-            const raw = await callAI(buildExtrasPrompt(extrasText, 'actions'), systemPrompt, 400, 0.2);
-            actionItems = raw.split('\n').map(l => l.replace(/^[•\-*]\s*/, '').trim()).filter(l => l.length > 5);
-        } catch { actionItems = []; }
-    }
-
-    progressFn(100, 'Complete!');
-
-    return {
-        summary,
-        keywords,
-        topics,
-        actionItems,
-        wordCount: countWords(summary),
-        charCount: summary.length,
-        pageCount,
-        chunkCount: numChunks,
-        modelUsed: SUMMARY_MODEL,
-        extractMethod: method,
-        processingMs: Date.now() - t0,
-    };
 }
 
 // ── Download helpers ──────────────────────────────────────────────────────────

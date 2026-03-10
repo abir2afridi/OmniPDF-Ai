@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rate Limiting Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #results { max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 AI Rate Limiting Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="testSingleRequest()">Test Single Request</button>
+        <button onclick="testMultipleRequests()">Test Multiple Requests</button>
+        <button onclick="testCacheHit()">Test Cache Hit</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        import { summariseDocument } from './services/summaryService.js';
+        
+        const results = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${timestamp}] ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        window.testSingleRequest = async function() {
+            log('🔄 Testing single request...', 'info');
+            try {
+                const result = await summariseDocument(
+                    'This is a test document. It contains some basic information about testing AI services. The purpose is to verify that the rate limiting improvements are working correctly.',
+                    {
+                        type: 'short',
+                        tone: 'professional',
+                        length: 'short',
+                        onProgress: (pct, stage) => {
+                            log(`📊 Progress: ${pct}% - ${stage}`, 'info');
+                        }
+                    }
+                );
+                log(`✅ Success: ${result.summary.slice(0, 100)}...`, 'success');
+                log(`📊 Stats: ${result.wordCount} words, ${result.processingMs}ms, model: ${result.modelUsed}`, 'info');
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        };
+        
+        window.testMultipleRequests = async function() {
+            log('🔄 Testing multiple concurrent requests...', 'info');
+            const requests = [];
+            
+            for (let i = 0; i < 3; i++) {
+                requests.push(
+                    summariseDocument(
+                        `Test document ${i + 1}. This is test content for request ${i + 1}.`,
+                        {
+                            type: 'bullets',
+                            tone: 'simple',
+                            length: 'short'
+                        }
+                    )
+                );
+            }
+            
+            try {
+                const results = await Promise.all(requests);
+                results.forEach((result, i) => {
+                    log(`✅ Request ${i + 1}: ${result.summary.slice(0, 50)}...`, 'success');
+                });
+            } catch (error) {
+                log(`❌ Concurrent requests error: ${error.message}`, 'error');
+            }
+        };
+        
+        window.testCacheHit = async function() {
+            log('🔄 Testing cache functionality...', 'info');
+            const testText = 'Cache test document. This should be cached on the first request and retrieved from cache on the second request.';
+            
+            try {
+                // First request - should hit API
+                log('📡 First request (should hit API)...', 'info');
+                const start1 = Date.now();
+                const result1 = await summariseDocument(testText, {
+                    type: 'short',
+                    tone: 'professional',
+                    length: 'short'
+                });
+                const time1 = Date.now() - start1;
+                log(`✅ First request completed in ${time1}ms`, 'success');
+                
+                // Second request - should hit cache
+                log('📡 Second request (should hit cache)...', 'info');
+                const start2 = Date.now();
+                const result2 = await summariseDocument(testText, {
+                    type: 'short',
+                    tone: 'professional',
+                    length: 'short'
+                });
+                const time2 = Date.now() - start2;
+                log(`✅ Second request completed in ${time2}ms (${time2 < time1 ? 'likely cached' : 'likely API'})`, 'success');
+                
+                if (result1.summary === result2.summary) {
+                    log('✅ Cache working - identical results', 'success');
+                } else {
+                    log('⚠️ Different results - cache may not be working', 'error');
+                }
+            } catch (error) {
+                log(`❌ Cache test error: ${error.message}`, 'error');
+            }
+        };
+        
+        window.clearResults = function() {
+            results.innerHTML = '';
+        };
+        
+        log('🧪 Rate limiting test page loaded', 'info');
+    </script>
+</body>
+</html>

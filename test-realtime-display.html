@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-Time Model Display Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        #results { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🤖 Real-Time Model Display Test</h1>
+
+    <div class="test-section">
+        <h2>Test Auto Model Selection with Real-Time Display</h2>
+        <button onclick="testAutoModel()">Test Auto Model with Real-Time Display</button>
+        <button onclick="testSpecificModel()">Test Specific Model</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // Import the summariseDocument function
+        import { summariseDocument } from './services/summaryService.js';
+
+        const results = document.getElementById('results');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${timestamp}] ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function logSuccess(message) {
+            log(message, 'success');
+        }
+
+        function logError(message) {
+            log(message, 'error');
+        }
+
+        window.testAutoModel = async function() {
+            log('🔄 Testing auto model selection with real-time display...', 'info');
+            
+            let currentModel = 'auto';
+            
+            try {
+                const result = await summariseDocument(
+                    'This is a test document for auto model selection with real-time display. The system should automatically choose the best available model and show which one is being used in real-time.',
+                    {
+                        type: 'short',
+                        tone: 'professional',
+                        length: 'short',
+                        model: 'auto',
+                        onProgress: (pct, stage) => {
+                            log(`📊 Progress: ${pct}% - ${stage}`, 'info');
+                        },
+                        onModelUsed: (model) => {
+                            currentModel = model;
+                            log(`🤖 Model switched to: ${model}`, 'info');
+                        }
+                    }
+                );
+
+                logSuccess(`✅ Auto model test completed!`);
+                log(`📊 Final model used: ${result.modelUsed}`);
+                log(`📄 Summary: ${result.summary.slice(0, 100)}...`);
+                log(`📊 Processing time: ${result.processingMs}ms`);
+                
+            } catch (error) {
+                logError(`❌ Auto model test failed: ${error.message}`);
+            }
+        };
+
+        window.testSpecificModel = async function() {
+            log('🔄 Testing specific model selection...', 'info');
+            
+            try {
+                const result = await summariseDocument(
+                    'This is a test document for specific model selection.',
+                    {
+                        type: 'short',
+                        tone: 'professional', 
+                        length: 'short',
+                        model: 'z-ai/glm-4.5-air:free',
+                        onProgress: (pct, stage) => {
+                            log(`📊 Progress: ${pct}% - ${stage}`, 'info');
+                        }
+                    }
+                );
+
+                logSuccess(`✅ Specific model test completed!`);
+                log(`📊 Model used: ${result.modelUsed}`);
+                log(`📄 Summary: ${result.summary.slice(0, 100)}...`);
+                
+            } catch (error) {
+                logError(`❌ Specific model test failed: ${error.message}`);
+            }
+        };
+
+        window.clearResults = function() {
+            results.innerHTML = '';
+        };
+
+        log('🤖 Real-time model display test page loaded!', 'success');
+    </script>
+</body>
+</html>

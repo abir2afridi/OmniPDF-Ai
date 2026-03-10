@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Model Switcher Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #results { max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔄 Model Switcher Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Model Switching</h2>
+        <button onclick="testGLMModel()">Test GLM-4.5 Model</button>
+        <button onclick="testStepModel()">Test Step-3.5 Model</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        import { summariseDocument } from './services/summaryService.js';
+        
+        const results = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${timestamp}] ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        window.testGLMModel = async function() {
+            log('🔄 Testing GLM-4.5 model...', 'info');
+            try {
+                const result = await summariseDocument(
+                    'This is a test document for model switching. It contains basic information about testing AI model selection.',
+                    {
+                        type: 'short',
+                        tone: 'professional',
+                        length: 'short',
+                        model: 'z-ai/glm-4.5-air:free',
+                        onProgress: (pct, stage) => {
+                            log(`📊 Progress: ${pct}% - ${stage}`, 'info');
+                        }
+                    }
+                );
+                log(`✅ Success with GLM-4.5: ${result.summary.slice(0, 100)}...`, 'success');
+                log(`📊 Model used: ${result.modelUsed}`, 'info');
+                log(`📊 Processing time: ${result.processingMs}ms`, 'info');
+            } catch (error) {
+                log(`❌ Error with GLM-4.5: ${error.message}`, 'error');
+            }
+        };
+        
+        window.testStepModel = async function() {
+            log('🔄 Testing Step-3.5 model...', 'info');
+            try {
+                const result = await summariseDocument(
+                    'This is a test document for model switching. It contains basic information about testing AI model selection.',
+                    {
+                        type: 'short',
+                        tone: 'professional',
+                        length: 'short',
+                        model: 'stepfun/step-3.5-flash:free',
+                        onProgress: (pct, stage) => {
+                            log(`📊 Progress: ${pct}% - ${stage}`, 'info');
+                        }
+                    }
+                );
+                log(`✅ Success with Step-3.5: ${result.summary.slice(0, 100)}...`, 'success');
+                log(`📊 Model used: ${result.modelUsed}`, 'info');
+                log(`📊 Processing time: ${result.processingMs}ms`, 'info');
+            } catch (error) {
+                log(`❌ Error with Step-3.5: ${error.message}`, 'error');
+            }
+        };
+        
+        window.clearResults = function() {
+            results.innerHTML = '';
+        };
+        
+        log('🧪 Model switcher test page loaded', 'info');
+    </script>
+</body>
+</html>

@@ -1,39 +1,70 @@
-// Test API directly
-const testAPI = async () => {
-  try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer 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',
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://omnifdf-ai.com',
-        'X-Title': 'OmniPDF AI',
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.2-3b-instruct:free',
-        messages: [
-          {
-            role: 'user',
-            content: 'Hello, how are you?'
-          }
-        ],
-        max_tokens: 100,
-        temperature: 0.7,
-      }),
-    });
-
-    console.log('Response status:', response.status);
-    const data = await response.json();
-    console.log('Response data:', data);
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OpenRouter API Test</title>
+</head>
+<body>
+    <h1>Testing OpenRouter API</h1>
+    <div id="result"></div>
     
-    if (response.ok) {
-      console.log('SUCCESS:', data.choices[0]?.message?.content);
-    } else {
-      console.error('ERROR:', data);
-    }
-  } catch (error) {
-    console.error('CATCH ERROR:', error);
-  }
-};
+    <script type="module">
+        const OPENROUTER_API_KEY = import.meta.env.OPENROUTER_API_KEY;
+        const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+        
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>🔑 Testing OpenRouter API...</p>';
+            
+            console.log('🔑 Testing OpenRouter API...');
+            console.log('API Key exists:', !!OPENROUTER_API_KEY);
+            console.log('API Key length:', OPENROUTER_API_KEY?.length || 0);
+            
+            if (!OPENROUTER_API_KEY) {
+                resultDiv.innerHTML = '<p style="color: red;">❌ API Key is missing!</p>';
+                return;
+            }
 
-testAPI();
+            try {
+                const response = await fetch(OPENROUTER_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': 'https://omnipdf-ai.com',
+                        'X-Title': 'OmniPDF AI Test',
+                    },
+                    body: JSON.stringify({
+                        model: 'z-ai/glm-4.5-air:free',
+                        messages: [
+                            { role: 'system', content: 'You are a helpful assistant.' },
+                            { role: 'user', content: 'Say "API is working" in response.' },
+                        ],
+                        max_tokens: 50,
+                        temperature: 0.3,
+                    }),
+                });
+
+                console.log('📡 Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ API Error:', response.status, errorText);
+                    resultDiv.innerHTML = `<p style="color: red;">❌ API Error: ${response.status} - ${errorText}</p>`;
+                    return;
+                }
+
+                const data = await response.json();
+                const responseText = data.choices?.[0]?.message?.content;
+                console.log('✅ API Response:', responseText);
+                resultDiv.innerHTML = `<p style="color: green;">✅ API is working! Response: "${responseText}"</p>`;
+            } catch (error) {
+                console.error('❌ Network error:', error);
+                resultDiv.innerHTML = `<p style="color: red;">❌ Network error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run test when page loads
+        testAPI();
+    </script>
+</body>
+</html>

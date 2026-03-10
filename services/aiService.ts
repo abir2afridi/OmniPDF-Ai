@@ -158,50 +158,76 @@ export const chatWithAI = async (
   ];
 
   let lastError: any = null;
+  let retryCount = 0;
+  const maxRetries = 3;
 
   for (const currentModel of fallbackModels) {
-    try {
-      console.log('🚀 Starting AI chat request via Supabase Edge Function with model:', currentModel)
-      console.log('📝 Messages prepared:', messages.length)
-
-      // Call Supabase Edge Function instead of direct API
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: {
-          messages,
-          model: currentModel,
-          max_tokens,
-          temperature
+    retryCount = 0;
+    while (retryCount <= maxRetries) {
+      try {
+        console.log('🚀 Starting AI chat request via Supabase Edge Function with model:', currentModel)
+        if (retryCount > 0) {
+          console.log(`🔄 Retry attempt ${retryCount} for model: ${currentModel}`)
         }
-      })
 
-      if (error) {
-        console.error(`❌ Error with model ${currentModel}:`, error)
+        // Call Supabase Edge Function instead of direct API
+        const { data, error } = await supabase.functions.invoke('ai-chat', {
+          body: {
+            messages,
+            model: currentModel,
+            max_tokens,
+            temperature
+          }
+        })
+
+        if (error) {
+          console.error(`❌ Error with model ${currentModel}:`, error)
+          lastError = error;
+          // Check if it's a rate limit error and we should retry
+          if (error.message?.includes('429') || error.message?.includes('rate limit')) {
+            if (retryCount < maxRetries) {
+              const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+              console.log(`⏳ Rate limited, retrying in ${delay}ms...`)
+              await new Promise(resolve => setTimeout(resolve, delay))
+              retryCount++
+              continue; // Retry same model
+            }
+          }
+          break; // Try next model
+        }
+
+        console.log('✅ Edge Function response received:', data)
+
+        const response = {
+          message: data?.message || 'No response generated',
+          reasoning_details: data?.reasoning_details,
+          usage: { ...data?.usage, model: currentModel }
+        };
+
+        // Cache successful responses
+        if (lastMessage && !responseCache.has(lastMessage)) {
+          responseCache.set(lastMessage, {
+            response: response.message,
+            timestamp: Date.now()
+          });
+        }
+
+        return response;
+      } catch (error) {
+        console.error(`💥 Error with model ${currentModel}:`, error)
         lastError = error;
-        continue; // Try next model
+        // Check if it's a rate limit error and we should retry
+        if (error.message?.includes('429') || error.message?.includes('rate limit')) {
+          if (retryCount < maxRetries) {
+            const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+            console.log(`⏳ Rate limited, retrying in ${delay}ms...`)
+            await new Promise(resolve => setTimeout(resolve, delay))
+            retryCount++
+            continue; // Retry same model
+          }
+        }
+        break; // Try next model
       }
-
-      console.log('✅ Edge Function response received:', data)
-
-      const response = {
-        message: data?.message || 'No response generated',
-        reasoning_details: data?.reasoning_details,
-        usage: data?.usage
-      };
-
-      // Cache the response for future use (only if not already cached)
-      if (lastMessage && !responseCache.has(lastMessage)) {
-        responseCache.set(lastMessage, {
-          response: response.message,
-          timestamp: Date.now()
-        });
-        console.log('💾 Response cached for future use');
-      }
-
-      return response;
-    } catch (error) {
-      console.error(`💥 Error with model ${currentModel}:`, error)
-      lastError = error;
-      continue; // Try next model
     }
   }
 
