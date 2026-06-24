@@ -46,19 +46,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
   };
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
+    let cancelled = false;
+
+    supabase.auth.getUser()
+      .then(({ data: { user } }) => {
+        if (!cancelled) setUser(user);
+      })
+      .catch(() => {
+        if (!cancelled) setUser(null);
+      });
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        setUser(session?.user ?? null);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
+      if (!cancelled) {
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          setUser(session?.user ?? null);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
       }
     });
 
     return () => {
+      cancelled = true;
       authListener.subscription.unsubscribe();
     };
   }, []);

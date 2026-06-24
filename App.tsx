@@ -1740,17 +1740,31 @@ const App: React.FC = () => {
   const [editAction, setEditAction] = useState<{ type: 'undo' | 'redo' | 'delete' | null, timestamp: number }>({ type: null, timestamp: 0 });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-    });
+    let cancelled = false;
+
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) setIsAuthenticated(false);
+    }, 8000);
+
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (!cancelled) setIsAuthenticated(!!session);
+      })
+      .catch(() => {
+        if (!cancelled) setIsAuthenticated(false);
+      })
+      .finally(() => clearTimeout(timeoutId));
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
+      if (!cancelled) setIsAuthenticated(!!session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -1911,7 +1925,11 @@ const App: React.FC = () => {
   };
 
   if (isAuthenticated === null) {
-    return null;
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[#020617]">
+        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   const protectedViews = [
@@ -1927,7 +1945,11 @@ const App: React.FC = () => {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Network error or supabase unreachable — still clear local session
+    }
     setCurrentView(AppView.DASHBOARD);
   };
 

@@ -15,6 +15,14 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
 
+    const getNetworkErrorMessage = (error: any): string => {
+        if (!navigator.onLine) return 'You are offline. Please check your internet connection.';
+        if (error?.message?.includes('Failed to fetch') || error?.message?.includes('NetworkError')) {
+            return 'Unable to connect to the authentication server. Please try again later.';
+        }
+        return error?.message || 'An unexpected error occurred. Please try again.';
+    };
+
     const handleGoogleLogin = async (e: React.MouseEvent) => {
         e.preventDefault();
         try {
@@ -30,7 +38,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
             if (error) throw error;
         } catch (error: any) {
             console.error('Login error:', error);
-            alert(`Authentication failed: ${error.message}`);
+            alert(`Authentication failed: ${getNetworkErrorMessage(error)}`);
         }
     };
 
@@ -50,7 +58,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
             alert('Signup successful! Check your email to verify your account.');
         } catch (error: any) {
             console.error('Signup error:', error);
-            alert(`Signup failed: ${error.message}`);
+            alert(`Signup failed: ${getNetworkErrorMessage(error)}`);
         }
     };
 
@@ -64,7 +72,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
             if (error) throw error;
         } catch (error: any) {
             console.error('Login error:', error);
-            alert(`Login failed: ${error.message}`);
+            alert(`Login failed: ${getNetworkErrorMessage(error)}`);
         }
     };
 

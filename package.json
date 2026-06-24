@@ -7,6 +7,7 @@
     "dev": "vite --mode development",
     "build": "vite build --mode production",
     "build:dev": "vite build --mode development",
+    "start": "vite preview --port $PORT --host 0.0.0.0",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -19,6 +20,7 @@
     "clsx": "^2.1.1",
     "docx": "^9.5.3",
     "exceljs": "^4.4.0",
+    "firebase": "^12.15.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.0",
     "jszip": "3.10.1",

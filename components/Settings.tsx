@@ -184,19 +184,28 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
 
   // Load user data
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
+    let cancelled = false;
+
+    supabase.auth.getUser()
+      .then(({ data: { user } }) => {
+        if (!cancelled) setUser(user);
+      })
+      .catch(() => {
+        if (!cancelled) setUser(null);
+      });
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        setUser(session?.user ?? null);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
+      if (!cancelled) {
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          setUser(session?.user ?? null);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
       }
     });
 
     return () => {
+      cancelled = true;
       authListener.subscription.unsubscribe();
     };
   }, []);
@@ -354,7 +363,13 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
                       Edit Profile
                     </button>
                     <button
-                      onClick={async () => await supabase.auth.resetPasswordForEmail(user?.email || '')}
+                      onClick={async () => {
+                        try {
+                          await supabase.auth.resetPasswordForEmail(user?.email || '');
+                        } catch {
+                          // Network error — silently ignore
+                        }
+                      }}
                       className="px-5 py-2.5 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 border border-transparent rounded-xl text-sm font-bold transition-colors text-gray-600 dark:text-gray-400 w-full md:w-auto"
                     >
                       Reset Password

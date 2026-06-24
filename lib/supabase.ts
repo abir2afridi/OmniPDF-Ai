@@ -1,6 +1,112 @@
-import { createClient } from '@supabase/supabase-js';
+import { initializeApp } from 'firebase/app';
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithPopup,
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut as fbSignOut,
+  sendPasswordResetEmail,
+  updateProfile,
+  User,
+} from 'firebase/auth';
 
-const supabaseUrl = 'https://rsagndlatqwzzsjqbqqt.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzYWduZGxhdHF3enpzanFicXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NDc0MzQsImV4cCI6MjA4NzQyMzQzNH0.f0zYG2T4kSjoTk9zO5Jv_NB4mdq7QHy5egB6HhCeQWo';
+const firebaseConfig = {
+  apiKey: "AIzaSyB51bv_qDJwmPw3kKWrxXTk1T5xg_A2cqE",
+  authDomain: "omnipdf-ai.firebaseapp.com",
+  projectId: "omnipdf-ai",
+  storageBucket: "omnipdf-ai.firebasestorage.app",
+  messagingSenderId: "619952563506",
+  appId: "1:619952563506:web:bcf59b3582f0bca808a32b",
+  measurementId: "G-HVMP4GXK59"
+};
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+const mapFirebaseUser = (user: User | null) => {
+  if (!user) return null;
+  return {
+    id: user.uid,
+    email: user.email,
+    user_metadata: {
+      full_name: user.displayName,
+      avatar_url: user.photoURL,
+      picture: user.photoURL,
+    },
+  };
+};
+
+const mapToSession = (user: User | null) => {
+  return user ? { user: mapFirebaseUser(user) } : null;
+};
+
+const supabase = {
+  auth: {
+    getSession: async () => {
+      return { data: { session: mapToSession(auth.currentUser) } };
+    },
+
+    getUser: async () => {
+      return { data: { user: mapFirebaseUser(auth.currentUser) } };
+    },
+
+    onAuthStateChange: (callback: (event: string, session: any) => void) => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          callback('SIGNED_IN', mapToSession(user));
+        } else {
+          callback('SIGNED_OUT', null);
+        }
+      });
+      return { data: { subscription: { unsubscribe } } };
+    },
+
+    signInWithOAuth: async ({ provider: _provider, options: _options }: { provider: string; options?: { redirectTo?: string } }) => {
+      try {
+        const googleProvider = new GoogleAuthProvider();
+        googleProvider.setCustomParameters({ prompt: 'select_account' });
+        await signInWithPopup(auth, googleProvider);
+        return { error: null };
+      } catch (error: any) {
+        if (error.code === 'auth/popup-closed-by-user') {
+          return { error: null };
+        }
+        return { error };
+      }
+    },
+
+    signUp: async ({ email, password, options }: { email: string; password: string; options?: { data?: { full_name?: string } } }) => {
+      try {
+        const credential = await createUserWithEmailAndPassword(auth, email, password);
+        if (options?.data?.full_name) {
+          await updateProfile(credential.user, { displayName: options.data.full_name });
+        }
+        return { data: { user: credential.user }, error: null };
+      } catch (error: any) {
+        return { error };
+      }
+    },
+
+    signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
+      try {
+        const credential = await signInWithEmailAndPassword(auth, email, password);
+        return { data: { user: credential.user }, error: null };
+      } catch (error: any) {
+        return { error };
+      }
+    },
+
+    signOut: async () => {
+      await fbSignOut(auth);
+    },
+
+    resetPasswordForEmail: async (email: string) => {
+      await sendPasswordResetEmail(auth, email);
+      return { data: {}, error: null };
+    },
+  },
+};
+
+export { supabase };

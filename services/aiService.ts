@@ -1,31 +1,29 @@
-import { supabase } from '../lib/supabase'
+import { OpenRouter } from '@openrouter/sdk'
+
+const apiKey = (typeof import.meta !== 'undefined' && import.meta.env?.OPENROUTER_API_KEY) || '';
+
+const openrouter = new OpenRouter({ apiKey });
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
-  reasoning_details?: any;
 }
 
 interface ChatRequest {
-  messages: ChatMessage[];
   model?: string;
   max_tokens?: number;
   temperature?: number;
-  reasoning?: { enabled: boolean };
 }
 
 interface ChatResponse {
   message: string;
-  reasoning_details?: any;
   usage?: any;
 }
 
-// Simple in-memory cache for common queries (client-side)
-const responseCache = new Map<string, { response: string, timestamp: number }>();
-const CACHE_DURATION = 1000 * 60 * 5; // 5 minutes
+const responseCache = new Map<string, { response: string; timestamp: number }>();
+const CACHE_DURATION = 1000 * 60 * 5;
 
-// Common query patterns and their cached responses
-const COMMON_RESPONSES = {
+const COMMON_RESPONSES: Record<string, string> = {
   'hello': 'Hello! I\'m your AI assistant for OmniPDF AI, a PDF management and analysis platform. I\'m here to help you with all your PDF-related tasks including document analysis, answering questions about uploaded files, PDF editing, conversion, and organization. How can I assist you today?',
   'hi': 'Hi there! I\'m your AI assistant for OmniPDF AI. I can help you analyze PDFs, answer questions about documents, convert files, and organize your PDF workflows. What would you like to do?',
   'help': 'I can help you with:\n• PDF document analysis and summarization\n• Answering questions about uploaded documents\n• PDF editing, conversion, and organization\n• Step-by-step guidance for PDF tasks\n• Troubleshooting PDF issues\n\nWhat specific task can I help you with?',
@@ -33,208 +31,107 @@ const COMMON_RESPONSES = {
   'how are you': 'I\'m doing great and ready to help you with your PDF needs! I\'m an AI assistant specifically designed for OmniPDF AI to help you with document analysis, conversion, and organization. What can I help you with today?'
 };
 
-// Streaming response support for better UX
+function getCacheKey(messages: ChatMessage[]): string | null {
+  const last = messages[messages.length - 1]?.content?.toLowerCase()?.trim();
+  return last || null;
+}
+
+function checkCache(key: string): string | null {
+  for (const [pattern, response] of Object.entries(COMMON_RESPONSES)) {
+    if (key.includes(pattern) || key === pattern) return response;
+  }
+  const cached = responseCache.get(key);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+    return cached.response;
+  }
+  return null;
+}
+
+function setCache(key: string, response: string) {
+  if (!responseCache.has(key)) {
+    responseCache.set(key, { response, timestamp: Date.now() });
+  }
+}
+
+async function sendChat(messages: ChatMessage[], opts: ChatRequest & { stream?: boolean } = {}) {
+  const { model = 'openrouter/free', max_tokens = 800, temperature = 0.7, stream = false } = opts;
+  return openrouter.chat.send({ model, messages, max_tokens, temperature, stream });
+}
+
 export const chatWithAIStreaming = async (
   messages: ChatMessage[],
   onChunk?: (chunk: string) => void,
-  model = 'meta-llama/llama-3.2-1b-instruct:free',
+  model = 'openrouter/free',
   max_tokens = 800
 ): Promise<ChatResponse> => {
-  const lastMessage = messages[messages.length - 1]?.content?.toLowerCase()?.trim();
-
-  // Check cached responses first (instant)
-  if (lastMessage) {
-    // Check common responses
-    for (const [pattern, response] of Object.entries(COMMON_RESPONSES)) {
-      if (lastMessage.includes(pattern) || lastMessage === pattern) {
-        console.log('⚡ Streaming instant response from cache:', pattern);
-        onChunk?.(response);
-        return {
-          message: response,
-          reasoning_details: null,
-          usage: { cached: true }
-        };
-      }
-    }
-
-    // Check dynamic cache
-    const cached = responseCache.get(lastMessage);
-    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-      console.log('⚡ Streaming response from dynamic cache');
-      onChunk?.(cached.response);
-      return {
-        message: cached.response,
-        reasoning_details: null,
-        usage: { cached: true }
-      };
+  const cacheKey = getCacheKey(messages);
+  if (cacheKey) {
+    const cached = checkCache(cacheKey);
+    if (cached) {
+      onChunk?.(cached);
+      return { message: cached, usage: { cached: true } };
     }
   }
 
-  // For streaming, use the fastest model only
   try {
-    console.log('🌊 Starting streaming AI chat request');
-
-    const { data, error } = await supabase.functions.invoke('ai-chat-stream', {
-      body: {
-        messages,
-        model,
-        max_tokens,
-        stream: true
-      }
-    });
-
-    if (error) {
-      console.error('❌ Streaming error, falling back to regular chat:', error);
-      return chatWithAI(messages, model, max_tokens);
-    }
-
-    // Handle streaming response
+    const stream = await sendChat(messages, { model, max_tokens, stream: true }) as any;
     let fullResponse = '';
-    if (data?.chunks) {
-      for (const chunk of data.chunks) {
-        fullResponse += chunk;
-        onChunk?.(chunk);
+    for await (const chunk of stream) {
+      const content = chunk.choices?.[0]?.delta?.content;
+      if (content) {
+        fullResponse += content;
+        onChunk?.(content);
       }
-    } else {
-      fullResponse = data?.message || 'No response';
-      onChunk?.(fullResponse);
     }
-
-    // Cache the response
-    if (lastMessage && !responseCache.has(lastMessage)) {
-      responseCache.set(lastMessage, {
-        response: fullResponse,
-        timestamp: Date.now()
-      });
-    }
-
-    return {
-      message: fullResponse,
-      reasoning_details: data?.reasoning_details,
-      usage: { ...data?.usage, streamed: true }
-    };
+    if (cacheKey) setCache(cacheKey, fullResponse);
+    return { message: fullResponse || 'No response' };
   } catch (error) {
-    console.error('💥 Streaming failed, using regular chat:', error);
+    console.error('Streaming failed, using regular chat:', error);
     return chatWithAI(messages, model, max_tokens);
   }
 };
 
 export const chatWithAI = async (
   messages: ChatMessage[],
-  model = 'meta-llama/llama-3.2-1b-instruct:free', // Fastest available model
-  max_tokens = 800, // Reduced for speed
+  model = 'openrouter/free',
+  max_tokens = 800,
   temperature = 0.7
 ): Promise<ChatResponse> => {
-  const lastMessage = messages[messages.length - 1]?.content?.toLowerCase()?.trim();
-
-  // Check for cached responses first (instant response)
-  if (lastMessage) {
-    // Check common responses
-    for (const [pattern, response] of Object.entries(COMMON_RESPONSES)) {
-      if (lastMessage.includes(pattern) || lastMessage === pattern) {
-        console.log('⚡ Instant response from cache:', pattern);
-        return {
-          message: response,
-          reasoning_details: null,
-          usage: { cached: true }
-        };
-      }
-    }
-
-    // Check dynamic cache
-    const cached = responseCache.get(lastMessage);
-    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-      console.log('⚡ Response from dynamic cache');
-      return {
-        message: cached.response,
-        reasoning_details: null,
-        usage: { cached: true }
-      };
-    }
+  const cacheKey = getCacheKey(messages);
+  if (cacheKey) {
+    const cached = checkCache(cacheKey);
+    if (cached) return { message: cached, usage: { cached: true } };
   }
-  const fallbackModels = [
-    'z-ai/glm-4.5-air:free', // Primary - confirmed working
-    'stepfun/step-3.5-flash:free' // Secondary - confirmed working with reasoning
-  ];
 
+  const models = [model, 'openrouter/free', 'z-ai/glm-4.5-air:free', 'stepfun/step-3.5-flash:free'];
   let lastError: any = null;
-  let retryCount = 0;
-  const maxRetries = 3;
 
-  for (const currentModel of fallbackModels) {
-    retryCount = 0;
-    while (retryCount <= maxRetries) {
+  for (const currentModel of models) {
+    for (let retry = 0; retry <= 2; retry++) {
       try {
-        console.log('🚀 Starting AI chat request via Supabase Edge Function with model:', currentModel)
-        if (retryCount > 0) {
-          console.log(`🔄 Retry attempt ${retryCount} for model: ${currentModel}`)
+        const result = await sendChat(messages, { model: currentModel, max_tokens, temperature });
+
+        const content = (result as any).choices?.[0]?.message?.content;
+        if (content) {
+          if (cacheKey) setCache(cacheKey, content);
+          return { message: content, usage: { model: currentModel } };
         }
-
-        // Call Supabase Edge Function instead of direct API
-        const { data, error } = await supabase.functions.invoke('ai-chat', {
-          body: {
-            messages,
-            model: currentModel,
-            max_tokens,
-            temperature
-          }
-        })
-
-        if (error) {
-          console.error(`❌ Error with model ${currentModel}:`, error)
-          lastError = error;
-          // Check if it's a rate limit error and we should retry
-          if (error.message?.includes('429') || error.message?.includes('rate limit')) {
-            if (retryCount < maxRetries) {
-              const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-              console.log(`⏳ Rate limited, retrying in ${delay}ms...`)
-              await new Promise(resolve => setTimeout(resolve, delay))
-              retryCount++
-              continue; // Retry same model
-            }
-          }
-          break; // Try next model
-        }
-
-        console.log('✅ Edge Function response received:', data)
-
-        const response = {
-          message: data?.message || 'No response generated',
-          reasoning_details: data?.reasoning_details,
-          usage: { ...data?.usage, model: currentModel }
-        };
-
-        // Cache successful responses
-        if (lastMessage && !responseCache.has(lastMessage)) {
-          responseCache.set(lastMessage, {
-            response: response.message,
-            timestamp: Date.now()
-          });
-        }
-
-        return response;
-      } catch (error) {
-        console.error(`💥 Error with model ${currentModel}:`, error)
+        lastError = new Error('Empty response');
+      } catch (error: any) {
         lastError = error;
-        // Check if it's a rate limit error and we should retry
-        if (error.message?.includes('429') || error.message?.includes('rate limit')) {
-          if (retryCount < maxRetries) {
-            const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-            console.log(`⏳ Rate limited, retrying in ${delay}ms...`)
-            await new Promise(resolve => setTimeout(resolve, delay))
-            retryCount++
-            continue; // Retry same model
-          }
+        const isRateLimit = error.message?.includes('429') || error.status === 429;
+        if (isRateLimit && retry < 2) {
+          await new Promise(r => setTimeout(r, Math.pow(2, retry) * 1000));
+          continue;
         }
-        break; // Try next model
+        break;
       }
     }
   }
 
-  // All models failed - provide helpful user message
-  console.error('All AI models failed, providing user-friendly error message')
-
-  const helpfulMessage = `I'm currently experiencing high demand and all AI services are temporarily unavailable. This usually resolves quickly.
+  console.error('All AI models failed');
+  return {
+    message: `I'm currently experiencing high demand and all AI services are temporarily unavailable. This usually resolves quickly.
 
 **What you can try:**
 • Wait 1-2 minutes and try again
@@ -245,11 +142,7 @@ export const chatWithAI = async (
 
 For technical support, you can contact the development team.
 
-_This is not a permanent issue - AI services typically resume within a few minutes._`
-
-  return {
-    message: helpfulMessage,
-    reasoning_details: null,
+_This is not a permanent issue - AI services typically resume within a few minutes._`,
     usage: { error: 'all_models_failed', fallback: true }
   };
 };
@@ -257,83 +150,22 @@ _This is not a permanent issue - AI services typically resume within a few minut
 export const translateText = async (
   text: string,
   targetLang: string,
-  model = 'z-ai/glm-4.5-air:free'
+  model = 'openrouter/free'
 ): Promise<string> => {
-  const fallbackModels = [
-    'z-ai/glm-4.5-air:free',
-    'stepfun/step-3.5-flash:free'
+  const messages: ChatMessage[] = [
+    { role: 'system', content: `You are a translator. Translate the following text to ${targetLang}. Return ONLY the translated text, no explanations.` },
+    { role: 'user', content: text }
   ];
 
-  let lastError: any = null;
+  const models = [model, 'openrouter/free', 'z-ai/glm-4.5-air:free', 'stepfun/step-3.5-flash:free'];
 
-  for (const currentModel of fallbackModels) {
+  for (const currentModel of models) {
     try {
-      console.log(`🌍 Trying translation with model: ${currentModel}`)
-      
-      const { data, error } = await supabase.functions.invoke('ai-translate', {
-        body: {
-          text,
-          targetLang,
-          model: currentModel
-        }
-      })
-
-      if (error) {
-        console.error(`❌ Translation error with ${currentModel}:`, error)
-        lastError = error;
-        
-        // If rate limited, wait and retry
-        if (error.message?.includes('429') || error.status === 429) {
-          console.log('⏳ Rate limited, trying next model...')
-          continue;
-        }
-        continue;
-      }
-
-      console.log('✅ Translation successful:', data)
-      return data?.translatedText || 'Translation failed.'
+      const result = await sendChat(messages, { model: currentModel });
+      const content = (result as any).choices?.[0]?.message?.content;
+      if (content) return content;
     } catch (error) {
-      console.error(`💥 Translation exception with ${currentModel}:`, error)
-      lastError = error;
-      continue;
-    }
-  }
-
-  // All models failed - provide helpful fallback
-  console.error('All translation models failed, providing fallback')
-  
-  // Simple translation fallback for common languages
-  const simpleTranslations = {
-    Spanish: {
-      Hello: 'Hola',
-      'How are you': 'Cómo estás',
-      'Thank you': 'Gracias',
-      'Goodbye': 'Adiós'
-    },
-    French: {
-      Hello: 'Bonjour',
-      'How are you': 'Comment allez-vous',
-      'Thank you': 'Merci',
-      'Goodbye': 'Au revoir'
-    },
-    German: {
-      Hello: 'Hallo',
-      'How are you': 'Wie geht es dir',
-      'Thank you': 'Danke',
-      'Goodbye': 'Auf Wiedersehen'
-    }
-  };
-  
-  // Try to find a simple fallback translation
-  const lowerText = text.toLowerCase();
-  const langMap = simpleTranslations[targetLang];
-  
-  if (langMap) {
-    for (const [english, translation] of Object.entries(langMap)) {
-      if (lowerText.includes(english.toLowerCase())) {
-        console.log('🔄 Using simple fallback translation')
-        return text.replace(new RegExp(english, 'gi'), translation as string);
-      }
+      console.error(`Translation error with ${currentModel}:`, error);
     }
   }
 
@@ -342,48 +174,37 @@ export const translateText = async (
 
 export const generateRefinedFilename = async (originalName: string, context: string): Promise<string> => {
   try {
-    const { data, error } = await supabase.functions.invoke('ai-rename', {
-      body: {
-        originalName,
-        context
-      }
-    })
+    const messages: ChatMessage[] = [
+      { role: 'system', content: 'You generate concise, descriptive filenames based on document context. Return ONLY the filename with extension, no explanation.' },
+      { role: 'user', content: `Original filename: "${originalName}"\nContext: ${context}\n\nGenerate a better filename:` }
+    ];
 
-    if (error) {
-      console.error('Filename generation Edge Function error:', error)
-      return originalName
-    }
-
-    return data?.filename || originalName
+    const result = await sendChat(messages, { model: 'openrouter/free', max_tokens: 100 });
+    const content = (result as any).choices?.[0]?.message?.content;
+    return content?.trim() || originalName;
   } catch (error) {
-    console.error('Error in generateRefinedFilename:', error)
-    return originalName
+    console.error('Error in generateRefinedFilename:', error);
+    return originalName;
   }
 };
 
-export const generateAudioOverview = async (text: string, voiceName: string = 'Kore'): Promise<string | null> => {
-  // Note: This will use a separate TTS Edge Function
-  console.log('TTS functionality via Edge Function. Text:', text, 'Voice:', voiceName);
+export const generateAudioOverview = async (_text: string, _voiceName: string = 'Kore'): Promise<string | null> => {
+  console.log('TTS functionality not available via OpenRouter');
   return null;
 };
 
 export const chatWithPDF = async (query: string, documentContext: string) => {
   try {
-    const { data, error } = await supabase.functions.invoke('chat-with-pdf', {
-      body: {
-        query,
-        documentContext
-      }
-    })
+    const messages: ChatMessage[] = [
+      { role: 'system', content: 'You are a PDF document analysis assistant. Answer questions based on the provided document context.' },
+      { role: 'user', content: `Document context:\n${documentContext}\n\nQuestion: ${query}` }
+    ];
 
-    if (error) {
-      console.error('PDF Chat Edge Function error:', error)
-      return "I encountered an error analyzing the document."
-    }
-
-    return data?.response || "I couldn't process that request."
+    const result = await sendChat(messages, { model: 'openrouter/free' });
+    const content = (result as any).choices?.[0]?.message?.content;
+    return content || "I couldn't process that request.";
   } catch (error) {
-    console.error('Error in chatWithPDF:', error)
-    return "I encountered an error analyzing the document."
+    console.error('Error in chatWithPDF:', error);
+    return "I encountered an error analyzing the document.";
   }
 };
