@@ -27,7 +27,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const authReady = setPersistence(auth, browserLocalPersistence).catch(() => {});
+const authReady = (async () => {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    console.log('[Auth] Persistence set to browserLocalPersistence');
+  } catch (err) {
+    console.warn('[Auth] Failed to set persistence, using default:', err);
+  }
+})();
 
 const mapFirebaseUser = (user: User | null) => {
   if (!user) return null;
@@ -50,9 +57,11 @@ const supabase = {
   auth: {
     getSession: async () => {
       await authReady;
+      console.log('[Auth] getSession: waiting for onAuthStateChanged...');
       const user = await new Promise<User | null>((resolve) => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
           unsubscribe();
+          console.log('[Auth] onAuthStateChanged resolved with:', user ? 'user' : 'null');
           resolve(user);
         });
       });
