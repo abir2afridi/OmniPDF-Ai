@@ -2,7 +2,8 @@ import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -90,8 +91,21 @@ const supabase = {
       try {
         const googleProvider = new GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
-        const result = await signInWithPopup(auth, googleProvider);
-        return { data: { user: result.user }, error: null };
+        await signInWithRedirect(auth, googleProvider);
+        return { error: null };
+      } catch (error: any) {
+        return { error };
+      }
+    },
+
+    getRedirectResult: async () => {
+      await authReady;
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          return { data: { user: result.user }, error: null };
+        }
+        return { data: null, error: null };
       } catch (error: any) {
         return { error };
       }
@@ -132,4 +146,4 @@ const supabase = {
   },
 };
 
-export { supabase };
+export { supabase, authReady };

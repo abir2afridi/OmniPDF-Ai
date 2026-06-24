@@ -20,7 +20,7 @@ import { History } from './components/History';
 import { Login } from './components/Login';
 import { AppView, PDFTool, ToolCategory, UploadedFile } from './types';
 import { processFiles } from './services/pdfService';
-import { supabase } from './lib/supabase';
+import { supabase, authReady } from './lib/supabase';
 import { MergePDF } from './components/MergePDF';
 import { SplitPDF } from './components/SplitPDF';
 import { DeletePages } from './components/DeletePages';
@@ -1747,14 +1747,21 @@ const App: React.FC = () => {
       if (!cancelled) setIsAuthenticated(false);
     }, 8000);
 
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        if (!cancelled) setIsAuthenticated(!!session);
-      })
-      .catch(() => {
-        if (!cancelled) setIsAuthenticated(false);
-      })
-      .finally(() => clearTimeout(timeoutId));
+    (async () => {
+      await authReady;
+      if (cancelled) return;
+
+      const redirectResult = await supabase.auth.getRedirectResult();
+      if (redirectResult?.data?.user && !cancelled) {
+        setIsAuthenticated(true);
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!cancelled) {
+        setIsAuthenticated(!!session);
+        clearTimeout(timeoutId);
+      }
+    })();
 
     const {
       data: { subscription: sub },
