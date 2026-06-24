@@ -1,6 +1,6 @@
 import { OpenRouter } from '@openrouter/sdk'
 
-const apiKey = (typeof import.meta !== 'undefined' && import.meta.env?.OPENROUTER_API_KEY) || '';
+const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
 
 const openrouter = new OpenRouter({ apiKey });
 
