@@ -185,6 +185,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
   // Load user data
   useEffect(() => {
     let cancelled = false;
+    let subscription: { unsubscribe: () => void } | null = null;
 
     supabase.auth.getUser()
       .then(({ data: { user } }) => {
@@ -194,7 +195,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
         if (!cancelled) setUser(null);
       });
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.onAuthStateChange((event, session) => {
       if (!cancelled) {
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
           setUser(session?.user ?? null);
@@ -202,11 +203,13 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
           setUser(null);
         }
       }
+    }).then(({ data: authListener }) => {
+      subscription = authListener.subscription;
     });
 
     return () => {
       cancelled = true;
-      authListener.subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 

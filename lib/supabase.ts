@@ -27,7 +27,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence);
+const authReady = setPersistence(auth, browserLocalPersistence).catch(() => {});
 
 const mapFirebaseUser = (user: User | null) => {
   if (!user) return null;
@@ -49,6 +49,7 @@ const mapToSession = (user: User | null) => {
 const supabase = {
   auth: {
     getSession: async () => {
+      await authReady;
       const user = await new Promise<User | null>((resolve) => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
           unsubscribe();
@@ -59,6 +60,7 @@ const supabase = {
     },
 
     getUser: async () => {
+      await authReady;
       const user = await new Promise<User | null>((resolve) => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
           unsubscribe();
@@ -68,7 +70,8 @@ const supabase = {
       return { data: { user: mapFirebaseUser(user) } };
     },
 
-    onAuthStateChange: (callback: (event: string, session: any) => void) => {
+    onAuthStateChange: async (callback: (event: string, session: any) => void) => {
+      await authReady;
       const unsubscribe = onAuthStateChanged(auth, (user) => {
         if (user) {
           callback('SIGNED_IN', mapToSession(user));
@@ -80,6 +83,7 @@ const supabase = {
     },
 
     signInWithOAuth: async ({ provider: _provider, options: _options }: { provider: string; options?: { redirectTo?: string } }) => {
+      await authReady;
       try {
         const googleProvider = new GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
@@ -91,6 +95,7 @@ const supabase = {
     },
 
     getRedirectResult: async () => {
+      await authReady;
       try {
         const result = await getRedirectResult(auth);
         if (result) {
@@ -103,6 +108,7 @@ const supabase = {
     },
 
     signUp: async ({ email, password, options }: { email: string; password: string; options?: { data?: { full_name?: string } } }) => {
+      await authReady;
       try {
         const credential = await createUserWithEmailAndPassword(auth, email, password);
         if (options?.data?.full_name) {
@@ -115,6 +121,7 @@ const supabase = {
     },
 
     signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
+      await authReady;
       try {
         const credential = await signInWithEmailAndPassword(auth, email, password);
         return { data: { user: credential.user }, error: null };
@@ -124,6 +131,7 @@ const supabase = {
     },
 
     signOut: async () => {
+      await authReady;
       await fbSignOut(auth);
     },
 

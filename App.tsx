@@ -1741,6 +1741,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
+    let subscription: { unsubscribe: () => void } | null = null;
 
     const timeoutId = setTimeout(() => {
       if (!cancelled) setIsAuthenticated(false);
@@ -1755,15 +1756,15 @@ const App: React.FC = () => {
       })
       .finally(() => clearTimeout(timeoutId));
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.onAuthStateChange((_event, session) => {
       if (!cancelled) setIsAuthenticated(!!session);
+    }).then(({ data: { subscription: sub } }) => {
+      subscription = sub;
     });
 
     return () => {
       cancelled = true;
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 
