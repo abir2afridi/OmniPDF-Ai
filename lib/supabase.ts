@@ -2,8 +2,7 @@ import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -56,12 +55,9 @@ const mapToSession = (user: User | null) => {
 const supabase = {
   auth: {
     getSession: async () => {
-      await authReady;
-      console.log('[Auth] getSession: waiting for onAuthStateChanged...');
       const user = await new Promise<User | null>((resolve) => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
           unsubscribe();
-          console.log('[Auth] onAuthStateChanged resolved with:', user ? 'user' : 'null');
           resolve(user);
         });
       });
@@ -69,7 +65,6 @@ const supabase = {
     },
 
     getUser: async () => {
-      await authReady;
       const user = await new Promise<User | null>((resolve) => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
           unsubscribe();
@@ -79,8 +74,7 @@ const supabase = {
       return { data: { user: mapFirebaseUser(user) } };
     },
 
-    onAuthStateChange: async (callback: (event: string, session: any) => void) => {
-      await authReady;
+    onAuthStateChange: (callback: (event: string, session: any) => void) => {
       const unsubscribe = onAuthStateChanged(auth, (user) => {
         if (user) {
           callback('SIGNED_IN', mapToSession(user));
@@ -91,26 +85,13 @@ const supabase = {
       return { data: { subscription: { unsubscribe } } };
     },
 
-    signInWithOAuth: async ({ provider: _provider, options: _options }: { provider: string; options?: { redirectTo?: string } }) => {
+    signInWithOAuth: async () => {
       await authReady;
       try {
         const googleProvider = new GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
-        await signInWithRedirect(auth, googleProvider);
-        return { error: null };
-      } catch (error: any) {
-        return { error };
-      }
-    },
-
-    getRedirectResult: async () => {
-      await authReady;
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          return { data: { user: result.user }, error: null };
-        }
-        return { data: null, error: null };
+        const result = await signInWithPopup(auth, googleProvider);
+        return { data: { user: result.user }, error: null };
       } catch (error: any) {
         return { error };
       }

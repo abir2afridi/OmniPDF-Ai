@@ -195,7 +195,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
         if (!cancelled) setUser(null);
       });
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!cancelled) {
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
           setUser(session?.user ?? null);
@@ -203,9 +203,8 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
           setUser(null);
         }
       }
-    }).then(({ data: authListener }) => {
-      subscription = authListener.subscription;
     });
+    subscription = authListener.subscription;
 
     return () => {
       cancelled = true;
