@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useContext } from 'react';
 import {
     Bot, Wand2, Languages, Mic, FileText, Play, Loader2,
     Send, Copy, Volume2, RefreshCw, ArrowRight, Check, Sparkles, BrainCircuit, Zap, Globe2, Ear,
-    ChevronDown, Settings
+
 } from 'lucide-react';
 import { chatWithAI, translateText, generateRefinedFilename, generateAudioOverview, chatWithPDF } from '../services/aiService';
 import { AppContext } from '../App';
@@ -363,37 +363,6 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                         <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-gray-400">
                             <Zap className="w-3 h-3" />
                             <span>Using: {currentModel}</span>
-                        </div>
-
-                        {/* Mode and Model Selector */}
-                        <div className="flex items-center gap-2">
-                            {/* Auto/Manual Mode Toggle */}
-                            <button
-                                onClick={() => setIsAutoMode(!isAutoMode)}
-                                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${
-                                    isAutoMode 
-                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
-                                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                                }`}
-                                title={`Currently in ${isAutoMode ? 'Auto' : 'Manual'} mode. Click to switch.`}
-                            >
-                                {isAutoMode ? '🤖 Auto' : '🎛️ Manual'}
-                            </button>
-
-                            {/* Model Selector (only show in manual mode) */}
-                            {!isAutoMode && (
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setSelectedModel(selectedModel === 'glm' ? 'stepfun' : 'glm')}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-100/50 dark:bg-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-all"
-                                        title={`Switch to ${selectedModel === 'glm' ? 'StepFun (Reasoning)' : 'GLM (Fast)'}`}
-                                    >
-                                        <Settings className="w-3 h-3" />
-                                        <span>{selectedModel === 'glm' ? 'GLM' : 'StepFun'}</span>
-                                        <ChevronDown className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </header>

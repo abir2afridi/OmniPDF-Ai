@@ -6,6 +6,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   const isDevelopment = mode === 'development';
 
+  const openrouterApiKey = env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY || '';
+
   return {
     server: {
       port: 3000,
@@ -15,8 +17,8 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.OPENROUTER_API_KEY': JSON.stringify(env.OPENROUTER_API_KEY),
-      'import.meta.env.OPENROUTER_API_KEY': JSON.stringify(env.OPENROUTER_API_KEY),
+      'process.env.OPENROUTER_API_KEY': JSON.stringify(openrouterApiKey),
+      'import.meta.env.OPENROUTER_API_KEY': JSON.stringify(openrouterApiKey),
       // Environment-specific URLs
       'import.meta.env.VITE_APP_ENV': JSON.stringify(env.VITE_APP_ENV || (isDevelopment ? 'development' : 'production')),
       'import.meta.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL || ''),
