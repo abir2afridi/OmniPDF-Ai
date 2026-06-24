@@ -10,6 +10,8 @@ import {
   signOut as fbSignOut,
   sendPasswordResetEmail,
   updateProfile,
+  setPersistence,
+  browserLocalPersistence,
   User,
 } from 'firebase/auth';
 
@@ -25,6 +27,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence);
 
 const mapFirebaseUser = (user: User | null) => {
   if (!user) return null;
@@ -46,11 +49,23 @@ const mapToSession = (user: User | null) => {
 const supabase = {
   auth: {
     getSession: async () => {
-      return { data: { session: mapToSession(auth.currentUser) } };
+      const user = await new Promise<User | null>((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          unsubscribe();
+          resolve(user);
+        });
+      });
+      return { data: { session: mapToSession(user) } };
     },
 
     getUser: async () => {
-      return { data: { user: mapFirebaseUser(auth.currentUser) } };
+      const user = await new Promise<User | null>((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          unsubscribe();
+          resolve(user);
+        });
+      });
+      return { data: { user: mapFirebaseUser(user) } };
     },
 
     onAuthStateChange: (callback: (event: string, session: any) => void) => {
