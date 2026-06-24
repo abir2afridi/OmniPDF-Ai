@@ -1,9 +1,3 @@
-import { OpenRouter } from '@openrouter/sdk'
-
-const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
-
-const openrouter = new OpenRouter({ apiKey });
-
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -53,9 +47,33 @@ function setCache(key: string, response: string) {
   }
 }
 
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
+const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
+
 async function sendChat(messages: ChatMessage[], opts: ChatRequest & { stream?: boolean } = {}) {
   const { model = 'openrouter/free', max_tokens = 800, temperature = 0.7, stream = false } = opts;
-  return openrouter.chat.send({ model, messages, max_tokens, temperature, stream });
+
+  const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'HTTP-Referer': window.location.origin,
+      'X-Title': 'OmniPDF AI',
+    },
+    body: JSON.stringify({ model, messages, max_tokens, temperature, stream }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`OpenRouter ${res.status}: ${text || res.statusText}`);
+  }
+
+  if (stream) {
+    return res.body;
+  }
+
+  return res.json();
 }
 
 export const chatWithAIStreaming = async (
@@ -74,15 +92,35 @@ export const chatWithAIStreaming = async (
   }
 
   try {
-    const stream = await sendChat(messages, { model, max_tokens, stream: true }) as any;
+    const streamRes = await sendChat(messages, { model, max_tokens, stream: true }) as ReadableStream<Uint8Array>;
+    const reader = streamRes.getReader();
+    const decoder = new TextDecoder();
     let fullResponse = '';
-    for await (const chunk of stream) {
-      const content = chunk.choices?.[0]?.delta?.content;
-      if (content) {
-        fullResponse += content;
-        onChunk?.(content);
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') break;
+        try {
+          const parsed = JSON.parse(data);
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) {
+            fullResponse += content;
+            onChunk?.(content);
+          }
+        } catch { }
       }
     }
+
     if (cacheKey) setCache(cacheKey, fullResponse);
     return { message: fullResponse || 'No response' };
   } catch (error) {
