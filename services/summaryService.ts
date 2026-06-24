@@ -34,7 +34,7 @@ if (GlobalWorkerOptions) {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const OPENROUTER_API_KEY = import.meta.env.OPENROUTER_API_KEY;
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // Fallback models in order of preference (free tier models with different rate limits)
