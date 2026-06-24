@@ -2,7 +2,8 @@ import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -67,12 +68,21 @@ const supabase = {
       try {
         const googleProvider = new GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
-        await signInWithPopup(auth, googleProvider);
+        await signInWithRedirect(auth, googleProvider);
         return { error: null };
       } catch (error: any) {
-        if (error.code === 'auth/popup-closed-by-user') {
-          return { error: null };
+        return { error };
+      }
+    },
+
+    getRedirectResult: async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          return { data: { user: result.user }, error: null };
         }
+        return { data: null, error: null };
+      } catch (error: any) {
         return { error };
       }
     },
