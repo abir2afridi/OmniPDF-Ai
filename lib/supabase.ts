@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
+  setPersistence,
+  browserLocalPersistence,
   onAuthStateChanged,
   signInWithRedirect,
   getRedirectResult,
@@ -25,6 +27,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+
+setPersistence(auth, browserLocalPersistence).catch(() => {});
 
 const mapFirebaseUser = (user: User | null) => {
   if (!user) return null;
