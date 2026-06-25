@@ -20,7 +20,7 @@ import { History } from './components/History';
 import { Login } from './components/Login';
 import { AppView, PDFTool, ToolCategory, UploadedFile } from './types';
 import { processFiles } from './services/pdfService';
-import { supabase, authReady } from './lib/supabase';
+import { supabase } from './lib/supabase';
 import { MergePDF } from './components/MergePDF';
 import { SplitPDF } from './components/SplitPDF';
 import { DeletePages } from './components/DeletePages';
@@ -1747,30 +1747,21 @@ const App: React.FC = () => {
       if (!cancelled) setIsAuthenticated(false);
     }, 8000);
 
-    (async () => {
-      await authReady;
-      if (cancelled) return;
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (!cancelled) setIsAuthenticated(!!session);
+      })
+      .catch(() => {
+        if (!cancelled) setIsAuthenticated(false);
+      })
+      .finally(() => clearTimeout(timeoutId));
 
-      const redirectResult = await supabase.auth.getRedirectResult();
-      if (!cancelled) {
-        setIsAuthenticated(!!redirectResult?.data?.user);
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!cancelled) {
-        setIsAuthenticated(!!session);
-        clearTimeout(timeoutId);
-      }
-
-      if (!cancelled) {
-        const {
-          data: { subscription: sub },
-        } = await supabase.auth.onAuthStateChange((_event, session) => {
-          if (!cancelled) setIsAuthenticated(!!session);
-        });
-        subscription = sub;
-      }
-    })();
+    const {
+      data: { subscription: sub },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!cancelled) setIsAuthenticated(!!session);
+    });
+    subscription = sub;
 
     return () => {
       cancelled = true;

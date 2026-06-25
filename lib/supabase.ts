@@ -10,8 +10,6 @@ import {
   signOut as fbSignOut,
   sendPasswordResetEmail,
   updateProfile,
-  setPersistence,
-  browserLocalPersistence,
   User,
 } from 'firebase/auth';
 
@@ -26,17 +24,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-
-const authReady = (async () => {
-  const auth = getAuth(app);
-  try {
-    await setPersistence(auth, browserLocalPersistence);
-    console.log('[Auth] Persistence set to browserLocalPersistence');
-  } catch (err) {
-    console.warn('[Auth] Failed to set persistence, using default:', err);
-  }
-  return auth;
-})();
+const auth = getAuth(app);
 
 const mapFirebaseUser = (user: User | null) => {
   if (!user) return null;
@@ -58,7 +46,6 @@ const mapToSession = (user: User | null) => {
 const supabase = {
   auth: {
     getSession: async () => {
-      const auth = await authReady;
       const user = await new Promise<User | null>((resolve) => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
           unsubscribe();
@@ -69,7 +56,6 @@ const supabase = {
     },
 
     getUser: async () => {
-      const auth = await authReady;
       const user = await new Promise<User | null>((resolve) => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
           unsubscribe();
@@ -79,8 +65,7 @@ const supabase = {
       return { data: { user: mapFirebaseUser(user) } };
     },
 
-    onAuthStateChange: async (callback: (event: string, session: any) => void) => {
-      const auth = await authReady;
+    onAuthStateChange: (callback: (event: string, session: any) => void) => {
       const unsubscribe = onAuthStateChanged(auth, (user) => {
         if (user) {
           callback('SIGNED_IN', mapToSession(user));
@@ -92,7 +77,6 @@ const supabase = {
     },
 
     signInWithOAuth: async () => {
-      const auth = await authReady;
       try {
         const googleProvider = new GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
@@ -104,7 +88,6 @@ const supabase = {
     },
 
     getRedirectResult: async () => {
-      const auth = await authReady;
       try {
         const result = await getRedirectResult(auth);
         if (result) {
@@ -117,7 +100,6 @@ const supabase = {
     },
 
     signUp: async ({ email, password, options }: { email: string; password: string; options?: { data?: { full_name?: string } } }) => {
-      const auth = await authReady;
       try {
         const credential = await createUserWithEmailAndPassword(auth, email, password);
         if (options?.data?.full_name) {
@@ -130,7 +112,6 @@ const supabase = {
     },
 
     signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
-      const auth = await authReady;
       try {
         const credential = await signInWithEmailAndPassword(auth, email, password);
         return { data: { user: credential.user }, error: null };
@@ -140,16 +121,14 @@ const supabase = {
     },
 
     signOut: async () => {
-      const auth = await authReady;
       await fbSignOut(auth);
     },
 
     resetPasswordForEmail: async (email: string) => {
-      const auth = await authReady;
       await sendPasswordResetEmail(auth, email);
       return { data: {}, error: null };
     },
   },
 };
 
-export { supabase, authReady };
+export { supabase };
