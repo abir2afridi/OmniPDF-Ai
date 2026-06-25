@@ -1,5 +1,3 @@
-declare const google: any;
-
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
@@ -144,75 +142,6 @@ const supabase = {
 
     clearRedirectError: () => {
       sessionStorage.removeItem('omni_google_auth_error');
-    },
-
-    getGSIClientId: () => {
-      return import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-    },
-
-    loadGSIScript: async () => {
-      if (document.getElementById('gsi-script')) return;
-      if (typeof google !== 'undefined' && google.accounts?.oauth2) return;
-      await new Promise<void>((resolve, reject) => {
-        const script = document.createElement('script');
-        script.id = 'gsi-script';
-        script.src = 'https://accounts.google.com/gsi/client';
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load Google Identity Services script'));
-        document.head.appendChild(script);
-      });
-      await new Promise<void>((resolve) => {
-        const check = () => {
-          if (typeof google !== 'undefined' && google.accounts?.oauth2) resolve();
-          else setTimeout(check, 50);
-        };
-        check();
-      });
-    },
-
-    signInWithGoogleGSI: async () => {
-      const gsiClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      if (!gsiClientId) {
-        return { data: null, error: new Error('VITE_GOOGLE_CLIENT_ID not set') };
-      }
-      try {
-        await supabase.auth.loadGSIScript();
-      } catch (e: any) {
-        return { data: null, error: e };
-      }
-      const GSITIMEOUT = 12000;
-      return new Promise((resolve) => {
-        const timeout = setTimeout(() => {
-          google.accounts.id.cancel?.();
-          resolve({ data: null, error: new Error('GSI One Tap timed out (no user interaction)') });
-        }, GSITIMEOUT);
-        try {
-          google.accounts.id.initialize({
-            client_id: gsiClientId,
-            cancel_on_tap_outside: false,
-            callback: async (response: any) => {
-              clearTimeout(timeout);
-              if (!response.credential) {
-                resolve({ data: null, error: new Error('No credential from Google One Tap') });
-                return;
-              }
-              try {
-                const credential = GoogleAuthProvider.credential(response.credential);
-                const result = await signInWithCredential(auth, credential);
-                resolve({ data: { session: mapToSession(result.user) }, error: null });
-              } catch (err: any) {
-                console.error('[Auth] GSI credential exchange error:', err);
-                resolve({ data: null, error: err });
-              }
-            },
-          });
-          google.accounts.id.prompt();
-        } catch (err: any) {
-          clearTimeout(timeout);
-          console.error('[Auth] GSI One Tap error:', err);
-          resolve({ data: null, error: err });
-        }
-      });
     },
 
     signInWithGoogleIdToken: async (idToken: string) => {

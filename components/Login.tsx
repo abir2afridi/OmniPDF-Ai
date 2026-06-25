@@ -39,17 +39,14 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
         setAuthError(null);
         setGoogleLoading(true);
         try {
-            const { error: gsiError } = await supabase.auth.signInWithGoogleGSI();
-            if (!gsiError) return;
-            console.warn('[Login] GSI failed, trying Firebase popup:', gsiError);
-            const { error: popupError } = await supabase.auth.signInWithGooglePopup();
-            if (!popupError) return;
-            if (popupError.code === 'auth/popup-blocked' || popupError.code === 'auth/cancelled-popup-request') {
+            const { error } = await supabase.auth.signInWithGooglePopup();
+            if (!error) return;
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
                 console.warn('[Login] Popup blocked, trying redirect...');
                 supabase.auth.signInWithGoogleRedirect();
             } else {
-                console.error('[Login] Google login error:', popupError);
-                setAuthError(getNetworkErrorMessage(popupError));
+                console.error('[Login] Google login error:', error);
+                setAuthError(getNetworkErrorMessage(error));
             }
         } catch (error: any) {
             console.warn('[Login] Google login failed, trying redirect...', error);
