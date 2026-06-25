@@ -40,11 +40,14 @@
  */
 
 import { PDFDocument as CantooDoc } from '@cantoo/pdf-lib';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
 }
 
 // ── Public types ───────────────────────────────────────────────────────────────
@@ -374,7 +377,8 @@ export async function unlockPdf(
     // Step 1: Try to open the encrypted PDF with pdfjs using the provided password
     let pdfJs: any;
     try {
-        pdfJs = await getDocument({ data: bytes.slice(), password: opts.password }).promise;
+        const pdfjsLib = await loadPdfjs();
+        pdfJs = await pdfjsLib.getDocument({ data: bytes.slice(), password: opts.password }).promise;
         clearAttempts(fileKey);
     } catch (e: any) {
         const msg = (e?.message ?? '').toLowerCase();

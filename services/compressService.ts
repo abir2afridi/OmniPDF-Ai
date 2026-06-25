@@ -26,11 +26,14 @@
  */
 
 import { PDFDocument, PDFName, PDFDict, PDFStream, PDFRawStream, decodePDFRawStream } from 'pdf-lib';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -143,7 +146,8 @@ class ImageResampleAdapter implements CompressionAdapter {
 
         // Load via pdf-lib for structure manipulation
         const doc = await PDFDocument.load(src, { ignoreEncryption: true });
-        const pdfJs = await getDocument({ data: src }).promise;
+        const pdfjsLib = await loadPdfjs();
+        const pdfJs = await pdfjsLib.getDocument({ data: src }).promise;
 
         opts.onProgress?.(10);
 

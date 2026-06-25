@@ -3,7 +3,14 @@
  * AI-powered PDF translation engine
  */
 
-import * as pdfjs from 'pdfjs-dist';
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
+}
 import { PDFDocument, StandardFonts, rgb } from '@cantoo/pdf-lib';
 import Tesseract from 'tesseract.js';
 

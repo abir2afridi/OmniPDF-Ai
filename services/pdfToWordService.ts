@@ -23,7 +23,7 @@
 import { type PDFDocumentProxy } from 'pdfjs-dist';
 import {
     Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak,
-    AlignmentType, LineRuleType,
+    AlignmentType, LineRuleType, ImageRun,
 } from 'docx';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -139,6 +139,26 @@ async function extractPageItems(
     }
 
     return items;
+}
+
+/** Render a PDF page to a JPEG data-URL via canvas */
+async function renderPageAsImage(
+    pdfDoc: PDFDocumentProxy,
+    pageIndex: number,
+    scale: number = 2,
+): Promise<string | null> {
+    try {
+        const page = await pdfDoc.getPage(pageIndex + 1);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(viewport.width);
+        canvas.height = Math.round(viewport.height);
+        const ctx = canvas.getContext('2d')!;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        return canvas.toDataURL('image/jpeg', 0.85);
+    } catch {
+        return null;
+    }
 }
 
 // ── Line grouping ──────────────────────────────────────────────────────────────
@@ -306,11 +326,53 @@ export async function convertPdfToWord(
         const lines = groupIntoLines(items);
         const bodySize = estimateBodyFontSize(lines);
 
-        for (const line of lines) {
-            const kind = classifyLine(line, bodySize);
-            if (kind === 'blank') continue;
-            allPageParagraphs.push(lineToParagraph(line, kind, bodySize));
-            wordCount += line.text.split(/\s+/).length;
+        if (lines.length === 0) {
+            // No extractable text — render page as image fallback
+            try {
+                const imgDataUrl = await renderPageAsImage(pdfDoc, pageIdx, 2);
+                if (imgDataUrl) {
+                    const base64 = imgDataUrl.split(',')[1];
+                    const imgBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+                    allPageParagraphs.push(
+                        new Paragraph({
+                            children: [
+                                new ImageRun({
+                                    data: imgBytes,
+                                    transformation: { width: 480, height: 640 },
+                                    type: 'jpg',
+                                }),
+                            ],
+                            alignment: AlignmentType.CENTER,
+                            spacing: { after: 100 },
+                        })
+                    );
+                } else {
+                    allPageParagraphs.push(
+                        new Paragraph({
+                            children: [new TextRun({
+                                text: `[Page ${pageIdx + 1} — no extractable text (scanned/image PDF)]`,
+                                italics: true, color: '999999',
+                            })],
+                        })
+                    );
+                }
+            } catch {
+                allPageParagraphs.push(
+                    new Paragraph({
+                        children: [new TextRun({
+                            text: `[Page ${pageIdx + 1} — could not render]`,
+                            italics: true, color: 'FF0000',
+                        })],
+                    })
+                );
+            }
+        } else {
+            for (const line of lines) {
+                const kind = classifyLine(line, bodySize);
+                if (kind === 'blank') continue;
+                allPageParagraphs.push(lineToParagraph(line, kind, bodySize));
+                wordCount += line.text.split(/\s+/).length;
+            }
         }
 
         // Page break between pages (not after the last one)

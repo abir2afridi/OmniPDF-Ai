@@ -28,11 +28,14 @@ import {
 } from '../services/pdfToPptService';
 import { downloadBlob } from '../services/pdfService';
 import JSZip from 'jszip';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -68,8 +71,9 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const ACCEPT = '.pdf,application/pdf';
 
 async function generateThumb(file: File): Promise<{ thumb: string; totalPages: number }> {
+    const pdfjsLib = await loadPdfjs();
     const buf = await file.arrayBuffer();
-    const pdf = await getDocument({ data: buf }).promise;
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
     const page = await pdf.getPage(1);
     const vp = page.getViewport({ scale: 0.4 });
     const canvas = document.createElement('canvas');

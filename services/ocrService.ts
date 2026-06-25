@@ -47,17 +47,18 @@
  *   - aiService.ts (OpenRouter - existing)
  */
 
-import {
-    getDocument, GlobalWorkerOptions,
-    type PDFDocumentProxy, type PDFPageProxy,
-} from 'pdfjs-dist';
+import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 import { createWorker } from 'tesseract.js';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { chatWithAI } from './aiService';
 
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -375,7 +376,8 @@ export async function runOcr(
     const buf = await file.arrayBuffer();
     let pdf: PDFDocumentProxy;
     try {
-        pdf = await getDocument({ data: buf }).promise;
+        const pdfjsLib = await loadPdfjs();
+        pdf = await pdfjsLib.getDocument({ data: buf }).promise;
     } catch {
         throw new Error(`"${file.name}" could not be opened — it may be corrupted or encrypted.`);
     }

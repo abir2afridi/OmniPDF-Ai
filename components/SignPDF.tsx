@@ -20,7 +20,6 @@ import {
     Pen, Image, Type, Lock, Calendar, AlignLeft, BadgeCheck,
     XCircle, FileWarning,
 } from 'lucide-react';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import {
     visualSignPdf, digitalSignPdf, verifyPdfSignature, parseP12,
     generateTypedSignatureDataUrl, validateSignFile, fmtSize,
@@ -30,9 +29,13 @@ import {
 } from '../services/signService';
 import { downloadBlob } from '../services/pdfService';
 
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -134,8 +137,9 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
         setOutputName(file.name.replace(/\.pdf$/i, ''));
         setSigPos({ x: 40, y: 40 }); setSigSize({ w: 200, h: 80 });
         try {
+            const pdfjsLib = await loadPdfjs();
             const buf = await file.arrayBuffer();
-            const doc = await getDocument({ data: buf }).promise;
+            const doc = await pdfjsLib.getDocument({ data: buf }).promise;
             setPdfObj(doc);
             setTotalPages(doc.numPages);
             setCurPage(1);

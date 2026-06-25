@@ -12,11 +12,13 @@
  * No vector DB needed — BM25 runs entirely client-side.
  */
 
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-
-if (GlobalWorkerOptions && !GlobalWorkerOptions.workerSrc) {
-    GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -109,8 +111,9 @@ export async function extractPageTexts(
     file: File,
     onProgress?: (pct: number, stage: string) => void,
 ): Promise<{ pages: PageText[]; method: 'text' | 'ocr' }> {
+    const pdfjsLib = await loadPdfjs();
     const bytes = await file.arrayBuffer();
-    const pdfDoc = await getDocument({ data: bytes }).promise;
+    const pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
     const total = pdfDoc.numPages;
     const pages: PageText[] = [];
     let offset = 0;

@@ -13,7 +13,6 @@ import {
     MousePointer2, Minus, Strikethrough, Underline, Trash2, RotateCw,
     Copy, Layers, Droplets, FileText, Sparkles, Settings2, Eye,
 } from 'lucide-react';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import {
     type EditAnnotation, type EditSession, type EditTool, type ShapeType,
     type WatermarkConfig,
@@ -24,10 +23,6 @@ import {
     getAiTextSuggestion, sanitizeText, uid, fmtSize,
     cleanupTempBlobs,
 } from '../services/editPdfService';
-
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-}
 
 interface Props { onBack?: () => void; }
 interface Toast { id: string; type: 'success' | 'error' | 'info' | 'warn'; msg: string; }

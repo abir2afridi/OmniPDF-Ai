@@ -16,12 +16,13 @@
  *  - Worker configured globally by pdfService.ts via GlobalWorkerOptions.workerSrc
  */
 
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-
-// Ensure worker is set (pdfService.ts may already have done this, but be safe)
-if (typeof GlobalWorkerOptions !== 'undefined' && !GlobalWorkerOptions.workerSrc) {
-    GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -153,8 +154,9 @@ export async function getPdfPageMeta(
     onProgress?: (p: number) => void
 ): Promise<PdfPageMeta[]> {
     validateFile(file);
+    const pdfjsLib = await loadPdfjs();
     const bytes = await file.arrayBuffer();
-    const pdfDoc = await getDocument({ data: new Uint8Array(bytes) }).promise;
+    const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(bytes) }).promise;
     const total = pdfDoc.numPages;
     const metas: PdfPageMeta[] = [];
 
@@ -204,8 +206,9 @@ export async function convertPdfToImages(
     // Load via pdfjs
     let pdfDoc: any;
     try {
+        const pdfjsLib = await loadPdfjs();
         const bytes = await file.arrayBuffer();
-        pdfDoc = await getDocument({ data: new Uint8Array(bytes) }).promise;
+        pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(bytes) }).promise;
     } catch (err: any) {
         throw new Error(`Cannot open "${file.name}": ${err?.message ?? 'file may be corrupted or encrypted.'}`);
     }

@@ -25,11 +25,13 @@
  * Dependencies: pdfjs-dist, tesseract.js, mammoth (DOCX), openrouter
  */
 
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -138,8 +140,9 @@ export async function extractPdfText(
     file: File,
     onProgress?: (p: number) => void,
 ): Promise<{ text: string; pageCount: number; method: 'text' | 'ocr' }> {
+    const pdfjsLib = await loadPdfjs();
     const bytes = await file.arrayBuffer();
-    const pdfDoc = await getDocument({ data: bytes }).promise;
+    const pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
     const total = pdfDoc.numPages;
     let full = '';
 

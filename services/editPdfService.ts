@@ -24,14 +24,15 @@
  */
 
 import { PDFDocument, rgb, StandardFonts, degrees, PDFPage, PDFFont } from 'pdf-lib';
-import {
-    getDocument, GlobalWorkerOptions,
-    type PDFDocumentProxy,
-} from 'pdfjs-dist';
+import type { PDFDocumentProxy } from 'pdfjs-dist';
 
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -191,9 +192,10 @@ export const loadPdfForEdit = async (file: File): Promise<{
     pdfBytes: Uint8Array;
     pageCount: number;
 }> => {
+    const pdfjsLib = await loadPdfjs();
     const buf = await file.arrayBuffer();
     const pdfBytes = new Uint8Array(buf);
-    const pdfDoc = await getDocument({ data: pdfBytes.slice() }).promise;
+    const pdfDoc = await pdfjsLib.getDocument({ data: pdfBytes.slice() }).promise;
     return { pdfDoc, pdfBytes, pageCount: pdfDoc.numPages };
 };
 

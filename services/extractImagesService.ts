@@ -25,11 +25,13 @@
  *   - pdfjs-dist
  */
 
-import { getDocument, GlobalWorkerOptions, type PDFDocumentProxy, type PDFPageProxy } from 'pdfjs-dist';
-
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -256,7 +258,8 @@ export async function extractImagesFromPdf(
 
     let pdf: PDFDocumentProxy;
     try {
-        pdf = await getDocument({ data: await file.arrayBuffer() }).promise;
+        const pdfjsLib = await loadPdfjs();
+        pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
     } catch {
         throw new Error(`"${file.name}" could not be opened — it may be corrupted or encrypted.`);
     }

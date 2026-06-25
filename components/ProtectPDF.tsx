@@ -27,8 +27,15 @@ import {
 } from '../services/protectService';
 import { downloadBlob } from '../services/pdfService';
 import JSZip from 'jszip';
-import { getDocument } from 'pdfjs-dist';
-// Worker is already configured in protectService.ts (imported above)
+
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -56,8 +63,9 @@ const ACCEPT = '.pdf,application/pdf';
 
 async function generateThumb(file: File): Promise<string> {
     try {
+        const pdfjsLib = await loadPdfjs();
         const buf = await file.arrayBuffer();
-        const pdf = await getDocument({ data: buf, password: '' }).promise;
+        const pdf = await pdfjsLib.getDocument({ data: buf, password: '' }).promise;
         const page = await pdf.getPage(1);
         const vp = page.getViewport({ scale: 0.3 });
         const c = document.createElement('canvas');

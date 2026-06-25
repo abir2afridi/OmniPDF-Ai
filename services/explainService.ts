@@ -4,10 +4,13 @@
  * Supported: PDF, DOCX, TXT
  */
 
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-
-if (GlobalWorkerOptions && !GlobalWorkerOptions.workerSrc) {
-    GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
 }
 
 const OPENROUTER_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
@@ -48,8 +51,9 @@ export async function extractDocumentText(file: File, onProgress?: (pct: number)
 }
 
 async function extractFromPDF(file: File, onProgress?: (pct: number) => void): Promise<DocumentInfo> {
+    const pdfjsLib = await loadPdfjs();
     const bytes = await file.arrayBuffer();
-    const pdf = await getDocument({ data: bytes }).promise;
+    const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
     const pages: { number: number; text: string }[] = [];
     let fullText = '';
 

@@ -6,18 +6,22 @@
 
 import { PDFDocument, PageSizes, StandardFonts, rgb, degrees } from 'pdf-lib';
 import JSZip from 'jszip';
-import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import { UploadedFile } from '../types';
 
-// Configure PDF.js v3 worker — CDN is the most reliable approach for Vite
-// because it avoids Vite trying to bundle the worker file itself.
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+/**
+ * Dynamic import helper for pdfjs-dist.
+ * We use dynamic imports (not static) because Vite bundles static pdfjs-dist
+ * imports, which breaks the worker setup. Dynamic imports create a fresh
+ * module instance that works correctly with the CDN worker.
+ */
+async function loadPdfjs() {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    return pdfjsLib;
 }
-
-// Re-export a pdfjs namespace shim so the rest of the file can call pdfjs.getDocument(...)
-const pdfjs = { getDocument, GlobalWorkerOptions };
 
 
 // HELPERS
@@ -103,8 +107,9 @@ export async function getFilePageCount(file: File): Promise<number> {
 // ──────────────────────────────────────────────
 export async function generatePDFThumbnail(file: File, maxWidth = 160): Promise<string> {
     try {
+        const pdfjsLib = await loadPdfjs();
         const bytes = await file.arrayBuffer();
-        const pdf = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(bytes) }).promise;
         const page = await pdf.getPage(1);
         const naturalVP = page.getViewport({ scale: 1 });
         const scale = maxWidth / naturalVP.width;
@@ -123,11 +128,7 @@ export async function generatePDFThumbnail(file: File, maxWidth = 160): Promise<
 export async function generatePDFPageThumbnails(file: File, pageNumbers: number[], maxWidth = 120): Promise<string[]> {
     const thumbnails: string[] = [];
     try {
-        const pdfjsLib = await import('pdfjs-dist');
-        if (pdfjsLib.GlobalWorkerOptions) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc =
-                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        }
+        const pdfjsLib = await loadPdfjs();
         const bytes = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(bytes) }).promise;
         for (const pageNum of pageNumbers) {
@@ -1003,8 +1004,9 @@ export async function pdfToImages(
 ): Promise<void> {
     if (!file.originalFile) throw new Error('No file provided');
 
+    const pdfjsLib = await loadPdfjs();
     const arrayBuffer = await readFileAsArrayBuffer(file.originalFile);
-    const pdfDocument = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+    const pdfDocument = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
     const numPages = pdfDocument.numPages;
     const scale = dpi / 72;
     const zip = new JSZip();
@@ -1046,8 +1048,9 @@ export async function extractTextFromPDF(
 ): Promise<string> {
     if (!file.originalFile) throw new Error('No file provided');
 
+    const pdfjsLib = await loadPdfjs();
     const arrayBuffer = await readFileAsArrayBuffer(file.originalFile);
-    const pdfDocument = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+    const pdfDocument = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
     const numPages = pdfDocument.numPages;
     let fullText = '';
 
