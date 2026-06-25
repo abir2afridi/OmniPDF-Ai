@@ -4,8 +4,7 @@ import {
   setPersistence,
   browserLocalPersistence,
   onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -84,7 +83,7 @@ const supabase = {
       try {
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
-        await signInWithRedirect(auth, provider);
+        await signInWithPopup(auth, provider);
         return { error: null };
       } catch (error: any) {
         return { error };
@@ -92,15 +91,7 @@ const supabase = {
     },
 
     handleRedirect: async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          return { data: { user: result.user }, error: null };
-        }
-        return { data: null, error: null };
-      } catch (error: any) {
-        return { data: null, error };
-      }
+      return { data: null, error: null };
     },
 
     signUp: async ({ email, password, options }: { email: string; password: string; options?: { data?: { full_name?: string } } }) => {

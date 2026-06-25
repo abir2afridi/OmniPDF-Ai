@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, useContext, createContext, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useContext, createContext } from 'react';
 import {
   Files, Scissors, ArrowRightLeft, FileText, Image,
   Lock, Wand2, PenTool, Search, Type, Grid, Shield,
@@ -1735,7 +1735,6 @@ const App: React.FC = () => {
   const [language, setLanguage] = useState('en');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const authSubRef = useRef<{ unsubscribe: () => void } | null>(null);
 
   // State to bridge RightDock buttons with Workspace actions
   const [editAction, setEditAction] = useState<{ type: 'undo' | 'redo' | 'delete' | null, timestamp: number }>({ type: null, timestamp: 0 });
@@ -1743,22 +1742,15 @@ const App: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
 
-    const init = async () => {
-      await supabase.auth.handleRedirect();
-
-      if (!cancelled) {
-        const { data: { subscription: sub } } = supabase.auth.onAuthStateChange((_event, session) => {
-          if (!cancelled) setIsAuthenticated(!!session);
-        });
-        authSubRef.current = sub;
-      }
-    };
-
-    init();
+    const {
+      data: { subscription: sub },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!cancelled) setIsAuthenticated(!!session);
+    });
 
     return () => {
       cancelled = true;
-      authSubRef.current?.unsubscribe();
+      sub.unsubscribe();
     };
   }, []);
 

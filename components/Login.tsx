@@ -13,10 +13,6 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
 
-    useEffect(() => {
-        supabase.auth.handleRedirect();
-    }, []);
-
     const getNetworkErrorMessage = (error: any): string => {
         if (!navigator.onLine) return 'You are offline. Please check your internet connection.';
         if (error?.message?.includes('Failed to fetch') || error?.message?.includes('NetworkError')) {
