@@ -39,7 +39,7 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // Fallback models in order of preference (free tier models with different rate limits)
 const FALLBACK_MODELS = [
-    'z-ai/glm-4.5-air:free',           // Primary - good performance
+    'openrouter/free',           // Primary - good performance
     'stepfun/step-3.5-flash:free',     // Secondary - reasoning support  
     'meta-llama/llama-3.2-1b-instruct:free', // Fast - for simple tasks
     'google/gemma-2-9b-it:free',       // Alternative

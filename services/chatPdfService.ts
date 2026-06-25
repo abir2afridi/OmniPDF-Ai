@@ -23,7 +23,7 @@ if (GlobalWorkerOptions && !GlobalWorkerOptions.workerSrc) {
 
 const OPENROUTER_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const CHAT_MODEL = 'z-ai/glm-4.5-air:free';
+const CHAT_MODEL = 'openrouter/free';
 const MAX_FILE_MB = 50;
 const CHUNK_SIZE = 1500;
 const CHUNK_OVERLAP = 200;

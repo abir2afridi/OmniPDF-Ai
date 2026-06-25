@@ -287,7 +287,7 @@ export const AISummary: React.FC = () => {
                         <div className="flex gap-2">
                             {[
                                 { id: 'auto', label: '🤖 Auto Select', desc: currentModelInUse === 'auto' ? 'Auto (Using GLM-4.5)' : 'Auto (Choosing best model)' },
-                                { id: 'z-ai/glm-4.5-air:free', label: 'GLM-4.5 Air', desc: currentModelInUse === 'z-ai/glm-4.5-air:free' ? 'GLM-4.5 (In Use)' : 'Primary - Good performance' },
+                                { id: 'openrouter/free', label: 'GLM-4.5 Air', desc: currentModelInUse === 'openrouter/free' ? 'GLM-4.5 (In Use)' : 'Primary - Good performance' },
                                 { id: 'stepfun/step-3.5-flash:free', label: 'Step-3.5 Flash', desc: currentModelInUse === 'stepfun/step-3.5-flash:free' ? 'Step-3.5 (In Use)' : 'Secondary - Reasoning support' }
                             ].map(model => (
                                 <button key={model.id} onClick={() => setSelectedModel(model.id)}

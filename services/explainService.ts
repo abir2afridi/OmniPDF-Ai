@@ -11,7 +11,7 @@ if (GlobalWorkerOptions && !GlobalWorkerOptions.workerSrc) {
 }
 
 const OPENROUTER_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
-const DEFAULT_MODEL = 'z-ai/glm-4.5-air:free';
+const DEFAULT_MODEL = 'openrouter/free';
 
 export type ExplanationMode = 'simple' | 'student' | 'professional';
 

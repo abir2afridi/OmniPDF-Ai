@@ -692,7 +692,7 @@ export const getAiTextSuggestion = async (
         const { chatWithAI } = await import('./aiService');
         const response = await chatWithAI(
             [{ role: 'user', content: `${instruction}:\n\n"${contextText}"\n\nReturn ONLY the improved text, nothing else.` }],
-            'z-ai/glm-4.5-air:free',
+            'openrouter/free',
             500,
             0.3
         );
@@ -713,7 +713,7 @@ export const getAiFormatSuggestion = async (
                 role: 'user',
                 content: `Analyze this text and suggest formatting. Return ONLY a JSON object with keys: fontSize (number 8-72), fontWeight ("normal" or "bold"), color (hex string). Text: "${text}"`
             }],
-            'z-ai/glm-4.5-air:free',
+            'openrouter/free',
             200,
             0.2
         );

@@ -28,7 +28,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, model = 'z-ai/glm-4.5-air:free', max_tokens = 800, temperature = 0.7, reasoning = { enabled: true } }: ChatRequest = await req.json()
+    const { messages, model = 'openrouter/free', max_tokens = 800, temperature = 0.7, reasoning = { enabled: true } }: ChatRequest = await req.json()
 
     console.log('🚀 Edge Function: Starting AI chat request with model:', model)
 
@@ -64,12 +64,12 @@ Always be helpful, professional, and mention that you're part of OmniPDF AI suit
     const allMessages = [systemMessage, ...messages]
     console.log('📝 Edge Function: Messages prepared:', allMessages.length)
 
-    // Try primary model first (z-ai/glm-4.5-air:free)
+    // Try primary model first (openrouter/free)
     let selectedModel = model;
     let enableReasoning = reasoning.enabled;
 
     // If model is not specified and we have conversation history, prefer stepfun for reasoning
-    if (model === 'z-ai/glm-4.5-air:free' && messages.length > 1) {
+    if (model === 'openrouter/free' && messages.length > 1) {
       selectedModel = 'stepfun/step-3.5-flash:free';
       console.log('🎯 Using stepfun model for conversation continuity with reasoning');
     }
@@ -96,7 +96,7 @@ Always be helpful, professional, and mention that you're part of OmniPDF AI suit
 
     if (!response.ok) {
       // If primary model fails, try the other confirmed working model
-      if (selectedModel === 'z-ai/glm-4.5-air:free') {
+      if (selectedModel === 'openrouter/free') {
         console.log('🔄 Primary model failed, trying stepfun model...');
         const fallbackResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',

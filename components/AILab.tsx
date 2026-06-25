@@ -31,7 +31,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
     const [isAutoMode, setIsAutoMode] = useState<boolean>(true); // Default to auto mode
 
     const modelOptions = [
-        { id: 'glm' as const, name: 'GLM (Fast)', fullName: 'z-ai/glm-4.5-air:free', description: 'Fast responses, general purpose' },
+        { id: 'glm' as const, name: 'GLM (Fast)', fullName: 'openrouter/free', description: 'Fast responses, general purpose' },
         { id: 'stepfun' as const, name: 'StepFun (Reasoning)', fullName: 'stepfun/step-3.5-flash:free', description: 'Advanced reasoning, conversation continuity' }
     ];
 
@@ -42,13 +42,13 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
 
         // For translation tasks, use GLM for speed
         if (taskType === 'translate') {
-            return 'z-ai/glm-4.5-air:free';
+            return 'openrouter/free';
         }
 
         // For simple greetings or basic questions, use fast model
         const simpleQueries = ['hello', 'hi', 'help', 'what can you do', 'how are you'];
         if (simpleQueries.some(query => lastMessage.includes(query))) {
-            return 'z-ai/glm-4.5-air:free';
+            return 'openrouter/free';
         }
 
         // For ongoing conversations (more than 3 exchanges), use reasoning model
@@ -69,7 +69,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
         }
 
         // Default to fast model for general queries
-        return 'z-ai/glm-4.5-air:free';
+        return 'openrouter/free';
     };
 
     // Smart Rewrite State
@@ -141,7 +141,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                 modelToUse = selectBestModel(messages, 'chat');
             } else {
                 const selectedModelOption = modelOptions.find(m => m.id === selectedModel);
-                modelToUse = selectedModelOption?.fullName || 'z-ai/glm-4.5-air:free';
+                modelToUse = selectedModelOption?.fullName || 'openrouter/free';
             }
 
             await chatWithAIStreaming(messages, (token) => {
@@ -175,10 +175,10 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
             let modelToUse: string;
 
             if (isAutoMode) {
-                modelToUse = 'z-ai/glm-4.5-air:free';
+                modelToUse = 'openrouter/free';
             } else {
                 const selectedModelOption = modelOptions.find(m => m.id === selectedModel);
-                modelToUse = selectedModelOption?.fullName || 'z-ai/glm-4.5-air:free';
+                modelToUse = selectedModelOption?.fullName || 'openrouter/free';
             }
             
             const result = await translateText(translateInput, targetLang, modelToUse);

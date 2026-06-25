@@ -2,7 +2,7 @@ import { supabase } from '../lib/firebase'
 
 export const chatWithAI = async (
   messages: ChatMessage[],
-  model = 'z-ai/glm-4.5-air:free',
+  model = 'openrouter/free',
   max_tokens = 1000,
   temperature = 0.7,
   reasoning = { enabled: true }
@@ -118,7 +118,7 @@ export const generateRefinedFilename = async (originalName: string, context: str
         'X-Title': 'OmniPDF AI',
       },
       body: JSON.stringify({
-        model: 'z-ai/glm-4.5-air:free',
+        model: 'openrouter/free',
         messages: [
           {
             role: 'system',
@@ -166,7 +166,7 @@ export const chatWithPDF = async (query: string, documentContext: string) => {
         'X-Title': 'OmniPDF AI',
       },
       body: JSON.stringify({
-        model: 'z-ai/glm-4.5-air:free',
+        model: 'openrouter/free',
         messages: [
           {
             role: 'system',

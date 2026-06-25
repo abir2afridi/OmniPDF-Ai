@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import './Login.css';
 import { supabase } from '../lib/supabase';
 
@@ -10,19 +10,30 @@ let gisClient: any = null;
 
 function getGisClient() {
     if (!gisClient && typeof google !== 'undefined' && google.accounts?.oauth2) {
-        gisClient = google.accounts.oauth2.initTokenClient({
-            client_id: '1044154368370-do81h015m74j9qbbjj77adsibc3tdqpg.apps.googleusercontent.com',
-            scope: 'openid profile email',
-            callback: async (response: any) => {
-                if (response.error) {
-                    console.error('GIS error:', response);
-                    return;
-                }
-                if (response.id_token) {
-                    await supabase.auth.signInWithGoogleIdToken(response.id_token);
-                }
-            },
-        });
+        const clientIds = [
+            '1044154368370-do81h015m74j9qbbjj77adsibc3tdqpg.apps.googleusercontent.com',
+            '1044154368370-do81h015m74j9qbbjj77adsibc3tdqpg',
+        ];
+        for (const clientId of clientIds) {
+            try {
+                gisClient = google.accounts.oauth2.initTokenClient({
+                    client_id: clientId,
+                    scope: 'openid profile email',
+                    callback: async (response: any) => {
+                        if (response.error) {
+                            console.error('GIS error:', response);
+                            return;
+                        }
+                        if (response.id_token) {
+                            await supabase.auth.signInWithGoogleIdToken(response.id_token);
+                        }
+                    },
+                });
+                break;
+            } catch (e) {
+                console.warn('GIS init failed with client ID:', clientId, e);
+            }
+        }
     }
     return gisClient;
 }

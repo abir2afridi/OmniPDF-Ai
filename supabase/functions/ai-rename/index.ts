@@ -31,7 +31,7 @@ serve(async (req) => {
         'X-Title': 'OmniPDF AI',
       },
       body: JSON.stringify({
-        model: 'z-ai/glm-4.5-air:free',
+        model: 'openrouter/free',
         messages: [
           {
             role: 'system',

@@ -141,7 +141,7 @@ export const chatWithAI = async (
     if (cached) return { message: cached, usage: { cached: true } };
   }
 
-  const models = [model, 'openrouter/free', 'z-ai/glm-4.5-air:free', 'stepfun/step-3.5-flash:free'];
+  const models = [model, 'openrouter/free', 'openrouter/free', 'stepfun/step-3.5-flash:free'];
   let lastError: any = null;
 
   for (const currentModel of models) {
@@ -195,7 +195,7 @@ export const translateText = async (
     { role: 'user', content: text }
   ];
 
-  const models = [model, 'openrouter/free', 'z-ai/glm-4.5-air:free', 'stepfun/step-3.5-flash:free'];
+  const models = [model, 'openrouter/free', 'openrouter/free', 'stepfun/step-3.5-flash:free'];
 
   for (const currentModel of models) {
     try {
