@@ -21,13 +21,12 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
         return error?.message || 'An unexpected error occurred. Please try again.';
     };
 
-    const handleGoogleLogin = (e: React.MouseEvent) => {
+    const handleGoogleLogin = async (e: React.MouseEvent) => {
         e.preventDefault();
-        const clientId = '1044154368370-do81h015m74j9qbbjj77adsibc3tdqpg.apps.googleusercontent.com';
-        const redirectUri = window.location.origin;
-        const nonce = Math.random().toString(36).substring(2);
-        const url = `https://accounts.google.com/o/oauth2/v2/auth?response_type=id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=openid%20profile%20email&nonce=${nonce}`;
-        window.location.href = url;
+        const { error } = await supabase.auth.signInWithGooglePopup();
+        if (error) {
+            alert(`Google sign-in failed: ${error.message || 'Popup may be blocked. Please allow popups and try again.'}`);
+        }
     };
 
     const handleEmailSignUp = async (e: React.FormEvent) => {

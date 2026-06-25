@@ -1743,25 +1743,12 @@ const App: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
 
-    // Handle Google OAuth redirect (id_token in URL hash)
-    const hash = window.location.hash;
-    if (hash && hash.includes('id_token=')) {
-      const params = new URLSearchParams(hash.substring(1));
-      const idToken = params.get('id_token');
-      if (idToken) {
-        supabase.auth.signInWithGoogleIdToken(idToken).then(({ error }) => {
-          if (!error && !cancelled) setLoginToast('Logged in successfully with Google');
-        });
-      }
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
     const {
       data: { subscription: sub },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
       setIsAuthenticated(!!session);
-      if (session && !hash?.includes('id_token=')) {
+      if (session) {
         setLoginToast('Logged in successfully');
       }
     });

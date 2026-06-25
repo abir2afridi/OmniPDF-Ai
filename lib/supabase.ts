@@ -5,6 +5,7 @@ import {
   browserLocalPersistence,
   onAuthStateChanged,
   signInWithCredential,
+  signInWithPopup,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -81,6 +82,17 @@ const supabase = {
 
     signInWithOAuth: async () => {
       return { error: null };
+    },
+
+    signInWithGooglePopup: async () => {
+      try {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        await signInWithPopup(auth, provider);
+        return { error: null };
+      } catch (error: any) {
+        return { error };
+      }
     },
 
     handleRedirect: async () => {
