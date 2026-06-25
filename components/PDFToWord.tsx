@@ -27,13 +27,6 @@ import {
 } from '../services/pdfToWordService';
 import { downloadBlob } from '../services/pdfService';
 import JSZip from 'jszip';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-
-// Ensure worker is set
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
-}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -74,8 +67,13 @@ const ACCEPT = '.pdf,application/pdf';
 
 /** Render first page of PDF to a thumbnail data URL */
 async function generateThumb(file: File): Promise<{ thumb: string; totalPages: number }> {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
     const buffer = await file.arrayBuffer();
-    const pdfDoc = await getDocument({ data: buffer }).promise;
+    const pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
     const page = await pdfDoc.getPage(1);
     const vp = page.getViewport({ scale: 0.4 });
     const canvas = document.createElement('canvas');

@@ -20,17 +20,11 @@
  *   - docx        (npm install docx)
  */
 
-import { getDocument, GlobalWorkerOptions, type PDFDocumentProxy } from 'pdfjs-dist';
+import { type PDFDocumentProxy } from 'pdfjs-dist';
 import {
     Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak,
     AlignmentType, LineRuleType,
 } from 'docx';
-
-// ── PDF.js worker (re-guard, already set up in pdfService.ts) ────────────────
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
-}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
