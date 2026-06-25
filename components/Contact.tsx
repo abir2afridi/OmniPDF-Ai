@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { motion } from 'motion/react';
 import { AppContext } from '../App';
+import { Header } from './Header';
 import {
     Github, Globe, Mail, MapPin, GraduationCap, Code2,
     User, Heart, Calendar, Briefcase, Sparkles, ArrowUpRight,
@@ -59,9 +60,10 @@ export const Contact: React.FC = () => {
     ];
 
     return (
-        <div className="flex-1 bg-[#f3f1ea] dark:bg-slate-900 h-full overflow-y-auto custom-scrollbar p-6 md:p-12 transition-colors duration-300">
+        <div className="flex-1 bg-[#f3f1ea] dark:bg-slate-900 h-full flex flex-col transition-colors duration-300">
+            <Header icon={User} title="Contact" />
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12">
             <div className="max-w-5xl mx-auto space-y-32 py-10 md:py-20">
-
                 {/* Minimal Header - About Style */}
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -249,6 +251,7 @@ export const Contact: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     );

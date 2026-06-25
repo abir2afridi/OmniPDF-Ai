@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { AppContext } from '../App';
 import { motion } from 'motion/react';
+import { Header } from './Header';
 
 export const Analytics: React.FC = () => {
     const { t } = useContext(AppContext);
@@ -46,32 +47,11 @@ export const Analytics: React.FC = () => {
             <div className="bg-blob -top-40 -left-40 opacity-20 dark:opacity-10 pointer-events-none" />
             <div className="bg-blob bg-blob-2 -bottom-40 -right-40 opacity-20 dark:opacity-10 pointer-events-none" />
 
-            <div className="max-w-7xl mx-auto px-6 lg:px-10 py-12 pb-32 relative z-10 space-y-12">
+      <Header icon={TrendingUp} title="System Insight" />
 
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-5">
-                        <div className="p-4 bg-brand-600 rounded-2xl shadow-xl shadow-brand-500/20 text-white">
-                            <TrendingUp className="w-8 h-8" />
-                        </div>
-                        <div>
-                            <h1 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight">System Insight</h1>
-                            <p className="text-gray-500 dark:text-gray-400 font-medium leading-tight">Live telemetry and document processing analytics</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <button className="flex items-center gap-2 px-5 py-2.5 bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-500 hover:bg-gray-50 dark:hover:bg-white/10 transition-all">
-                            <Calendar className="w-4 h-4" />
-                            Last 30 Days
-                        </button>
-                        <button className="flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-500 shadow-xl shadow-brand-500/20 transition-all">
-                            <Download className="w-4 h-4" />
-                            Export
-                        </button>
-                    </div>
-                </div>
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-12 pb-32 relative z-10 space-y-12">
 
-                {/* User Card & Plan */}
+        {/* User Card & Plan */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}

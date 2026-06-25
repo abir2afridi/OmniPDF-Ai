@@ -1,6 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { History as HistoryIcon, Download, Search, Calendar, FileText, Trash2, ExternalLink, Filter, TrendingUp, Clock, ShieldCheck } from 'lucide-react';
 import { AppContext } from '../App';
+import { Header } from './Header';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface DownloadRecord {
@@ -37,7 +38,9 @@ export const History: React.FC = () => {
                 <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[100px] translate-y-1/4 -translate-x-1/4" />
             </div>
 
-            {/* Premium Live Ticker */}
+            <Header icon={HistoryIcon} title="History" />
+
+      {/* Premium Live Ticker */}
             <div className="w-full bg-[#f3f1ea]/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-100 dark:border-white/5 py-2.5 overflow-hidden sticky top-0 z-50">
                 <div className="max-w-[1600px] mx-auto flex items-center px-6 md:px-10">
                     <div className="flex items-center gap-2 pr-4 bg-[#f3f1ea]/80 dark:bg-slate-900/80 backdrop-blur-xl z-10 shrink-0">

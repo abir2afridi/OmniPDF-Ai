@@ -2,6 +2,7 @@ import React, { useContext, useState, useMemo } from 'react';
 import { PDFTool, ToolCategory } from '../types';
 import { ArrowRight, Sparkles, Search, X, LayoutGrid, Files, PenTool, Shield, Zap, Sun, Moon } from 'lucide-react';
 import { AppContext } from '../App';
+import { Header } from './Header';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface DashboardProps {
@@ -35,6 +36,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
     }
     return result;
   }, [tools, searchQuery, activeCategory, t]);
+
+  const tickerItems = useMemo(() =>
+    tools.map(tool => ({
+      label: tool.name.toUpperCase(),
+      val: tool.description.length > 28 ? tool.description.substring(0, 26) + '…' : tool.description,
+      type: tool.category === ToolCategory.ORGANIZE ? 'info' :
+            tool.category === ToolCategory.CONVERT ? 'warning' :
+            tool.category === ToolCategory.SECURITY ? 'success' : 'info',
+    })),
+    [tools]
+  );
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -114,6 +126,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f3f1ea] dark:bg-[#020617] relative scroll-smooth overflow-x-hidden">
+      <Header icon={LayoutGrid} title="All Tools" />
+
       {/* Premium Live Ticker */}
       <div className="w-full bg-[#f3f1ea]/80 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-200/50 dark:border-white/5 py-2.5 overflow-hidden sticky top-0 z-50">
         <div className="max-w-[1600px] mx-auto flex items-center px-6 md:px-10">
@@ -136,13 +150,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
             >
               {[1, 2].map((i) => (
                 <div key={i} className="flex gap-12 items-center">
-                  {[
-                    { label: "AI ENGINE", val: "Neural 2.0 Stabilized", type: "success" },
-                    { label: "LATENCY", val: "12.4ms Optimized", type: "info" },
-                    { label: "ENCRYPTION", val: "AES-256 Active", type: "warning" },
-                    { label: "TRAFFIC", val: "52K+ Sessions Active", type: "success" },
-                    { label: "SYSTEM", val: "All Nodes Operational", type: "info" }
-                  ].map((msg, idx) => (
+                  {tickerItems.map((msg, idx) => (
                     <div key={idx} className="flex items-center gap-3">
                       <span className="text-[9px] font-black bg-[#f3f1ea] dark:bg-white/5 text-gray-400 dark:text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 dark:border-white/10">{msg.label}</span>
                       <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 tracking-tight">{msg.val}</span>
@@ -153,37 +161,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
             </motion.div>
           </div>
 
-          <div className="flex items-center gap-2 ml-4">
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="group relative flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-brand-500/50 transition-all duration-300 overflow-hidden"
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              <AnimatePresence mode="wait">
-                {theme === 'dark' ? (
-                  <motion.div
-                    key="sun"
-                    initial={{ y: 20, opacity: 0, rotate: -45 }}
-                    animate={{ y: 0, opacity: 1, rotate: 0 }}
-                    exit={{ y: -20, opacity: 0, rotate: 45 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Sun className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="moon"
-                    initial={{ y: 20, opacity: 0, rotate: -45 }}
-                    animate={{ y: 0, opacity: 1, rotate: 0 }}
-                    exit={{ y: -20, opacity: 0, rotate: 45 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Moon className="w-3.5 h-3.5 text-indigo-500 group-hover:scale-110 transition-transform" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </button>
-          </div>
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import {
 import { chatWithAIStreaming, translateText, generateRefinedFilename, generateAudioOverview, chatWithPDF } from '../services/aiService';
 import { AppContext } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
+import { Header } from './Header';
 
 interface ChatMessage {
     id: string;
@@ -284,6 +285,8 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                 <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[80px] translate-y-1/4 -translate-x-1/4" />
             </div>
 
+            <Header icon={BrainCircuit} title="AI Laboratory" />
+
             {/* Premium Live Ticker */}
             <div className="w-full bg-[#f3f1ea]/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-100 dark:border-white/5 py-2.5 overflow-hidden sticky top-0 z-50">
                 <div className="max-w-[1600px] mx-auto flex items-center px-6 md:px-10">
@@ -326,44 +329,35 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
             </div>
 
             <div className="w-full h-full max-w-[1600px] mx-auto flex flex-col relative z-10">
-                {/* Seamless Integrated Header */}
-                <header className="px-6 py-8 border-b border-gray-100 dark:border-white/10">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gray-900 dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-gray-900 shadow-xl">
-                                <BrainCircuit className="w-7 h-7" />
-                            </div>
-                            <div>
-                                <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">AI Laboratory</h1>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
-                                    <span className={`inline-block w-2 h-2 rounded-full transition-colors duration-300 ${
-                                        aiStatus === 'streaming' ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]' :
-                                        aiStatus === 'loading' ? 'bg-yellow-500 shadow-[0_0_6px_rgba(234,179,8,0.6)]' :
-                                        'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]'
-                                    }`} />
-                                    Advanced Document Intelligence
-                                </p>
-                            </div>
-                        </div>
 
-                        {/* Integrated Tab Bar in Header Line */}
-                        <nav className="flex items-center gap-1 bg-gray-100/50 dark:bg-white/5 p-1 rounded-2xl">
-                            {tabs.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id as any)}
-                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
-                                    ${activeTab === tab.id
-                                            ? 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm'
-                                            : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
-                                >
-                                    <tab.icon className={`w-3.5 h-3.5 ${activeTab === tab.id ? tab.color : ''}`} />
-                                    {t(tab.label)}
-                                </button>
-                            ))}
-                        </nav>
-                    </div>
-                </header>
+                {/* Subtitle + Tab Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-3 border-b border-gray-100 dark:border-white/10">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <span className={`inline-block w-2 h-2 rounded-full transition-colors duration-300 ${
+                            aiStatus === 'streaming' ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]' :
+                            aiStatus === 'loading' ? 'bg-yellow-500 shadow-[0_0_6px_rgba(234,179,8,0.6)]' :
+                            'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]'
+                        }`} />
+                        Advanced Document Intelligence
+                    </p>
+
+                    {/* Integrated Tab Bar */}
+                    <nav className="flex items-center gap-1 bg-gray-100/50 dark:bg-white/5 p-1 rounded-2xl">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
+                                ${activeTab === tab.id
+                                        ? 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm'
+                                        : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                            >
+                                <tab.icon className={`w-3.5 h-3.5 ${activeTab === tab.id ? tab.color : ''}`} />
+                                {t(tab.label)}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
 
                 {/* Seamless Content Area */}
                 <main className="flex-1 min-h-0 relative">

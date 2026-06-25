@@ -2,11 +2,12 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import {
   User, Globe, Shield, CreditCard,
   HardDrive, Save, LogOut, Laptop, Check, Crown,
-  RefreshCcw, Search, ChevronDown, X
+  RefreshCcw, Search, ChevronDown, X, Settings as SettingsIcon
 } from 'lucide-react';
 import { AppContext } from '../App';
 import { AppView, PDFTool } from '../types';
 import { supabase } from '../lib/supabase';
+import { Header } from './Header';
 
 interface SettingsProps {
   currentView: AppView;
@@ -260,6 +261,8 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
       <div className="bg-blob opacity-10 dark:opacity-[0.07] -top-40 right-0 pointer-events-none" />
 
       {/* Remove the redundant Settings Sidebar as it's now in the main Sidebar */}
+      <Header icon={SettingsIcon} title="Settings" />
+
       {/* Settings Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8 lg:p-12 z-10">
         <div className="max-w-[1600px] mx-auto">
