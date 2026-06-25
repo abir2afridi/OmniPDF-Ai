@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, useContext, createContext } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useContext, createContext, useRef } from 'react';
 import {
   Files, Scissors, ArrowRightLeft, FileText, Image,
   Lock, Wand2, PenTool, Search, Type, Grid, Shield,
@@ -20,7 +20,7 @@ import { History } from './components/History';
 import { Login } from './components/Login';
 import { AppView, PDFTool, ToolCategory, UploadedFile } from './types';
 import { processFiles } from './services/pdfService';
-import { supabase } from './lib/supabase';
+import { supabase, authReady } from './lib/supabase';
 import { MergePDF } from './components/MergePDF';
 import { SplitPDF } from './components/SplitPDF';
 import { DeletePages } from './components/DeletePages';
@@ -1735,6 +1735,7 @@ const App: React.FC = () => {
   const [language, setLanguage] = useState('en');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   // State to bridge RightDock buttons with Workspace actions
   const [editAction, setEditAction] = useState<{ type: 'undo' | 'redo' | 'delete' | null, timestamp: number }>({ type: null, timestamp: 0 });
@@ -1742,15 +1743,25 @@ const App: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
 
-    const {
-      data: { subscription: sub },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!cancelled) setIsAuthenticated(!!session);
-    });
+    const init = async () => {
+      await authReady;
+      await supabase.auth.handleRedirect();
+
+      if (!cancelled) {
+        const {
+          data: { subscription: sub },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (!cancelled) setIsAuthenticated(!!session);
+        });
+        cleanupRef.current = sub.unsubscribe;
+      }
+    };
+
+    init();
 
     return () => {
       cancelled = true;
-      sub.unsubscribe();
+      cleanupRef.current?.();
     };
   }, []);
 

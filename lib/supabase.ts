@@ -3,8 +3,10 @@ import {
   getAuth,
   setPersistence,
   browserLocalPersistence,
+  authStateReady,
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -27,7 +29,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-setPersistence(auth, browserLocalPersistence).catch(() => {});
+const authReady = (async () => {
+  await setPersistence(auth, browserLocalPersistence);
+  return auth;
+})();
 
 const mapFirebaseUser = (user: User | null) => {
   if (!user) return null;
@@ -49,22 +54,14 @@ const mapToSession = (user: User | null) => {
 const supabase = {
   auth: {
     getSession: async () => {
-      const user = await new Promise<User | null>((resolve) => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-          unsubscribe();
-          resolve(user);
-        });
-      });
+      await authReady;
+      const user = auth.currentUser;
       return { data: { session: mapToSession(user) } };
     },
 
     getUser: async () => {
-      const user = await new Promise<User | null>((resolve) => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-          unsubscribe();
-          resolve(user);
-        });
-      });
+      await authReady;
+      const user = auth.currentUser;
       return { data: { user: mapFirebaseUser(user) } };
     },
 
@@ -81,9 +78,10 @@ const supabase = {
 
     signInWithOAuth: async () => {
       try {
+        await authReady;
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
-        await signInWithPopup(auth, provider);
+        await signInWithRedirect(auth, provider);
         return { error: null };
       } catch (error: any) {
         return { error };
@@ -91,11 +89,21 @@ const supabase = {
     },
 
     handleRedirect: async () => {
-      return { data: null, error: null };
+      try {
+        await authReady;
+        const result = await getRedirectResult(auth);
+        if (result) {
+          return { data: { user: result.user }, error: null };
+        }
+        return { data: null, error: null };
+      } catch (error: any) {
+        return { data: null, error };
+      }
     },
 
     signUp: async ({ email, password, options }: { email: string; password: string; options?: { data?: { full_name?: string } } }) => {
       try {
+        await authReady;
         const credential = await createUserWithEmailAndPassword(auth, email, password);
         if (options?.data?.full_name) {
           await updateProfile(credential.user, { displayName: options.data.full_name });
@@ -108,6 +116,7 @@ const supabase = {
 
     signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
       try {
+        await authReady;
         const credential = await signInWithEmailAndPassword(auth, email, password);
         return { data: { user: credential.user }, error: null };
       } catch (error: any) {
@@ -126,4 +135,4 @@ const supabase = {
   },
 };
 
-export { supabase };
+export { supabase, authReady };
