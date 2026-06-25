@@ -113,48 +113,6 @@ const supabase = {
       }
     },
 
-    signInWithGoogleIdTokenREST: async (idToken: string) => {
-      try {
-        const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=AIzaSyB51bv_qDJwmPw3kKWrxXTk1T5xg_A2cqE`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            postBody: `id_token=${idToken}&providerId=google.com`,
-            requestUri: 'https://omnipdf-ai.firebaseapp.com',
-            returnIdpCredential: true,
-            returnSecureToken: true,
-          }),
-        });
-        const data = await res.json();
-        if (data.error) throw new Error(data.error.message || 'REST sign-in failed');
-        return { data, error: null };
-      } catch (error: any) {
-        return { error };
-      }
-    },
-
-    signInWithGoogleCustomToken: async (idToken: string) => {
-      try {
-        const edgeUrl = Deno.env.get('SUPABASE_URL')
-          ? `${Deno.env.get('SUPABASE_URL')}/functions/v1/auth-google`
-          : 'https://omnipdf-ai-d5uq.onrender.com/api/auth-google';
-        const res = await fetch(edgeUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id_token: idToken }),
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Custom token exchange failed');
-        }
-        const { custom_token } = await res.json();
-        await signInWithCustomToken(auth, custom_token);
-        return { error: null };
-      } catch (error: any) {
-        return { error };
-      }
-    },
-
     signUp: async ({ email, password, options }: { email: string; password: string; options?: { data?: { full_name?: string } } }) => {
       try {
         const credential = await createUserWithEmailAndPassword(auth, email, password);
