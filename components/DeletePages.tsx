@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import {
     getFilePageCount,
+    generatePDFPageThumbnails,
     deletePagesAdvanced,
     downloadBytes,
     type DeletePagesResult,
@@ -180,6 +181,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
     const [progressLabel, setProgressLabel] = useState('');
     const [lastResult, setLastResult] = useState<DeletePagesResult | null>(null);
     const [resultBytes, setResultBytes] = useState<Uint8Array | null>(null);
+    const [resultBlobUrl, setResultBlobUrl] = useState<string | null>(null);
 
     const dropZoneRef = useRef<HTMLDivElement>(null);
     const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -195,31 +197,6 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
 
     const dismissToast = useCallback((id: string) =>
         setToasts(prev => prev.filter(t => t.id !== id)), []);
-
-    // ── Thumbnail generator ──────────────────────────────────────────────────
-
-    const generatePageThumb = useCallback(async (f: File, pageIndex: number): Promise<string> => {
-        try {
-            const { GlobalWorkerOptions, getDocument } = await import('pdfjs-dist');
-            if (GlobalWorkerOptions) {
-                GlobalWorkerOptions.workerSrc =
-                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-            }
-            const bytes = await f.arrayBuffer();
-            const pdf = await getDocument({ data: new Uint8Array(bytes) }).promise;
-            const page = await pdf.getPage(pageIndex + 1);
-            const naturalVP = page.getViewport({ scale: 1 });
-            const scale = 120 / naturalVP.width;
-            const vp = page.getViewport({ scale });
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.round(vp.width);
-            canvas.height = Math.round(vp.height);
-            await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp }).promise;
-            return canvas.toDataURL('image/jpeg', 0.68);
-        } catch {
-            return '';
-        }
-    }, []);
 
     // ── File loading ─────────────────────────────────────────────────────────
 
@@ -240,6 +217,8 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
         setTotalPages(0);
         setLastResult(null);
         setResultBytes(null);
+        if (resultBlobUrl) URL.revokeObjectURL(resultBlobUrl);
+        setResultBlobUrl(null);
         setRangeInput('');
         setLoadingFile(true);
 
@@ -256,12 +235,10 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
         toast('info', `Loaded ${count} pages. Generating previews…`);
         setLoadingThumbs(true);
         const limit = Math.min(count, THUMB_LIMIT);
-        for (let i = 0; i < limit; i++) {
-            const dataUrl = await generatePageThumb(f, i);
-            if (dataUrl) setThumbs(prev => [...prev, { index: i, dataUrl }]);
-        }
+        const thumbUrls = await generatePDFPageThumbnails(f, Array.from({ length: limit }, (_, i) => i + 1), 120);
+        setThumbs(thumbUrls.map((dataUrl, i) => ({ index: i, dataUrl })));
         setLoadingThumbs(false);
-    }, [toast, generatePageThumb]);
+    }, [toast]);
 
     // ── Drag & Drop ──────────────────────────────────────────────────────────
 
@@ -396,13 +373,23 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
             setResultBytes(result.bytes);
             setProgress(100);
             setProgressLabel('Done!');
+
+            // Auto-download
+            const blob = new Blob([result.bytes], { type: 'application/pdf' });
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = result.outputName;
+            a.click();
+            setResultBlobUrl(blobUrl);
+
             toast('success', `Deleted ${result.deletedIndices.length} page(s). ${result.keptPageCount} pages remain.`);
 
             setTimeout(() => {
                 setIsProcessing(false);
                 setProgress(0);
                 setProgressLabel('');
-            }, 1400);
+            }, 800);
         } catch (err: any) {
             toast('error', err?.message || 'Deletion failed. Please try again.');
             setIsProcessing(false);
@@ -416,6 +403,15 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
         downloadBytes(resultBytes, lastResult.outputName);
         toast('success', `Downloaded: ${lastResult.outputName}`);
     }, [resultBytes, lastResult, toast]);
+
+    const dismissResult = useCallback(() => {
+        if (resultBlobUrl) URL.revokeObjectURL(resultBlobUrl);
+        setResultBlobUrl(null);
+        setLastResult(null);
+        setResultBytes(null);
+        setProgress(0);
+        setProgressLabel('');
+    }, [resultBlobUrl]);
 
     // Derived thumb map
     const thumbMap = new Map<number, string>(thumbs.map(t => [t.index, t.dataUrl]));
@@ -841,18 +837,39 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                             )}
                         </button>
 
-                        {/* Download button — shows after successful deletion */}
+                        {/* Download buttons — shows after successful deletion */}
                         <AnimatePresence>
                             {lastResult && !isProcessing && resultBytes && (
-                                <motion.button
+                                <motion.div
                                     initial={{ opacity: 0, y: 8 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 8 }}
-                                    onClick={handleDownload}
-                                    className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-black text-sm bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                                    className="space-y-2"
                                 >
-                                    <Download className="w-5 h-5" /> Download Result
-                                </motion.button>
+                                    <button
+                                        onClick={() => {
+                                            if (!resultBlobUrl) return;
+                                            window.open(resultBlobUrl, '_blank');
+                                        }}
+                                        className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-black text-sm bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-500 hover:to-indigo-400 text-white shadow-lg shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                                    >
+                                        <Eye className="w-5 h-5" /> View PDF
+                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleDownload}
+                                            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+                                        >
+                                            <Download className="w-4 h-4" /> Download
+                                        </button>
+                                        <button
+                                            onClick={dismissResult}
+                                            className="px-3 py-3 rounded-xl font-bold text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </motion.div>
                             )}
                         </AnimatePresence>
 
