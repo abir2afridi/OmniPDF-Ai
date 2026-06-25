@@ -5,7 +5,6 @@ import {
   browserLocalPersistence,
   onAuthStateChanged,
   signInWithCredential,
-  signInWithRedirect,
   signInWithPopup,
   getRedirectResult,
   GoogleAuthProvider,
@@ -26,6 +25,8 @@ const firebaseConfig = {
   appId: "1:619952563506:web:bcf59b3582f0bca808a32b",
   measurementId: "G-HVMP4GXK59"
 };
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -87,14 +88,49 @@ const supabase = {
     },
 
     signInWithGoogleRedirect: async () => {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
+      const clientId = GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        return { data: null, error: new Error('VITE_GOOGLE_CLIENT_ID not set') };
+      }
+      const state = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      sessionStorage.setItem('omni_google_oauth_state', state);
+      sessionStorage.setItem('omni_google_oauth_nonce', nonce);
+      const redirectUri = window.location.origin;
+      const url = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+        'client_id=' + clientId +
+        '&response_type=id_token%20token' +
+        '&redirect_uri=' + encodeURIComponent(redirectUri) +
+        '&scope=' + encodeURIComponent('openid email profile') +
+        '&state=' + state +
+        '&nonce=' + nonce +
+        '&prompt=select_account';
+      window.location.assign(url);
+      return { data: null, error: null };
+    },
+
+    handleGoogleOAuthRedirect: async () => {
+      const hash = window.location.hash;
+      if (!hash || hash.length < 5) return { data: null, error: null };
+      const params = new URLSearchParams(hash.substring(1));
+      const idToken = params.get('id_token');
+      const state = params.get('state');
+      const savedState = sessionStorage.getItem('omni_google_oauth_state');
+      sessionStorage.removeItem('omni_google_oauth_state');
+      sessionStorage.removeItem('omni_google_oauth_nonce');
+      if (!idToken || !state || state !== savedState) {
+        return { data: null, error: null };
+      }
+      window.history.replaceState({}, document.title, window.location.pathname);
       try {
-        await signInWithRedirect(auth, provider);
+        const credential = GoogleAuthProvider.credential(idToken);
+        const result = await signInWithCredential(auth, credential);
+        return { data: { session: mapToSession(result.user) }, error: null };
       } catch (error: any) {
-        console.error('Google redirect error:', error);
-        const errMsg = `Google login failed: ${error?.code || error?.message || 'Unknown error'}. Check Firebase Console → Authentication → Settings → Authorized domains.`;
+        console.error('[Auth] Google OAuth credential exchange error:', error);
+        const errMsg = 'Google login failed: ' + (error?.code || error?.message || 'Unknown error');
         sessionStorage.setItem('omni_google_auth_error', errMsg);
+        return { data: null, error };
       }
     },
 
@@ -109,12 +145,7 @@ const supabase = {
           code: error?.code,
           message: error?.message,
           name: error?.name,
-          stack: error?.stack,
-          toJSON: typeof error?.toJSON === 'function' ? error.toJSON() : undefined,
         });
-        if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/cancelled-popup-request') {
-          return { data: null, error };
-        }
         return { data: null, error };
       }
     },

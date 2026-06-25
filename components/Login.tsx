@@ -39,20 +39,18 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
         setAuthError(null);
         setGoogleLoading(true);
         try {
-            const { error } = await supabase.auth.signInWithGooglePopup();
-            if (!error) return;
-            if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
-                console.warn('[Login] Popup blocked, trying redirect...');
+            const { error: popupError } = await supabase.auth.signInWithGooglePopup();
+            if (!popupError) return;
+            if (popupError.code === 'auth/popup-blocked' || popupError.code === 'auth/cancelled-popup-request') {
+                console.warn('[Login] Popup blocked, redirecting to Google...');
                 supabase.auth.signInWithGoogleRedirect();
             } else {
-                console.error('[Login] Google login error:', error);
-                setAuthError(getNetworkErrorMessage(error));
+                console.error('[Login] Google login error:', popupError);
+                setAuthError(getNetworkErrorMessage(popupError));
             }
         } catch (error: any) {
-            console.warn('[Login] Google login failed, trying redirect...', error);
+            console.warn('[Login] Popup failed, redirecting to Google...', error);
             supabase.auth.signInWithGoogleRedirect();
-        } finally {
-            setGoogleLoading(false);
         }
     };
 

@@ -1756,6 +1756,11 @@ const App: React.FC = () => {
       if (error) console.error('Redirect sign-in error:', error);
     });
 
+    // Process manual Google OAuth redirect result
+    supabase.auth.handleGoogleOAuthRedirect().then(({ error }) => {
+      if (error) console.error('[Auth] Google OAuth redirect error:', error);
+    });
+
     return () => {
       cancelled = true;
       sub.unsubscribe();
