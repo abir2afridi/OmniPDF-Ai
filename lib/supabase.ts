@@ -1,3 +1,5 @@
+declare const google: any;
+
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
@@ -105,6 +107,13 @@ const supabase = {
         const result = await signInWithPopup(auth, provider);
         return { data: { session: mapToSession(result.user) }, error: null };
       } catch (error: any) {
+        console.error('[Auth] signInWithGooglePopup full error:', {
+          code: error?.code,
+          message: error?.message,
+          name: error?.name,
+          stack: error?.stack,
+          toJSON: typeof error?.toJSON === 'function' ? error.toJSON() : undefined,
+        });
         if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/cancelled-popup-request') {
           return { data: null, error };
         }
@@ -135,6 +144,72 @@ const supabase = {
 
     clearRedirectError: () => {
       sessionStorage.removeItem('omni_google_auth_error');
+    },
+
+    getGSIClientId: () => {
+      return import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+    },
+
+    loadGSIScript: async () => {
+      if (document.getElementById('gsi-script')) return;
+      if (typeof google !== 'undefined' && google.accounts?.oauth2) return;
+      await new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script');
+        script.id = 'gsi-script';
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Google Identity Services script'));
+        document.head.appendChild(script);
+      });
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          if (typeof google !== 'undefined' && google.accounts?.oauth2) resolve();
+          else setTimeout(check, 50);
+        };
+        check();
+      });
+    },
+
+    signInWithGoogleGSI: async () => {
+      const gsiClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!gsiClientId) {
+        return { data: null, error: new Error('VITE_GOOGLE_CLIENT_ID not set. Get it from Firebase Console → Project Settings → General → Your apps → Web client ID') };
+      }
+      try {
+        await supabase.auth.loadGSIScript();
+      } catch (e: any) {
+        return { data: null, error: e };
+      }
+      return new Promise((resolve) => {
+        try {
+          const client = google.accounts.oauth2.initTokenClient({
+            client_id: gsiClientId,
+            scope: 'openid email profile',
+            callback: async (response: any) => {
+              if (response.error) {
+                resolve({ data: null, error: new Error(response.error) });
+                return;
+              }
+              if (!response.id_token) {
+                resolve({ data: null, error: new Error('No ID token received from Google') });
+                return;
+              }
+              try {
+                const credential = GoogleAuthProvider.credential(response.id_token);
+                const result = await signInWithCredential(auth, credential);
+                resolve({ data: { session: mapToSession(result.user) }, error: null });
+              } catch (err: any) {
+                console.error('[Auth] GSI credential exchange error:', err);
+                resolve({ data: null, error: err });
+              }
+            },
+          });
+          client.requestAccessToken({ prompt: 'select_account' });
+        } catch (err: any) {
+          console.error('[Auth] GSI init error:', err);
+          resolve({ data: null, error: err });
+        }
+      });
     },
 
     signInWithGoogleIdToken: async (idToken: string) => {
