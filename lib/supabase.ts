@@ -180,27 +180,24 @@ const supabase = {
       } catch (e: any) {
         return { data: null, error: e };
       }
-      const GSITIMEOUT = 8000;
+      const GSITIMEOUT = 12000;
       return new Promise((resolve) => {
         const timeout = setTimeout(() => {
-          resolve({ data: null, error: new Error('GSI popup timed out (blocked or closed)') });
+          google.accounts.id.cancel?.();
+          resolve({ data: null, error: new Error('GSI One Tap timed out (no user interaction)') });
         }, GSITIMEOUT);
         try {
-          const client = google.accounts.oauth2.initTokenClient({
+          google.accounts.id.initialize({
             client_id: gsiClientId,
-            scope: 'openid email profile',
+            cancel_on_tap_outside: false,
             callback: async (response: any) => {
               clearTimeout(timeout);
-              if (response.error) {
-                resolve({ data: null, error: new Error(response.error) });
-                return;
-              }
-              if (!response.id_token) {
-                resolve({ data: null, error: new Error('No ID token received from Google') });
+              if (!response.credential) {
+                resolve({ data: null, error: new Error('No credential from Google One Tap') });
                 return;
               }
               try {
-                const credential = GoogleAuthProvider.credential(response.id_token);
+                const credential = GoogleAuthProvider.credential(response.credential);
                 const result = await signInWithCredential(auth, credential);
                 resolve({ data: { session: mapToSession(result.user) }, error: null });
               } catch (err: any) {
@@ -209,10 +206,10 @@ const supabase = {
               }
             },
           });
-          client.requestAccessToken({ prompt: 'select_account' });
+          google.accounts.id.prompt();
         } catch (err: any) {
           clearTimeout(timeout);
-          console.error('[Auth] GSI init error:', err);
+          console.error('[Auth] GSI One Tap error:', err);
           resolve({ data: null, error: err });
         }
       });
