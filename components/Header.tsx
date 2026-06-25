@@ -18,7 +18,7 @@ export const Header: React.FC<HeaderProps> = ({ icon: Icon, title }) => {
   }, []);
 
   return (
-    <header className="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-white/5 shrink-0">
+    <header className="hidden lg:flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-white/5 shrink-0">
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 bg-gray-900 dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-gray-900 shadow-lg">
           <Icon className="w-5 h-5" />

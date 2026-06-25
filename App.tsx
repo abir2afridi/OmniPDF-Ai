@@ -3,9 +3,10 @@ import {
   Files, Scissors, ArrowRightLeft, FileText, Image,
   Lock, Wand2, PenTool, Search, Type, Grid, Shield,
   Unlock, Eraser, RotateCw, Hammer, Layers, FileSpreadsheet,
-  Presentation, FileJson, FileCode, BookOpen, Printer, Monitor, Loader2, Menu, X, Sparkles
+  Presentation, FileJson, FileCode, BookOpen, Printer, Monitor, Loader2, Menu, X, Sparkles, Sun, Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { Sidebar } from './components/Sidebar';
 import { RightDock } from './components/RightDock';
 import { Dashboard } from './components/Dashboard';
@@ -1970,15 +1971,53 @@ const App: React.FC = () => {
           {/* Mobile Header */}
           <header className={`lg:hidden h-16 ${theme === 'dark' ? 'bg-slate-900/60' : 'bg-[#f3f1ea]/80'} glass-morphism flex items-center justify-between px-6 z-40 border-b border-white/10 shrink-0`}>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-black text-xs">OP</div>
+              <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
+                <DotLottieReact
+                  src="https://lottie.host/daa1f232-6d5d-4fe3-8f24-cfce746869a9/aQCuSzLOPd.lottie"
+                  loop
+                  autoplay
+                  className="w-full h-full scale-[1.5]"
+                />
+              </div>
               <span className="font-black tracking-tighter text-lg">{t('OmniPDF AI Suite')}</span>
             </div>
-            <button
-              onClick={() => setIsSidebarOpen(true)}
-              className="p-2 hover:bg-white/10 rounded-xl transition-colors"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="group relative flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-brand-500/50 transition-all duration-300 overflow-hidden"
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                <AnimatePresence mode="wait">
+                  {theme === 'dark' ? (
+                    <motion.div
+                      key="sun"
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Sun className="w-4 h-4 text-yellow-500" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="moon"
+                      initial={{ rotate: 90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: -90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Moon className="w-4 h-4 text-gray-600" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </button>
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+            </div>
           </header>
 
           <main className="flex-1 overflow-hidden relative flex flex-col">

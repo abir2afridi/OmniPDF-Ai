@@ -152,6 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                 src="https://lottie.host/daa1f232-6d5d-4fe3-8f24-cfce746869a9/aQCuSzLOPd.lottie"
                 loop
                 autoplay
+                observe
                 className="w-full h-full scale-[1.5]"
               />
             </motion.div>
