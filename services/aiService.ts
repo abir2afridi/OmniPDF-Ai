@@ -141,7 +141,7 @@ export const chatWithAI = async (
     if (cached) return { message: cached, usage: { cached: true } };
   }
 
-  const models = [model, 'openrouter/free', 'openrouter/free', 'stepfun/step-3.5-flash:free'];
+  const models = [model, 'openrouter/free'];
   let lastError: any = null;
 
   for (const currentModel of models) {

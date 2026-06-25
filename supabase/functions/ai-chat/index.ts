@@ -70,7 +70,7 @@ Always be helpful, professional, and mention that you're part of OmniPDF AI suit
 
     // If model is not specified and we have conversation history, prefer stepfun for reasoning
     if (model === 'openrouter/free' && messages.length > 1) {
-      selectedModel = 'stepfun/step-3.5-flash:free';
+      selectedModel = 'openrouter/free';
       console.log('🎯 Using stepfun model for conversation continuity with reasoning');
     }
 
@@ -88,7 +88,7 @@ Always be helpful, professional, and mention that you're part of OmniPDF AI suit
         messages: allMessages,
         max_tokens,
         temperature,
-        ...(enableReasoning && selectedModel === 'stepfun/step-3.5-flash:free' ? { reasoning: { enabled: true } } : {})
+        ...(enableReasoning && selectedModel === 'openrouter/free' ? { reasoning: { enabled: true } } : {})
       }),
     })
 
@@ -107,7 +107,7 @@ Always be helpful, professional, and mention that you're part of OmniPDF AI suit
             'X-Title': 'OmniPDF AI',
           },
           body: JSON.stringify({
-            model: 'stepfun/step-3.5-flash:free',
+            model: 'openrouter/free',
             messages: allMessages,
             max_tokens,
             temperature,

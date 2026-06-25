@@ -30,15 +30,6 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
     const [selectedModel, setSelectedModel] = useState<'glm' | 'stepfun'>('glm');
     const [isAutoMode, setIsAutoMode] = useState<boolean>(true); // Default to auto mode
 
-    const aiStatus = (() => {
-        if (activeTab !== 'chat') return 'idle';
-        const streamingMsg = chatHistory.findLast(msg => msg.role === 'ai' && msg.isStreaming);
-        if (streamingMsg) {
-            return streamingMsg.content ? 'streaming' : 'loading';
-        }
-        return 'idle';
-    })();
-
     const modelOptions = [
         { id: 'glm' as const, name: 'GLM (Fast)', fullName: 'openrouter/free', description: 'Fast responses, general purpose' },
         { id: 'stepfun' as const, name: 'Auto (Best Free)', fullName: 'openrouter/free', description: 'Automatically picks best free model' }
@@ -93,6 +84,15 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
         { id: '1', role: 'ai', content: 'Hello! I\'m your AI assistant for OmniPDF AI Suite. I can help you analyze documents, extract logic, or answer complex questions about your PDFs. How can I assist you today?', timestamp: Date.now() }
     ]);
     const chatEndRef = useRef<HTMLDivElement>(null);
+
+    const aiStatus = (() => {
+        if (activeTab !== 'chat') return 'idle';
+        const streamingMsg = chatHistory.findLast(msg => msg.role === 'ai' && msg.isStreaming);
+        if (streamingMsg) {
+            return streamingMsg.content ? 'streaming' : 'loading';
+        }
+        return 'idle';
+    })();
 
     // Translate State
     const [translateInput, setTranslateInput] = useState('');

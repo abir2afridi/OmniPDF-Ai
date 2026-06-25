@@ -286,9 +286,8 @@ export const AISummary: React.FC = () => {
                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">AI Model</p>
                         <div className="flex gap-2">
                             {[
-                                { id: 'auto', label: '🤖 Auto Select', desc: currentModelInUse === 'auto' ? 'Auto (Using GLM-4.5)' : 'Auto (Choosing best model)' },
-                                { id: 'openrouter/free', label: 'GLM-4.5 Air', desc: currentModelInUse === 'openrouter/free' ? 'GLM-4.5 (In Use)' : 'Primary - Good performance' },
-                                { id: 'stepfun/step-3.5-flash:free', label: 'Step-3.5 Flash', desc: currentModelInUse === 'stepfun/step-3.5-flash:free' ? 'Step-3.5 (In Use)' : 'Secondary - Reasoning support' }
+                                { id: 'auto', label: '🤖 Auto Select', desc: currentModelInUse === 'auto' ? 'Auto (Free)' : 'Auto (Choosing best model)' },
+                                { id: 'openrouter/free', label: 'Best Free', desc: currentModelInUse === 'openrouter/free' ? 'AI (In Use)' : 'Primary - Fast & free' }
                             ].map(model => (
                                 <button key={model.id} onClick={() => setSelectedModel(model.id)}
                                     className={`flex-1 py-2 px-3 text-[10px] font-black border transition-colors rounded-xl
