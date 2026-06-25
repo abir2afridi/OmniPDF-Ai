@@ -23,7 +23,9 @@ import {
 import {
     convertPdfToWord, validatePdfForWord, fmtSize,
     PDF_TO_WORD_MAX_MB,
+    PAGE_SIZE_PRESETS,
     type PdfToWordResult,
+    type PageSizeKey,
 } from '../services/pdfToWordService';
 import { downloadBlob } from '../services/pdfService';
 import JSZip from 'jszip';
@@ -293,6 +295,7 @@ export const PDFToWord: React.FC<PDFToWordProps> = ({ onBack }) => {
     const [isDragOver, setIsDragOver] = useState(false);
     const [toasts, setToasts] = useState<Toast[]>([]);
     const [advOpen, setAdvOpen] = useState(false);
+    const [pageSize, setPageSize] = useState<PageSizeKey>('auto');
 
     const dropRef = useRef<HTMLDivElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
@@ -388,6 +391,7 @@ export const PDFToWord: React.FC<PDFToWordProps> = ({ onBack }) => {
             const result = await convertPdfToWord(entry.file, {
                 selectedPages: entry.selectedPages.length > 0 ? entry.selectedPages : undefined,
                 outputName: entry.outputName,
+                pageSize,
                 onProgress: p => updateFile(id, { progress: p }),
             });
             updateFile(id, { status: 'done', result, progress: 100 });
@@ -607,6 +611,28 @@ export const PDFToWord: React.FC<PDFToWordProps> = ({ onBack }) => {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+                    </div>
+
+                    {/* Page Size */}
+                    <div className="border-b border-gray-100 dark:border-white/5">
+                        <div className="px-5 py-4 space-y-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Page Size</p>
+                            <select
+                                value={pageSize}
+                                onChange={e => setPageSize(e.target.value as PageSizeKey)}
+                                className="w-full px-3 py-2 bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+                            >
+                                <option value="auto">Auto-detect (match PDF)</option>
+                                {Object.entries(PAGE_SIZE_PRESETS).map(([key, preset]) => (
+                                    <option key={key} value={key}>{preset.label}</option>
+                                ))}
+                            </select>
+                            <p className="text-[10px] text-gray-400 leading-relaxed">
+                                {pageSize === 'auto'
+                                    ? 'DOCX page size matches the first page of your PDF.'
+                                    : `All pages will be set to ${PAGE_SIZE_PRESETS[pageSize]?.label ?? pageSize}.`}
+                            </p>
+                        </div>
                     </div>
 
                     {/* Tips */}

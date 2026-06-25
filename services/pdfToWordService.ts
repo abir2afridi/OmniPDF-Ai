@@ -28,6 +28,22 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+export type PageSizeKey = 'auto' | 'a4' | 'letter' | 'legal' | 'a3' | 'a5';
+
+export interface PageSizePreset {
+    label: string;
+    widthPt: number;
+    heightPt: number;
+}
+
+export const PAGE_SIZE_PRESETS: Record<Exclude<PageSizeKey, 'auto'>, PageSizePreset> = {
+    a4:     { label: 'A4 (210 × 297 mm)',   widthPt: 595,  heightPt: 842 },
+    letter: { label: 'Letter (8.5 × 11 in)', widthPt: 612,  heightPt: 792 },
+    legal:  { label: 'Legal (8.5 × 14 in)',  widthPt: 612,  heightPt: 1008 },
+    a3:     { label: 'A3 (297 × 420 mm)',    widthPt: 842,  heightPt: 1191 },
+    a5:     { label: 'A5 (148 × 210 mm)',    widthPt: 420,  heightPt: 595 },
+};
+
 export interface PdfToWordOptions {
     /** 0-based page indices to convert. Omit = convert all pages. */
     selectedPages?: number[];
@@ -35,6 +51,8 @@ export interface PdfToWordOptions {
     outputName?: string;
     /** Progress callback [0–100] */
     onProgress?: (p: number) => void;
+    /** Page size for DOCX. 'auto' = match PDF first page dimensions. */
+    pageSize?: PageSizeKey;
 }
 
 export interface PdfToWordResult {
@@ -281,7 +299,7 @@ export async function convertPdfToWord(
     const errMsg = validatePdfForWord(file);
     if (errMsg) throw new Error(errMsg);
 
-    const { onProgress, outputName: rawName } = options;
+    const { onProgress, outputName: rawName, pageSize = 'auto' } = options;
 
     onProgress?.(2);
     let pdfDoc: PDFDocumentProxy;
@@ -301,6 +319,30 @@ export async function convertPdfToWord(
         throw new Error(`Too many pages (max ${PDF_TO_WORD_MAX_PAGES}). Select a range.`);
 
     onProgress?.(5);
+
+    // ── Read first page dimensions for DOCX page size
+    let pageWidthPt: number;
+    let pageHeightPt: number;
+
+    if (pageSize !== 'auto' && PAGE_SIZE_PRESETS[pageSize]) {
+        // Use the user-selected preset
+        pageWidthPt = PAGE_SIZE_PRESETS[pageSize].widthPt;
+        pageHeightPt = PAGE_SIZE_PRESETS[pageSize].heightPt;
+    } else {
+        // Auto-detect: read from first PDF page
+        pageWidthPt = 595;   // default A4 width in points
+        pageHeightPt = 842;  // default A4 height in points
+        try {
+            const firstPage = await pdfDoc.getPage(pageIndices[0] + 1);
+            const vp = firstPage.getViewport({ scale: 1 });
+            pageWidthPt = vp.width;
+            pageHeightPt = vp.height;
+        } catch { /* use defaults */ }
+    }
+
+    // docx uses twips (1 point = 20 twips)
+    const pageW = Math.round(pageWidthPt * 20);
+    const pageH = Math.round(pageHeightPt * 20);
 
     // ── Extract text from each page
     const allPageParagraphs: Paragraph[] = [];
@@ -333,12 +375,17 @@ export async function convertPdfToWord(
                 if (imgDataUrl) {
                     const base64 = imgDataUrl.split(',')[1];
                     const imgBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+                    // Scale image to fit within the DOCX page width (minus margins)
+                    const maxImgW = Math.min(pageW / 20 - 120, 520); // twips→pt minus margins, cap at 520pt
+                    const imgScale = maxImgW / pageWidthPt;
+                    const imgW = Math.round(maxImgW);
+                    const imgH = Math.round(pageHeightPt * imgScale);
                     allPageParagraphs.push(
                         new Paragraph({
                             children: [
                                 new ImageRun({
                                     data: imgBytes,
-                                    transformation: { width: 480, height: 640 },
+                                    transformation: { width: imgW, height: imgH },
                                     type: 'jpg',
                                 }),
                             ],
@@ -413,6 +460,14 @@ export async function convertPdfToWord(
             },
         },
         sections: [{
+            properties: {
+                page: {
+                    size: {
+                        width: pageW,
+                        height: pageH,
+                    },
+                },
+            },
             children: allPageParagraphs,
         }],
     });
