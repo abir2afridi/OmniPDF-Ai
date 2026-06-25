@@ -1765,7 +1765,7 @@ const App: React.FC = () => {
       if (!cancelled) {
         const {
           data: { subscription: sub },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
+        } = await supabase.auth.onAuthStateChange((_event, session) => {
           if (!cancelled) setIsAuthenticated(!!session);
         });
         subscription = sub;

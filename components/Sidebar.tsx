@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
         if (!cancelled) setUser(null);
       });
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.onAuthStateChange((event, session) => {
       if (!cancelled) {
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
           setUser(session?.user ?? null);
@@ -65,8 +65,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
           setUser(null);
         }
       }
+    }).then(({ data: authListener }) => {
+      subscription = authListener.subscription;
     });
-    subscription = authListener.subscription;
 
     return () => {
       cancelled = true;
