@@ -1203,7 +1203,7 @@ export const RightDock: React.FC<RightDockProps> = ({
     };
 
     return (
-        <div className="h-screen w-80 glass flex flex-col z-40 shadow-2xl transition-all duration-300 border-l border-gray-200/50 dark:border-white/5">
+        <div className="h-full w-80 glass flex flex-col z-40 shadow-2xl transition-all duration-300 border-l border-gray-200/50 dark:border-white/5 shrink-0">
 
             {/* Active Tool Header */}
             <AnimatePresence mode="wait">

@@ -1874,6 +1874,8 @@ const App: React.FC = () => {
       } else {
         setCurrentView(AppView.WORKSPACE);
       }
+    } else {
+      setCurrentView(AppView.DASHBOARD);
     }
   };
 
@@ -1969,7 +1971,7 @@ const App: React.FC = () => {
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           {/* Mobile Header */}
-          <header className={`lg:hidden h-16 ${theme === 'dark' ? 'bg-slate-900/60' : 'bg-[#f3f1ea]/80'} glass-morphism flex items-center justify-between px-6 z-40 border-b border-white/10 shrink-0`}>
+          <header className={`lg:hidden h-16 ${theme === 'dark' ? 'bg-slate-900/60' : 'bg-[#f3f1ea]/80'} glass-morphism flex items-center justify-between px-6 z-[80] border-b border-white/10 shrink-0`}>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
                 <DotLottieReact
@@ -2107,6 +2109,7 @@ const App: React.FC = () => {
                   toolOptions={toolOptions}
                   onOptionChange={handleOptionChange}
                   editAction={editAction}
+                  onBack={() => handleToolSelect(null)}
                 />
                 <RightDock
                   activeTool={activeTool}

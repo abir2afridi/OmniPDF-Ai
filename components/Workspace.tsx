@@ -1,9 +1,10 @@
-import React, { useState, useCallback, useContext, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useRef } from 'react';
 import {
   Upload, File, X, Check, ArrowRight, Settings2,
   RotateCw, Trash2, Download, Eye, Layers,
   Wand2, Shield, Lock, FileText, Share2,
-  Plus, Search, GripVertical, PenTool, Unlock, ArrowUpDown
+  Plus, Search, GripVertical, PenTool, Unlock, ArrowUpDown,
+  ArrowLeft, Sun, Moon,
 } from 'lucide-react';
 import { PDFTool, UploadedFile } from '../types';
 import { AppContext as MainContext } from '../App';
@@ -21,17 +22,24 @@ interface WorkspaceProps {
   toolOptions: any;
   onOptionChange: (key: string, value: any) => void;
   editAction: string | null;
+  onBack?: () => void;
 }
 
 export const Workspace: React.FC<WorkspaceProps> = ({
   activeTool, files, onUpload, onDelete, onUpdateFile,
   onClear, onReorder, onExport, toolOptions,
-  onOptionChange, editAction
+  onOptionChange, editAction, onBack
 }) => {
-  const { t } = useContext(MainContext);
+  const { t, theme, setTheme } = useContext(MainContext);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const addMoreInputRef = useRef<HTMLInputElement>(null);
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const getExportLabel = () => {
     if (!activeTool) return t('Download All');
@@ -369,6 +377,42 @@ export const Workspace: React.FC<WorkspaceProps> = ({
 
   return (
     <div className="flex-1 bg-[#f3f1ea] dark:bg-[#1e1e2e] flex flex-col h-full overflow-hidden transition-colors duration-300">
+      {/* Header */}
+      <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button onClick={onBack}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500 dark:text-gray-400">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
+          <div className={`p-2 rounded-xl ${activeTool?.color || 'bg-brand-500'} bg-opacity-10 dark:bg-opacity-20`}>
+            {activeTool ? <activeTool.icon className={`w-5 h-5 ${activeTool.color.replace('bg-', 'text-')}`} /> : <File className="w-5 h-5 text-brand-500" />}
+          </div>
+          <div>
+            <h1 className="text-lg font-black dark:text-white tracking-tight">{activeTool ? t(activeTool.name) : t('Workspace')}</h1>
+            <p className="text-[11px] text-gray-400 font-medium">
+              {files.length > 0
+                ? `${files.length} file${files.length !== 1 ? 's' : ''} in stack`
+                : activeTool?.description || 'Upload files to get started'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="hidden sm:block text-xs font-mono text-gray-500 dark:text-gray-400 tabular-nums">
+            {now.toLocaleDateString([], { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+            {' · '}
+            {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          </span>
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-400"
+            title={theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-yellow-500" /> : <Moon className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
       {files.length === 0 ? renderEmptyState() : renderFileGrid()}
     </div>
   );

@@ -74,7 +74,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
 
   const navItems = [
     { id: AppView.DASHBOARD, icon: LayoutGrid, label: t('All Tools'), color: 'text-indigo-500' },
-    { id: AppView.WORKSPACE, icon: Layers, label: t('Workspace'), color: 'text-purple-500' },
     { id: AppView.AI_LAB, icon: Bot, label: t('AI Lab'), color: 'text-emerald-500' },
     { id: AppView.ANALYTICS, icon: TrendingUp, label: t('Analytics'), color: 'text-amber-500' },
     { id: AppView.E_SIGN, icon: UserCheck, label: t('E-Sign'), color: 'text-rose-500' },
@@ -134,7 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
           setIsHovered(false);
           setIsSettingsExpanded(false);
         }}
-        className={`fixed inset-y-0 left-0 z-[70] flex flex-col py-6 
+        className={`fixed top-16 lg:top-0 bottom-0 left-0 z-[70] lg:z-auto flex flex-col py-6 
           bg-[#210c6e] dark:bg-[#210c6e] backdrop-blur-2xl border-r border-white/10 shadow-[20px_0_40px_rgba(0,0,0,0.02)]
           lg:relative lg:translate-x-0 transition-opacity duration-300
           ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}`}
