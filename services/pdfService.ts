@@ -120,6 +120,34 @@ export async function generatePDFThumbnail(file: File, maxWidth = 160): Promise<
     }
 }
 
+export async function generatePDFPageThumbnails(file: File, pageNumbers: number[], maxWidth = 120): Promise<string[]> {
+    const thumbnails: string[] = [];
+    try {
+        const bytes = await file.arrayBuffer();
+        const pdf = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+        for (const pageNum of pageNumbers) {
+            try {
+                const page = await pdf.getPage(pageNum);
+                const vp = page.getViewport({ scale: 1 });
+                const scale = maxWidth / vp.width;
+                const viewport = page.getViewport({ scale });
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(viewport.width);
+                canvas.height = Math.round(viewport.height);
+                const ctx = canvas.getContext('2d')!;
+                await page.render({ canvasContext: ctx, viewport }).promise;
+                thumbnails.push(canvas.toDataURL('image/jpeg', 0.65));
+            } catch {
+                thumbnails.push('');
+            }
+        }
+    } catch {
+        // If PDF fails, return empty strings
+        for (let i = 0; i < pageNumbers.length; i++) thumbnails.push('');
+    }
+    return thumbnails;
+}
+
 // ──────────────────────────────────────────────
 // ADVANCED MERGE  (per-file ranges + options)
 // ──────────────────────────────────────────────
@@ -128,9 +156,13 @@ export interface AdvancedMergeFileInput {
     pageRange?: string; // "" = all pages, "1-3,5" = specific pages
 }
 
+export type MergeMode = 'sequential' | 'interleave';
+
 export interface AdvancedMergeOptions {
     outputName?: string;
     addBlankBetween?: boolean;
+    addBlankAtEnd?: boolean;
+    mode?: MergeMode;
     onProgress?: (p: number) => void;
 }
 
@@ -138,7 +170,7 @@ export async function mergePDFsAdvanced(
     inputs: AdvancedMergeFileInput[],
     options: AdvancedMergeOptions = {}
 ): Promise<void> {
-    const { outputName = 'merged', addBlankBetween = false, onProgress } = options;
+    const { outputName = 'merged', addBlankBetween = false, addBlankAtEnd = false, mode = 'sequential', onProgress } = options;
 
     if (inputs.length === 0) throw new Error('No files to merge. Please add at least one PDF.');
 
@@ -157,12 +189,14 @@ export async function mergePDFsAdvanced(
     }
 
     onProgress?.(5);
-    const mergedDoc = await PDFDocument.create();
+
+    // ── Load all source PDFs and extract requested pages ──
+    type PageEntry = { docIndex: number; pageIndex: number };
+    const allPageEntries: PageEntry[][] = []; // entries[docIndex] = list of page indices
 
     for (let i = 0; i < inputs.length; i++) {
         const { file, pageRange = '' } = inputs[i];
 
-        // Load source PDF
         let srcBytes: ArrayBuffer;
         try {
             srcBytes = await file.arrayBuffer();
@@ -189,22 +223,73 @@ export async function mergePDFsAdvanced(
             pageIndices = Array.from({ length: totalPages }, (_, k) => k);
         }
 
-        const copiedPages = await mergedDoc.copyPages(srcDoc, pageIndices);
-        copiedPages.forEach(p => mergedDoc.addPage(p));
+        allPageEntries.push(pageIndices.map(pi => ({ docIndex: i, pageIndex: pi })));
 
-        // Blank separator page between documents (not after the last one)
-        if (addBlankBetween && i < inputs.length - 1) {
-            mergedDoc.addPage(PageSizes.A4);
+        // Store srcDoc for later copying
+        (inputs[i] as any).__srcDoc = srcDoc;
+
+        onProgress?.(5 + Math.round(((i + 1) / inputs.length) * 10));
+    }
+
+    onProgress?.(15);
+    const mergedDoc = await PDFDocument.create();
+
+    // Helper: copy pages from a source doc and add them
+    const addPagesFromDoc = (docIndex: number, indices: number[]) => {
+        if (indices.length === 0) return;
+        const srcDoc = (inputs[docIndex] as any).__srcDoc as PDFDocument;
+        const copied = mergedDoc.copyPages(srcDoc, indices);
+        copied.forEach(p => mergedDoc.addPage(p));
+    };
+
+    // ── Build ordered page list ──
+    const ordered: PageEntry[] = [];
+
+    if (mode === 'interleave') {
+        // Round-robin: take page 0 from each doc, then page 1, etc.
+        let maxLen = 0;
+        for (const entries of allPageEntries) {
+            if (entries.length > maxLen) maxLen = entries.length;
         }
+        let lastDocIndex = -1;
+        for (let round = 0; round < maxLen; round++) {
+            for (let d = 0; d < allPageEntries.length; d++) {
+                if (round < allPageEntries[d].length) {
+                    if (addBlankBetween && lastDocIndex !== -1 && lastDocIndex !== d) {
+                        mergedDoc.addPage(PageSizes.A4);
+                    }
+                    addPagesFromDoc(allPageEntries[d][round].docIndex, [allPageEntries[d][round].pageIndex]);
+                    lastDocIndex = d;
+                }
+            }
+        }
+    } else {
+        // Sequential: append pages doc by doc
+        for (let d = 0; d < allPageEntries.length; d++) {
+            const entries = allPageEntries[d];
+            if (entries.length === 0) continue;
 
-        onProgress?.(5 + Math.round(((i + 1) / inputs.length) * 85));
+            const indices = entries.map(e => e.pageIndex);
+            addPagesFromDoc(d, indices);
+
+            // Blank separator between documents (not after the last one)
+            if (addBlankBetween && d < allPageEntries.length - 1) {
+                mergedDoc.addPage(PageSizes.A4);
+            }
+
+            onProgress?.(15 + Math.round(((d + 1) / allPageEntries.length) * 75));
+        }
+    }
+
+    // Blank page at the very end
+    if (addBlankAtEnd) {
+        mergedDoc.addPage(PageSizes.A4);
     }
 
     onProgress?.(92);
     const mergedBytes = await mergedDoc.save();
     onProgress?.(100);
 
-    // Sanitise filename
     const safe = (outputName.trim() || 'merged')
         .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
         .replace(/\s+/g, '_')

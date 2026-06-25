@@ -12,11 +12,12 @@ import {
     Download, Settings2, ChevronDown, ChevronUp,
     AlertCircle, CheckCircle2, Loader2, Info,
     Layers, FileInput, Zap, BookOpen, FilePlus2,
-    ArrowLeft, Trash2, Eye, EyeOff,
+    ArrowLeft, ArrowDownUp, Trash2, Eye, EyeOff, Copy, Check,
 } from 'lucide-react';
 import {
     getFilePageCount,
     generatePDFThumbnail,
+    generatePDFPageThumbnails,
     mergePDFsAdvanced,
     type AdvancedMergeFileInput,
 } from '../services/pdfService';
@@ -31,6 +32,8 @@ interface MergeFile {
     size: number;
     pageCount: number | null;
     thumbnail: string | null;
+    pageThumbnails: string[];  // thumbnails for every page
+    selectedPages: boolean[];  // true = include this page (index = pageNum - 1)
     pageRange: string;          // "" = all pages
     loading: boolean;           // true while computing page count + thumbnail
     error: string | null;
@@ -63,6 +66,28 @@ const formatBytes = (bytes: number): string => {
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+// Convert a boolean array (selectedPages) to a compact page-range string
+// e.g. [T,T,T,F,F,T,T] → "1-3,6-7"; all true → ""
+const selectedToRange = (sel: boolean[]): string => {
+    if (sel.every(Boolean)) return '';
+    const ranges: string[] = [];
+    let start: number | null = null;
+    for (let i = 0; i < sel.length; i++) {
+        if (sel[i]) {
+            if (start === null) start = i + 1;
+        } else {
+            if (start !== null) {
+                ranges.push(start === i ? `${start}` : `${start}-${i}`);
+                start = null;
+            }
+        }
+    }
+    if (start !== null) {
+        ranges.push(start === sel.length ? `${start}` : `${start}-${sel.length}`);
+    }
+    return ranges.join(',');
+};
+
 // ── Sub-components ──────────────────────────────────────────────────────────────
 
 const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) => (
@@ -92,107 +117,214 @@ const FileCard = ({
     onRemove,
     onRangeChange,
     onNameChange,
+    onDuplicate,
+    expanded,
+    onToggleExpand,
+    onTogglePage,
+    onSelectAll,
+    onSelectNone,
     showThumbs,
 }: {
     item: MergeFile;
     onRemove: () => void;
     onRangeChange: (v: string) => void;
     onNameChange: (v: string) => void;
+    onDuplicate: () => void;
+    expanded: boolean;
+    onToggleExpand: () => void;
+    onTogglePage: (pageNum: number) => void;
+    onSelectAll: () => void;
+    onSelectNone: () => void;
     showThumbs: boolean;
 }) => {
     const controls = useDragControls();
     const [editingName, setEditingName] = useState(false);
     const nameRef = useRef<HTMLInputElement>(null);
 
+    const totalPages = item.pageCount ?? 0;
+    const selectedCount = item.selectedPages.filter(Boolean).length;
+
     return (
         <Reorder.Item
             value={item}
             dragListener={false}
             dragControls={controls}
-            className="group relative flex items-start gap-3 p-3 bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-2xl hover:border-blue-200 dark:hover:border-blue-500/30 hover:shadow-md transition-all duration-200 select-none"
+            className="group bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-2xl hover:border-blue-200 dark:hover:border-blue-500/30 hover:shadow-md transition-all duration-200 select-none overflow-hidden"
         >
-            {/* Drag handle */}
-            <button
-                onPointerDown={(e) => controls.start(e)}
-                className="mt-2 p-1 rounded-lg cursor-grab active:cursor-grabbing text-gray-300 dark:text-white/20 hover:text-blue-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shrink-0"
-                title="Drag to reorder"
-            >
-                <GripVertical className="w-4 h-4" />
-            </button>
+            {/* ── Main row ── */}
+            <div className="flex items-start gap-3 p-3">
+                {/* Drag handle */}
+                <button
+                    onPointerDown={(e) => controls.start(e)}
+                    className="mt-2 p-1 rounded-lg cursor-grab active:cursor-grabbing text-gray-300 dark:text-white/20 hover:text-blue-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shrink-0"
+                    title="Drag to reorder"
+                >
+                    <GripVertical className="w-4 h-4" />
+                </button>
 
-            {/* Thumbnail */}
-            <div className={`shrink-0 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center transition-all duration-300 ${showThumbs ? 'w-14 h-[72px]' : 'w-9 h-10'}`}>
-                {item.loading ? (
-                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                ) : item.thumbnail ? (
-                    <img src={item.thumbnail} alt="" className="w-full h-full object-cover" />
-                ) : (
-                    <FileText className="w-5 h-5 text-gray-400" />
-                )}
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-                {/* Editable name */}
-                <div className="flex items-center gap-1 mb-1">
-                    {editingName ? (
-                        <input
-                            ref={nameRef}
-                            value={item.displayName}
-                            onChange={(e) => onNameChange(e.target.value)}
-                            onBlur={() => setEditingName(false)}
-                            onKeyDown={(e) => e.key === 'Enter' && setEditingName(false)}
-                            className="flex-1 text-xs font-bold bg-transparent border-b border-blue-400 outline-none dark:text-gray-100 pb-0.5"
-                            autoFocus
-                        />
+                {/* Thumbnail */}
+                <div className={`shrink-0 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center transition-all duration-300 ${showThumbs ? 'w-14 h-[72px]' : 'w-9 h-10'}`}>
+                    {item.loading ? (
+                        <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                    ) : item.thumbnail ? (
+                        <img src={item.thumbnail} alt="" className="w-full h-full object-cover" />
                     ) : (
+                        <FileText className="w-5 h-5 text-gray-400" />
+                    )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1 mb-1">
+                        {editingName ? (
+                            <input
+                                ref={nameRef}
+                                value={item.displayName}
+                                onChange={(e) => onNameChange(e.target.value)}
+                                onBlur={() => setEditingName(false)}
+                                onKeyDown={(e) => e.key === 'Enter' && setEditingName(false)}
+                                className="flex-1 text-xs font-bold bg-transparent border-b border-blue-400 outline-none dark:text-gray-100 pb-0.5"
+                                autoFocus
+                            />
+                        ) : (
+                            <button
+                                onClick={() => { setEditingName(true); setTimeout(() => nameRef.current?.select(), 50); }}
+                                className="flex-1 text-xs font-bold truncate dark:text-gray-100 text-left hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                title="Click to rename"
+                            >
+                                {item.displayName || item.name}
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] text-gray-400 font-medium">{formatBytes(item.size)}</span>
+                        {item.pageCount !== null && (
+                            <span className="flex items-center gap-0.5 text-[10px] text-gray-400 font-medium">
+                                <Layers className="w-2.5 h-2.5" />
+                                {selectedCount}/{item.pageCount} pages
+                            </span>
+                        )}
+                        {item.error && (
+                            <span className="text-[10px] text-red-500 font-bold flex items-center gap-1">
+                                <AlertCircle className="w-2.5 h-2.5" /> {item.error}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Page range */}
+                    <div className="mt-2 flex items-center gap-2">
+                        <label className="text-[9px] font-bold uppercase tracking-widest text-gray-400 shrink-0">Pages</label>
+                        <input
+                            type="text"
+                            value={item.pageRange}
+                            onChange={(e) => onRangeChange(e.target.value)}
+                            placeholder={item.pageCount ? `all (1–${item.pageCount})` : 'all'}
+                            className="flex-1 text-[10px] px-2 py-1 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 outline-none dark:text-gray-200 placeholder-gray-300 dark:placeholder-gray-600"
+                        />
+                    </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                    {/* Expand pages */}
+                    {totalPages > 0 && !item.loading && (
                         <button
-                            onClick={() => { setEditingName(true); setTimeout(() => nameRef.current?.select(), 50); }}
-                            className="flex-1 text-xs font-bold truncate dark:text-gray-100 text-left hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                            title="Click to rename"
+                            onClick={onToggleExpand}
+                            className={`p-1.5 rounded-lg transition-colors ${expanded ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-300 dark:text-white/20 hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
+                            title={expanded ? 'Collapse pages' : 'View & select pages'}
                         >
-                            {item.displayName || item.name}
+                            <Layers className="w-4 h-4" />
                         </button>
                     )}
-                </div>
-
-                {/* Meta row */}
-                <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] text-gray-400 font-medium">{formatBytes(item.size)}</span>
-                    {item.pageCount !== null && (
-                        <span className="flex items-center gap-0.5 text-[10px] text-gray-400 font-medium">
-                            <Layers className="w-2.5 h-2.5" />
-                            {item.pageCount} {item.pageCount === 1 ? 'page' : 'pages'}
-                        </span>
-                    )}
-                    {item.error && (
-                        <span className="text-[10px] text-red-500 font-bold flex items-center gap-1">
-                            <AlertCircle className="w-2.5 h-2.5" /> {item.error}
-                        </span>
-                    )}
-                </div>
-
-                {/* Page range */}
-                <div className="mt-2 flex items-center gap-2">
-                    <label className="text-[9px] font-bold uppercase tracking-widest text-gray-400 shrink-0">Pages</label>
-                    <input
-                        type="text"
-                        value={item.pageRange}
-                        onChange={(e) => onRangeChange(e.target.value)}
-                        placeholder={item.pageCount ? `all (1–${item.pageCount})` : 'all'}
-                        className="flex-1 text-[10px] px-2 py-1 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 outline-none dark:text-gray-200 placeholder-gray-300 dark:placeholder-gray-600"
-                    />
+                    {/* Duplicate */}
+                    <button
+                        onClick={onDuplicate}
+                        className="p-1.5 rounded-lg text-gray-300 dark:text-white/20 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                        title="Duplicate"
+                    >
+                        <Copy className="w-3.5 h-3.5" />
+                    </button>
+                    {/* Remove */}
+                    <button
+                        onClick={onRemove}
+                        className="p-1.5 rounded-lg text-gray-300 dark:text-white/20 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        title="Remove"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
                 </div>
             </div>
 
-            {/* Remove */}
-            <button
-                onClick={onRemove}
-                className="shrink-0 mt-1 p-1.5 rounded-lg text-gray-300 dark:text-white/20 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
-                title="Remove"
-            >
-                <X className="w-4 h-4" />
-            </button>
+            {/* ── Expandable page grid ── */}
+            <AnimatePresence>
+                {expanded && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="px-3 pb-3 pt-0 border-t border-gray-100 dark:border-white/5 mx-3">
+                            {/* Toolbar */}
+                            <div className="flex items-center justify-between mb-2 mt-2">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">
+                                    Pages ({selectedCount}/{totalPages})
+                                </span>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={onSelectAll}
+                                        className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                                    >All</button>
+                                    <button
+                                        onClick={onSelectNone}
+                                        className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                                    >None</button>
+                                </div>
+                            </div>
+
+                            {/* Thumbnail grid */}
+                            <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-1.5">
+                                {item.selectedPages.map((selected, idx) => {
+                                    const pageNum = idx + 1;
+                                    const thumb = item.pageThumbnails[idx] ?? null;
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => onTogglePage(pageNum)}
+                                            className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all duration-150 ${
+                                                selected
+                                                    ? 'border-blue-500 shadow-sm shadow-blue-500/30'
+                                                    : 'border-gray-200 dark:border-white/10 opacity-45 hover:opacity-100'
+                                            }`}
+                                            title={`Page ${pageNum}${selected ? ' ✓ Selected' : ''}`}
+                                        >
+                                            {thumb ? (
+                                                <img src={thumb} alt={`Page ${pageNum}`} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-white/5 text-[8px] text-gray-400 font-bold">
+                                                    {pageNum}
+                                                </div>
+                                            )}
+                                            {/* Checkmark overlay */}
+                                            {selected && (
+                                                <div className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-blue-600 rounded-full flex items-center justify-center shadow">
+                                                    <Check className="w-2 h-2 text-white" />
+                                                </div>
+                                            )}
+                                            {/* Page number badge */}
+                                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 py-0.5 text-center">
+                                                <span className="text-[8px] text-white font-bold">{pageNum}</span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </Reorder.Item>
     );
 };
@@ -208,8 +340,11 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
     const [advancedOpen, setAdvancedOpen] = useState(false);
     const [showThumbs, setShowThumbs] = useState(true);
+    const [expandedFileId, setExpandedFileId] = useState<string | null>(null);
     const [outputName, setOutputName] = useState('merged');
     const [addBlankBetween, setAddBlankBetween] = useState(false);
+    const [addBlankAtEnd, setAddBlankAtEnd] = useState(false);
+    const [mergeMode, setMergeMode] = useState<'sequential' | 'interleave'>('sequential');
     const uploadInputRef = useRef<HTMLInputElement>(null);
     const dropZoneRef = useRef<HTMLDivElement>(null);
 
@@ -242,6 +377,8 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
             size: file.size,
             pageCount: null,
             thumbnail: null,
+            pageThumbnails: [],
+            selectedPages: [],
             pageRange: '',
             loading: true,
             error: null,
@@ -262,14 +399,23 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
         });
 
         // Async enrichment
-        const [pageCount, thumbnail] = await Promise.all([
-            getFilePageCount(file),
+        const pageCount = await getFilePageCount(file);
+        // Limit page thumbnails to avoid long load times with large PDFs
+        const thumbCount = Math.min(pageCount, 30);
+        const [thumbnail, pageThumbnails] = await Promise.all([
             generatePDFThumbnail(file, 140),
+            thumbCount > 0
+                ? generatePDFPageThumbnails(file, Array.from({ length: thumbCount }, (_, i) => i + 1), 120)
+                : Promise.resolve([]),
         ]);
+
+        const selectedPages = pageCount > 0
+            ? Array.from({ length: pageCount }, () => true)
+            : [];
 
         setFiles(prev => prev.map(f =>
             f.id === entry.id
-                ? { ...f, pageCount, thumbnail, loading: false }
+                ? { ...f, pageCount, thumbnail, pageThumbnails, selectedPages, loading: false }
                 : f
         ));
 
@@ -312,11 +458,41 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
         setFiles(prev => prev.map(f => f.id === id ? { ...f, pageRange } : f));
     }, []);
 
+    const updateSelectedPages = useCallback((id: string, selectedPages: boolean[]) => {
+        setFiles(prev => prev.map(f =>
+            f.id === id
+                ? { ...f, selectedPages, pageRange: selectedToRange(selectedPages) }
+                : f
+        ));
+    }, []);
+
     const updateName = useCallback((id: string, displayName: string) => {
         setFiles(prev => prev.map(f => f.id === id ? { ...f, displayName } : f));
     }, []);
 
     const clearAll = useCallback(() => setFiles([]), []);
+
+    const sortAlphabetically = useCallback(() => {
+        setFiles(prev => [...prev].sort((a, b) => a.displayName.localeCompare(b.displayName)));
+    }, []);
+
+    const duplicateFile = useCallback((item: MergeFile) => {
+        const newEntry: MergeFile = {
+            ...item,
+            id: uid(),
+            displayName: `${item.displayName} (copy)`,
+        };
+        setFiles(prev => {
+            if (prev.length >= MAX_FILES) {
+                toast('info', `Maximum of ${MAX_FILES} files reached.`);
+                return prev;
+            }
+            const idx = prev.findIndex(f => f.id === item.id);
+            const copy = [...prev];
+            copy.splice(idx + 1, 0, newEntry);
+            return copy;
+        });
+    }, [toast]);
 
     // ── Merge ────────────────────────────────────────────────────────────────
 
@@ -345,6 +521,8 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
             await mergePDFsAdvanced(inputs, {
                 outputName,
                 addBlankBetween,
+                addBlankAtEnd,
+                mode: mergeMode,
                 onProgress: (p) => {
                     setProgress(p);
                     if (p < 30) setProgressLabel('Loading files…');
@@ -369,7 +547,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
             setProgress(0);
             setProgressLabel('');
         }
-    }, [files, isProcessing, outputName, addBlankBetween, toast]);
+    }, [files, isProcessing, outputName, addBlankBetween, addBlankAtEnd, mergeMode, toast]);
 
     // ── Derived stats ────────────────────────────────────────────────────────
 
@@ -492,6 +670,12 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                         {showThumbs ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
 
+                    {files.length > 1 && (
+                        <button onClick={sortAlphabetically}
+                            className="px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors flex items-center gap-1.5">
+                            <ArrowDownUp className="w-3.5 h-3.5" /> Sort
+                        </button>
+                    )}
                     {files.length > 0 && (
                         <button onClick={clearAll}
                             className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center gap-1.5">
@@ -602,6 +786,20 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                                         onRemove={() => removeFile(item.id)}
                                                         onRangeChange={(v) => updateRange(item.id, v)}
                                                         onNameChange={(v) => updateName(item.id, v)}
+                                                        onDuplicate={() => duplicateFile(item)}
+                                                        expanded={expandedFileId === item.id}
+                                                        onToggleExpand={() => setExpandedFileId(prev => prev === item.id ? null : item.id)}
+                                                        onTogglePage={(pageNum) => {
+                                                            const sel = [...item.selectedPages];
+                                                            sel[pageNum - 1] = !sel[pageNum - 1];
+                                                            updateSelectedPages(item.id, sel);
+                                                        }}
+                                                        onSelectAll={() => {
+                                                            updateSelectedPages(item.id, item.selectedPages.map(() => true));
+                                                        }}
+                                                        onSelectNone={() => {
+                                                            updateSelectedPages(item.id, item.selectedPages.map(() => false));
+                                                        }}
                                                         showThumbs={showThumbs}
                                                     />
                                                 </div>
@@ -679,7 +877,34 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                 >
                                     <div className="px-5 pb-5 space-y-4">
 
-                                        {/* Blank page toggle */}
+                                        {/* Merge mode */}
+                                        <div>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">
+                                                Merge Mode
+                                            </label>
+                                            <div className="flex gap-2">
+                                                {(['sequential', 'interleave'] as const).map(mode => (
+                                                    <button
+                                                        key={mode}
+                                                        onClick={() => setMergeMode(mode)}
+                                                        className={`flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
+                                                            mergeMode === mode
+                                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                                : 'bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/10 hover:border-blue-300'
+                                                        }`}
+                                                    >
+                                                        {mode === 'sequential' ? 'Sequential' : 'Interleave'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <p className="text-[10px] text-gray-400 mt-1.5 leading-relaxed">
+                                                {mergeMode === 'sequential'
+                                                    ? 'Append files one after another (default)'
+                                                    : 'Alternate pages from each file. Useful for booklet printing, side-by-side merging.'}
+                                            </p>
+                                        </div>
+
+                                        {/* Blank page toggles */}
                                         <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10">
                                             <div>
                                                 <p className="text-xs font-bold dark:text-gray-200 flex items-center gap-1.5">
@@ -696,6 +921,26 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                                     className="absolute top-1 w-3 h-3 bg-white rounded-full shadow"
                                                     style={{ left: addBlankBetween ? '20px' : '2px' }}
+                                                />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10">
+                                            <div>
+                                                <p className="text-xs font-bold dark:text-gray-200 flex items-center gap-1.5">
+                                                    <FilePlus2 className="w-3.5 h-3.5 text-blue-500" /> Blank page at end
+                                                </p>
+                                                <p className="text-[10px] text-gray-400 mt-0.5">Appends an empty A4 page to the output</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setAddBlankAtEnd(v => !v)}
+                                                className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ml-3 ${addBlankAtEnd ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-700'}`}
+                                            >
+                                                <motion.div
+                                                    animate={{ left: addBlankAtEnd ? '20px' : '2px' }}
+                                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                                    className="absolute top-1 w-3 h-3 bg-white rounded-full shadow"
+                                                    style={{ left: addBlankAtEnd ? '20px' : '2px' }}
                                                 />
                                             </button>
                                         </div>
