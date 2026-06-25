@@ -54,8 +54,7 @@ const supabase = {
     getSession: async () => {
       try {
         await auth.authStateReady();
-        const user = auth.currentUser;
-        return { data: { session: mapToSession(user) } };
+        return { data: { session: mapToSession(auth.currentUser) } };
       } catch (error) {
         console.error('getSession error:', error);
         return { data: { session: null } };
@@ -65,8 +64,7 @@ const supabase = {
     getUser: async () => {
       try {
         await auth.authStateReady();
-        const user = auth.currentUser;
-        return { data: { user: mapFirebaseUser(user) } };
+        return { data: { user: mapFirebaseUser(auth.currentUser) } };
       } catch (error) {
         console.error('getUser error:', error);
         return { data: { user: null } };
@@ -88,10 +86,15 @@ const supabase = {
       return { error: null };
     },
 
-    signInWithGoogleRedirect: () => {
+    signInWithGoogleRedirect: async () => {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      return signInWithRedirect(auth, provider);
+      try {
+        await signInWithRedirect(auth, provider);
+      } catch (error) {
+        console.error('Google redirect error:', error);
+        throw error;
+      }
     },
 
     signInWithGooglePopup: async () => {

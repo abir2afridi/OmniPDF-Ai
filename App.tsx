@@ -1743,26 +1743,17 @@ const App: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
 
-    async function init() {
-      // Process any pending redirect result first
-      const { data: redirectData, error: redirectError } = await supabase.auth.handleRedirect();
-      if (redirectError) {
-        console.error('Redirect sign-in error:', redirectError);
-      }
-
-      // Get session (waits for auth state to restore from IndexedDB)
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled) {
-        setIsAuthenticated(!!data?.session);
-      }
-    }
-    init();
-
+    // Subscribe to auth state changes FIRST (persistent listener handles all events)
     const {
       data: { subscription: sub },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
       setIsAuthenticated(!!session);
+    });
+
+    // Process any pending redirect result (subscription catches the sign-in event)
+    supabase.auth.handleRedirect().then(({ error }) => {
+      if (error) console.error('Redirect sign-in error:', error);
     });
 
     return () => {
