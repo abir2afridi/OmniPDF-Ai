@@ -114,6 +114,7 @@ const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
 // Individual file card with reorder handle
 const FileCard = ({
     item,
+    sequence,
     onRemove,
     onRangeChange,
     onNameChange,
@@ -126,6 +127,7 @@ const FileCard = ({
     showThumbs,
 }: {
     item: MergeFile;
+    sequence: number;
     onRemove: () => void;
     onRangeChange: (v: string) => void;
     onNameChange: (v: string) => void;
@@ -149,7 +151,9 @@ const FileCard = ({
             value={item}
             dragListener={false}
             dragControls={controls}
-            className="group bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-2xl hover:border-blue-200 dark:hover:border-blue-500/30 hover:shadow-md transition-all duration-200 select-none overflow-hidden"
+            className="group bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-2xl hover:border-blue-200 dark:hover:border-blue-500/30 hover:shadow-md select-none overflow-hidden"
+            layout
+            transition={{ type: 'spring', stiffness: 500, damping: 35, mass: 1 }}
         >
             {/* ── Main row ── */}
             <div className="flex items-start gap-3 p-3">
@@ -161,6 +165,11 @@ const FileCard = ({
                 >
                     <GripVertical className="w-4 h-4" />
                 </button>
+
+                {/* Sequence badge */}
+                <div className="mt-2 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[9px] font-black flex items-center justify-center shrink-0">
+                    {sequence}
+                </div>
 
                 {/* Thumbnail */}
                 <div className={`shrink-0 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center transition-all duration-300 ${showThumbs ? 'w-14 h-[72px]' : 'w-9 h-10'}`}>
@@ -345,6 +354,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
     const [addBlankBetween, setAddBlankBetween] = useState(false);
     const [addBlankAtEnd, setAddBlankAtEnd] = useState(false);
     const [mergeMode, setMergeMode] = useState<'sequential' | 'interleave'>('sequential');
+    const [mergedResult, setMergedResult] = useState<{ blobUrl: string; filename: string } | null>(null);
     const uploadInputRef = useRef<HTMLInputElement>(null);
     const dropZoneRef = useRef<HTMLDivElement>(null);
 
@@ -518,7 +528,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
 
         try {
             setProgressLabel('Merging PDFs…');
-            await mergePDFsAdvanced(inputs, {
+            const { bytes, filename } = await mergePDFsAdvanced(inputs, {
                 outputName,
                 addBlankBetween,
                 addBlankAtEnd,
@@ -531,16 +541,23 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                     else setProgressLabel('Preparing download…');
                 },
             });
+
+            // Auto-download
+            const blob = new Blob([bytes], { type: 'application/pdf' });
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            a.click();
+
             setProgress(100);
             setProgressLabel('Done!');
-            toast('success', `"${outputName || 'merged'}.pdf" downloaded successfully!`);
+            setMergedResult({ blobUrl, filename });
 
-            // Reset after success
+            // Reset processing state after a moment
             setTimeout(() => {
                 setIsProcessing(false);
-                setProgress(0);
-                setProgressLabel('');
-            }, 1200);
+            }, 800);
         } catch (err: any) {
             toast('error', err?.message || 'Merge failed. Please try again.');
             setIsProcessing(false);
@@ -548,6 +565,15 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
             setProgressLabel('');
         }
     }, [files, isProcessing, outputName, addBlankBetween, addBlankAtEnd, mergeMode, toast]);
+
+    const dismissResult = useCallback(() => {
+        if (mergedResult) {
+            URL.revokeObjectURL(mergedResult.blobUrl);
+        }
+        setMergedResult(null);
+        setProgress(0);
+        setProgressLabel('');
+    }, [mergedResult]);
 
     // ── Derived stats ────────────────────────────────────────────────────────
 
@@ -772,39 +798,33 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                         axis="y"
                                         values={files}
                                         onReorder={setFiles}
-                                        className="space-y-2"
+                                        className="space-y-2 relative"
                                     >
-                                        <AnimatePresence initial={false}>
-                                            {files.map((item, idx) => (
-                                                <div key={item.id} className="relative">
-                                                    {/* Sequence number badge */}
-                                                    <span className="absolute -left-6 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[9px] font-black flex items-center justify-center select-none">
-                                                        {idx + 1}
-                                                    </span>
-                                                    <FileCard
-                                                        item={item}
-                                                        onRemove={() => removeFile(item.id)}
-                                                        onRangeChange={(v) => updateRange(item.id, v)}
-                                                        onNameChange={(v) => updateName(item.id, v)}
-                                                        onDuplicate={() => duplicateFile(item)}
-                                                        expanded={expandedFileId === item.id}
-                                                        onToggleExpand={() => setExpandedFileId(prev => prev === item.id ? null : item.id)}
-                                                        onTogglePage={(pageNum) => {
-                                                            const sel = [...item.selectedPages];
-                                                            sel[pageNum - 1] = !sel[pageNum - 1];
-                                                            updateSelectedPages(item.id, sel);
-                                                        }}
-                                                        onSelectAll={() => {
-                                                            updateSelectedPages(item.id, item.selectedPages.map(() => true));
-                                                        }}
-                                                        onSelectNone={() => {
-                                                            updateSelectedPages(item.id, item.selectedPages.map(() => false));
-                                                        }}
-                                                        showThumbs={showThumbs}
-                                                    />
-                                                </div>
-                                            ))}
-                                        </AnimatePresence>
+                                        {files.map((item, idx) => (
+                                            <FileCard
+                                                key={item.id}
+                                                item={item}
+                                                sequence={idx + 1}
+                                                onRemove={() => removeFile(item.id)}
+                                                onRangeChange={(v) => updateRange(item.id, v)}
+                                                onNameChange={(v) => updateName(item.id, v)}
+                                                onDuplicate={() => duplicateFile(item)}
+                                                expanded={expandedFileId === item.id}
+                                                onToggleExpand={() => setExpandedFileId(prev => prev === item.id ? null : item.id)}
+                                                onTogglePage={(pageNum) => {
+                                                    const sel = [...item.selectedPages];
+                                                    sel[pageNum - 1] = !sel[pageNum - 1];
+                                                    updateSelectedPages(item.id, sel);
+                                                }}
+                                                onSelectAll={() => {
+                                                    updateSelectedPages(item.id, item.selectedPages.map(() => true));
+                                                }}
+                                                onSelectNone={() => {
+                                                    updateSelectedPages(item.id, item.selectedPages.map(() => false));
+                                                }}
+                                                showThumbs={showThumbs}
+                                            />
+                                        ))}
                                     </Reorder.Group>
                                 </div>
                             </motion.div>
@@ -1040,6 +1060,53 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                             </p>
                         )}
                     </div>
+
+                    {/* ── Merged Result Card ── */}
+                    <AnimatePresence>
+                        {mergedResult && (
+                            <motion.div
+                                initial={{ y: 40, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: 40, opacity: 0 }}
+                                className="p-5 border-t border-gray-100 dark:border-white/5 bg-white dark:bg-[#262636]"
+                            >
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-black dark:text-white">Merge Complete</p>
+                                        <p className="text-[10px] text-gray-400 font-medium">{mergedResult.filename}</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => window.open(mergedResult.blobUrl, '_blank')}
+                                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                                    >
+                                        <Eye className="w-4 h-4" /> View PDF
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            const a = document.createElement('a');
+                                            a.href = mergedResult.blobUrl;
+                                            a.download = mergedResult.filename;
+                                            a.click();
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 transition-colors"
+                                    >
+                                        <Download className="w-4 h-4" /> Download
+                                    </button>
+                                    <button
+                                        onClick={dismissResult}
+                                        className="px-3 py-3 rounded-xl font-bold text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         </div>

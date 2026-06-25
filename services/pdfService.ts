@@ -169,7 +169,7 @@ export interface AdvancedMergeOptions {
 export async function mergePDFsAdvanced(
     inputs: AdvancedMergeFileInput[],
     options: AdvancedMergeOptions = {}
-): Promise<void> {
+): Promise<{ bytes: Uint8Array; filename: string }> {
     const { outputName = 'merged', addBlankBetween = false, addBlankAtEnd = false, mode = 'sequential', onProgress } = options;
 
     if (inputs.length === 0) throw new Error('No files to merge. Please add at least one PDF.');
@@ -192,7 +192,7 @@ export async function mergePDFsAdvanced(
 
     // ── Load all source PDFs and extract requested pages ──
     type PageEntry = { docIndex: number; pageIndex: number };
-    const allPageEntries: PageEntry[][] = []; // entries[docIndex] = list of page indices
+    const allPageEntries: PageEntry[][] = [];
 
     for (let i = 0; i < inputs.length; i++) {
         const { file, pageRange = '' } = inputs[i];
@@ -242,7 +242,6 @@ export async function mergePDFsAdvanced(
         copied.forEach(p => mergedDoc.addPage(p));
     };
 
-    // ── Build ordered page list ──
     const ordered: PageEntry[] = [];
 
     if (mode === 'interleave') {
@@ -294,7 +293,8 @@ export async function mergePDFsAdvanced(
         .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
         .replace(/\s+/g, '_')
         .slice(0, 100) || 'merged';
-    downloadBytes(mergedBytes, `${safe}.pdf`);
+
+    return { bytes: mergedBytes, filename: `${safe}.pdf` };
 }
 
 // ──────────────────────────────────────────────
