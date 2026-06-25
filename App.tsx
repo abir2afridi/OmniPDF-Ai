@@ -1752,8 +1752,8 @@ const App: React.FC = () => {
       if (cancelled) return;
 
       const redirectResult = await supabase.auth.getRedirectResult();
-      if (redirectResult?.data?.user && !cancelled) {
-        setIsAuthenticated(true);
+      if (!cancelled) {
+        setIsAuthenticated(!!redirectResult?.data?.user);
       }
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -1761,14 +1761,16 @@ const App: React.FC = () => {
         setIsAuthenticated(!!session);
         clearTimeout(timeoutId);
       }
-    })();
 
-    const {
-      data: { subscription: sub },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!cancelled) setIsAuthenticated(!!session);
-    });
-    subscription = sub;
+      if (!cancelled) {
+        const {
+          data: { subscription: sub },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (!cancelled) setIsAuthenticated(!!session);
+        });
+        subscription = sub;
+      }
+    })();
 
     return () => {
       cancelled = true;
