@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithCredential,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -22,6 +22,8 @@ const firebaseConfig = {
   measurementId: "G-HVMP4GXK59"
 };
 
+const GOOGLE_CLIENT_ID = "619952563506-dg0jv4cvg1t4h0va8qhf8g7at7gh5fur.apps.googleusercontent.com";
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
@@ -40,6 +42,38 @@ const mapFirebaseUser = (user: User | null) => {
 
 const mapToSession = (user: User | null) => {
   return user ? { user: mapFirebaseUser(user) } : null;
+};
+
+let gisInitialized = false;
+
+const loadGIS = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (document.getElementById('google-identity-services')) {
+      resolve();
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'google-identity-services';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
+    document.head.appendChild(script);
+  });
+};
+
+const waitForGIS = (): Promise<void> => {
+  return new Promise((resolve) => {
+    const check = () => {
+      if (typeof (window as any).google?.accounts?.id) {
+        resolve();
+      } else {
+        setTimeout(check, 100);
+      }
+    };
+    check();
+  });
 };
 
 const supabase = {
@@ -82,9 +116,6 @@ const supabase = {
         await signInWithPopup(auth, provider);
         return { error: null };
       } catch (error: any) {
-        if (error.code === 'auth/popup-blocked') {
-          return { error: { message: 'Popup blocked. Please allow popups for this site and try again.' } };
-        }
         return { error };
       }
     },
@@ -117,6 +148,41 @@ const supabase = {
     resetPasswordForEmail: async (email: string) => {
       await sendPasswordResetEmail(auth, email);
       return { data: {}, error: null };
+    },
+
+    initGoogleButton: async (container: HTMLElement) => {
+      try {
+        await loadGIS();
+        await waitForGIS();
+
+        if (!gisInitialized) {
+          (window as any).google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: async (response: { credential: string }) => {
+              try {
+                const credential = GoogleAuthProvider.credential(response.credential);
+                await signInWithCredential(auth, credential);
+              } catch (err: any) {
+                console.error('Google sign-in error:', err);
+              }
+            },
+          });
+          gisInitialized = true;
+        }
+
+        container.innerHTML = '';
+        (window as any).google.accounts.id.renderButton(container, {
+          type: 'standard',
+          size: 'large',
+          text: 'signin_with',
+          shape: 'rectangular',
+          theme: 'outline',
+          logo_alignment: 'left',
+          width: container.offsetWidth || 300,
+        });
+      } catch (err: any) {
+        console.error('Failed to init Google button:', err);
+      }
     },
   },
 };

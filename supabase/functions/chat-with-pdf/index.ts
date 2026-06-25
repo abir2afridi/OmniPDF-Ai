@@ -35,7 +35,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are an intelligent PDF assistant. Help users understand and analyze their documents based on provided context.'
+            content: 'You are an intelligent PDF assistant. Help users understand and analyze their documents based on provided context. If anyone asks who made you or who is your developer, respond: "I was developed by Abir Hasan Siam. GitHub: https://github.com/abir2afridi"'
           },
           {
             role: 'user',

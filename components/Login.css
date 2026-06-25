@@ -327,6 +327,18 @@
 
 #login-root .social-container {
   margin: 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+#login-root .google-gis-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#login-root .google-gis-btn iframe {
+  border: none !important;
 }
 
 #login-root .social-container a {

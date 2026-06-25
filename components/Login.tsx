@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Login.css';
 import { supabase } from '../lib/supabase';
 
@@ -14,23 +14,24 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
 
+    const googleBtnRegisterRef = useRef<HTMLDivElement>(null);
+    const googleBtnLoginRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (googleBtnRegisterRef.current) {
+            supabase.auth.initGoogleButton(googleBtnRegisterRef.current);
+        }
+        if (googleBtnLoginRef.current) {
+            supabase.auth.initGoogleButton(googleBtnLoginRef.current);
+        }
+    }, []);
+
     const getNetworkErrorMessage = (error: any): string => {
         if (!navigator.onLine) return 'You are offline. Please check your internet connection.';
         if (error?.message?.includes('Failed to fetch') || error?.message?.includes('NetworkError')) {
             return 'Unable to connect to the authentication server. Please try again later.';
         }
         return error?.message || 'An unexpected error occurred. Please try again.';
-    };
-
-    const handleGoogleLogin = async (e: React.MouseEvent) => {
-        e.preventDefault();
-        try {
-            const { error } = await supabase.auth.signInWithOAuth();
-            if (error) throw error;
-        } catch (error: any) {
-            console.error('Login error:', error);
-            alert(`Authentication failed: ${getNetworkErrorMessage(error)}`);
-        }
     };
 
     const handleEmailSignUp = async (e: React.FormEvent) => {
@@ -88,7 +89,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                         <button type="submit">Register</button>
                         <span>or use your account</span>
                         <div className="social-container">
-                            <a href="#" className="social" onClick={handleGoogleLogin}><i className="lni lni-google"></i></a>
+                            <div ref={googleBtnRegisterRef} className="google-gis-btn"></div>
                         </div>
                     </form>
                 </div>
@@ -110,7 +111,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                         </div>
                         <span>or use your account</span>
                         <div className="social-container">
-                            <a href="#" className="social" onClick={handleGoogleLogin}><i className="lni lni-google"></i></a>
+                            <div ref={googleBtnLoginRef} className="google-gis-btn"></div>
                         </div>
                     </form>
                 </div>

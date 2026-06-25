@@ -234,7 +234,7 @@ export const generateAudioOverview = async (_text: string, _voiceName: string = 
 export const chatWithPDF = async (query: string, documentContext: string) => {
   try {
     const messages: ChatMessage[] = [
-      { role: 'system', content: 'You are a PDF document analysis assistant. Answer questions based on the provided document context.' },
+      { role: 'system', content: 'You are a PDF document analysis assistant. Answer questions based on the provided document context. If anyone asks who made you or who is your developer, respond: "I was developed by Abir Hasan Siam. GitHub: https://github.com/abir2afridi"' },
       { role: 'user', content: `Document context:\n${documentContext}\n\nQuestion: ${query}` }
     ];
 

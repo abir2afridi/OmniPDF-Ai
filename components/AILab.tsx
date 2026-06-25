@@ -119,7 +119,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
             const messages = [
                 {
                     role: 'system' as const,
-                    content: 'You are an AI assistant for OmniPDF AI, a PDF management and analysis platform. Always be helpful, professional, and mention that you\'re part of OmniPDF AI suite when appropriate.'
+                    content: 'You are an AI assistant for OmniPDF AI, a PDF management and analysis platform. Always be helpful, professional, and mention that you\'re part of OmniPDF AI suite when appropriate. IMPORTANT: If anyone asks "who made you", "who is your developer", "who created you", or similar questions, always respond: "I was developed by Abir Hasan Siam. GitHub: https://github.com/abir2afridi"'
                 },
                 ...chatHistory.slice(-10).map(msg => ({ // Keep last 10 messages for context
                     role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
@@ -381,13 +381,28 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                 <div className="flex-1 p-6 md:p-8 overflow-y-auto space-y-6 custom-scrollbar">
                                     {chatHistory.map((msg) => (
                                         <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`max-w-[85%] md:max-w-[70%] p-5 rounded-2xl ${msg.role === 'user'
+                                            <div className={`group max-w-[85%] md:max-w-[70%] p-5 rounded-2xl ${msg.role === 'user'
                                                 ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-br-none shadow-lg'
                                                 : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-bl-none border border-gray-100 dark:border-white/5 shadow-sm'
                                                 }`}>
-                                                <p className="text-sm font-medium leading-relaxed">{msg.content}</p>
-                                                <div className={`mt-2 text-[9px] font-black uppercase tracking-widest opacity-30 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                                                    {msg.role === 'user' ? 'Operator' : 'AI Lab Core'} • {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{
+                                                    __html: msg.role === 'ai'
+                                                        ? msg.content.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-brand-500 dark:text-brand-400 underline hover:opacity-80 transition-opacity">$1</a>')
+                                                        : msg.content
+                                                }} />
+                                                <div className={`mt-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest opacity-30 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                    <span>{msg.role === 'user' ? 'Operator' : 'AI Lab Core'} • {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    {msg.role === 'ai' && (
+                                                        <button
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(msg.content);
+                                                            }}
+                                                            className="opacity-0 group-hover:opacity-100 hover:!opacity-100 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-white/10 transition-all text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                            title="Copy message"
+                                                        >
+                                                            <Copy className="w-3 h-3" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
