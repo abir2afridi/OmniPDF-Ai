@@ -2033,7 +2033,7 @@ const App: React.FC = () => {
               <SplitPDF onBack={() => handleToolSelect(null)} />
             )}
 
-            {currentView === AppView.WORKSPACE && activeTool?.id === 'delete' && (
+            {currentView === AppView.WORKSPACE && activeTool?.id === 'delete-pages' && (
               <DeletePages onBack={() => handleToolSelect(null)} />
             )}
 
@@ -2093,7 +2093,7 @@ const App: React.FC = () => {
               <SignPDF onBack={() => handleToolSelect(null)} />
             )}
 
-            {currentView === AppView.WORKSPACE && activeTool?.id !== 'merge' && activeTool?.id !== 'split' && activeTool?.id !== 'delete' && activeTool?.id !== 'rotate' && activeTool?.id !== 'word-to-pdf' && activeTool?.id !== 'excel-to-pdf' && activeTool?.id !== 'ppt-to-pdf' && activeTool?.id !== 'pdf-to-jpg' && activeTool?.id !== 'jpg-to-pdf' && activeTool?.id !== 'pdf-to-word' && activeTool?.id !== 'pdf-to-excel' && activeTool?.id !== 'pdf-to-ppt' && activeTool?.id !== 'extract-images' && activeTool?.id !== 'compress' && activeTool?.id !== 'ocr' && activeTool?.id !== 'protect' && activeTool?.id !== 'sign' && activeTool?.id !== 'esign' && (
+            {currentView === AppView.WORKSPACE && activeTool?.id !== 'merge' && activeTool?.id !== 'split' && activeTool?.id !== 'delete-pages' && activeTool?.id !== 'rotate' && activeTool?.id !== 'word-to-pdf' && activeTool?.id !== 'excel-to-pdf' && activeTool?.id !== 'ppt-to-pdf' && activeTool?.id !== 'pdf-to-jpg' && activeTool?.id !== 'jpg-to-pdf' && activeTool?.id !== 'pdf-to-word' && activeTool?.id !== 'pdf-to-excel' && activeTool?.id !== 'pdf-to-ppt' && activeTool?.id !== 'extract-images' && activeTool?.id !== 'compress' && activeTool?.id !== 'ocr' && activeTool?.id !== 'protect' && activeTool?.id !== 'sign' && activeTool?.id !== 'esign' && (
               <div className="flex flex-1 overflow-hidden">
                 <Workspace
                   activeTool={activeTool}

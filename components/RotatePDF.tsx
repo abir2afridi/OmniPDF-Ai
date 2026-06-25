@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import {
     getFilePageCount,
+    generatePDFPageThumbnails,
     rotatePDFAdvanced,
     downloadBytes,
     type RotationMap,
@@ -127,7 +128,7 @@ const PageCard: React.FC<PageCardProps> = ({
             onClick={onSelect}
         >
             {/* Thumbnail card */}
-            <div className={`relative aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all duration-150
+            <div className={`relative aspect-[3/4] rounded-xl border-2 transition-all duration-150
                 ${selected
                     ? 'border-violet-500 ring-2 ring-violet-400/40 shadow-lg shadow-violet-500/20'
                     : 'border-gray-200 dark:border-white/10 hover:border-violet-300 dark:hover:border-violet-500/40'}`}
@@ -136,13 +137,15 @@ const PageCard: React.FC<PageCardProps> = ({
                 {isRotated && angleBadge(displayAngle)}
 
                 {/* Thumbnail with live CSS rotation preview */}
-                <div className="w-full h-full flex items-center justify-center bg-[#f3f1ea] dark:bg-white/5 overflow-hidden p-1">
+                <div className={`w-full h-full flex items-center justify-center bg-[#f3f1ea] dark:bg-white/5 p-1 ${isRotated ? 'overflow-visible' : 'overflow-hidden'}`}>
                     {src ? (
                         <img
                             src={src}
                             alt={`Page ${index + 1}`}
                             className="max-w-full max-h-full object-contain transition-transform duration-300"
-                            style={{ transform: `rotate(${displayAngle}deg)` }}
+                            style={{
+                                transform: `rotate(${displayAngle}deg) scale(${isRotated ? 0.72 : 1})`,
+                            }}
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -259,28 +262,6 @@ export const RotatePDF: React.FC<RotatePDFProps> = ({ onBack }) => {
     const dismissToast = useCallback((id: string) =>
         setToasts(prev => prev.filter(t => t.id !== id)), []);
 
-    // ── Thumbnail generator
-    const generatePageThumb = useCallback(async (f: File, pageIndex: number): Promise<string> => {
-        try {
-            const { GlobalWorkerOptions, getDocument } = await import('pdfjs-dist');
-            if (GlobalWorkerOptions) {
-                GlobalWorkerOptions.workerSrc =
-                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-            }
-            const bytes = await f.arrayBuffer();
-            const pdf = await getDocument({ data: new Uint8Array(bytes) }).promise;
-            const page = await pdf.getPage(pageIndex + 1);
-            const naturalVP = page.getViewport({ scale: 1 });
-            const scale = 120 / naturalVP.width;
-            const vp = page.getViewport({ scale });
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.round(vp.width);
-            canvas.height = Math.round(vp.height);
-            await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp }).promise;
-            return canvas.toDataURL('image/jpeg', 0.68);
-        } catch { return ''; }
-    }, []);
-
     // ── File loading
     const loadFile = useCallback(async (f: File) => {
         if (f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) {
@@ -303,25 +284,30 @@ export const RotatePDF: React.FC<RotatePDFProps> = ({ onBack }) => {
         setRangeInput('');
         setLoadingFile(true);
 
-        const count = await getFilePageCount(f);
-        setTotalPages(count);
-        setOutputPrefix(f.name.replace(/\.pdf$/i, ''));
-        setLoadingFile(false);
+        try {
+            const count = await getFilePageCount(f);
+            setTotalPages(count);
+            setOutputPrefix(f.name.replace(/\.pdf$/i, ''));
+            setLoadingFile(false);
 
-        if (count === 0) {
-            toast('error', 'Could not read page count — file may be corrupted.');
-            return;
-        }
+            if (count === 0) {
+                toast('error', 'Could not read page count — file may be corrupted.');
+                return;
+            }
 
-        toast('info', `Loaded ${count} pages. Generating previews…`);
-        setLoadingThumbs(true);
-        const limit = Math.min(count, THUMB_LIMIT);
-        for (let i = 0; i < limit; i++) {
-            const dataUrl = await generatePageThumb(f, i);
-            if (dataUrl) setThumbs(prev => [...prev, { index: i, dataUrl }]);
+            toast('info', `Loaded ${count} pages. Generating previews…`);
+            setLoadingThumbs(true);
+            const limit = Math.min(count, THUMB_LIMIT);
+            const thumbUrls = await generatePDFPageThumbnails(f, Array.from({ length: limit }, (_, i) => i + 1), 280);
+            setThumbs(thumbUrls.map((dataUrl, i) => ({ index: i, dataUrl })));
+        } catch (err) {
+            console.error('loadFile error:', err);
+            toast('error', 'Failed to load PDF preview. Try a different file.');
+        } finally {
+            setLoadingThumbs(false);
+            setLoadingFile(false);
         }
-        setLoadingThumbs(false);
-    }, [toast, generatePageThumb]);
+    }, [toast]);
 
     // ── Drag & Drop
     const onDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); }, []);
@@ -711,7 +697,7 @@ export const RotatePDF: React.FC<RotatePDFProps> = ({ onBack }) => {
 
                                     {/* Card Grid */}
                                     <div className="flex-1 overflow-y-auto p-4">
-                                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                                             {Array.from({ length: totalPages }, (_, i) => (
                                                 <PageCard
                                                     key={i}

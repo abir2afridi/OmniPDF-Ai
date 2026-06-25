@@ -123,8 +123,13 @@ export async function generatePDFThumbnail(file: File, maxWidth = 160): Promise<
 export async function generatePDFPageThumbnails(file: File, pageNumbers: number[], maxWidth = 120): Promise<string[]> {
     const thumbnails: string[] = [];
     try {
+        const pdfjsLib = await import('pdfjs-dist');
+        if (pdfjsLib.GlobalWorkerOptions) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc =
+                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
         const bytes = await file.arrayBuffer();
-        const pdf = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(bytes) }).promise;
         for (const pageNum of pageNumbers) {
             try {
                 const page = await pdf.getPage(pageNum);
@@ -141,8 +146,8 @@ export async function generatePDFPageThumbnails(file: File, pageNumbers: number[
                 thumbnails.push('');
             }
         }
-    } catch {
-        // If PDF fails, return empty strings
+    } catch (err) {
+        console.error('generatePDFPageThumbnails error:', err);
         for (let i = 0; i < pageNumbers.length; i++) thumbnails.push('');
     }
     return thumbnails;

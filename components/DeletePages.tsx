@@ -222,22 +222,29 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
         setRangeInput('');
         setLoadingFile(true);
 
-        const count = await getFilePageCount(f);
-        setTotalPages(count);
-        setOutputPrefix(f.name.replace(/\.pdf$/i, ''));
-        setLoadingFile(false);
+        try {
+            const count = await getFilePageCount(f);
+            setTotalPages(count);
+            setOutputPrefix(f.name.replace(/\.pdf$/i, ''));
+            setLoadingFile(false);
 
-        if (count === 0) {
-            toast('error', 'Could not read page count — file may be corrupted.');
-            return;
+            if (count === 0) {
+                toast('error', 'Could not read page count — file may be corrupted.');
+                return;
+            }
+
+            toast('info', `Loaded ${count} pages. Generating previews…`);
+            setLoadingThumbs(true);
+            const limit = Math.min(count, THUMB_LIMIT);
+            const thumbUrls = await generatePDFPageThumbnails(f, Array.from({ length: limit }, (_, i) => i + 1), 120);
+            setThumbs(thumbUrls.map((dataUrl, i) => ({ index: i, dataUrl })));
+        } catch (err) {
+            console.error('loadFile error:', err);
+            toast('error', 'Failed to load PDF preview. Try a different file.');
+        } finally {
+            setLoadingThumbs(false);
+            setLoadingFile(false);
         }
-
-        toast('info', `Loaded ${count} pages. Generating previews…`);
-        setLoadingThumbs(true);
-        const limit = Math.min(count, THUMB_LIMIT);
-        const thumbUrls = await generatePDFPageThumbnails(f, Array.from({ length: limit }, (_, i) => i + 1), 120);
-        setThumbs(thumbUrls.map((dataUrl, i) => ({ index: i, dataUrl })));
-        setLoadingThumbs(false);
     }, [toast]);
 
     // ── Drag & Drop ──────────────────────────────────────────────────────────

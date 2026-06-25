@@ -94,8 +94,13 @@ export function validatePdfForWord(file: File): string | null {
 // ── PDF Loading ───────────────────────────────────────────────────────────────
 
 async function loadPdf(file: File): Promise<PDFDocumentProxy> {
+    const pdfjsLib = await import('pdfjs-dist');
+    if (pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
     const buffer = await file.arrayBuffer();
-    return getDocument({ data: buffer }).promise;
+    return pdfjsLib.getDocument({ data: buffer }).promise;
 }
 
 // ── Text extraction ───────────────────────────────────────────────────────────
