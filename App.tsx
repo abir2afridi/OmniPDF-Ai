@@ -1747,7 +1747,8 @@ const App: React.FC = () => {
       if (!cancelled) setIsAuthenticated(false);
     }, 8000);
 
-    supabase.auth.getSession()
+    supabase.auth.handleRedirect()
+      .then(() => supabase.auth.getSession())
       .then(({ data: { session } }) => {
         if (!cancelled) setIsAuthenticated(!!session);
       })

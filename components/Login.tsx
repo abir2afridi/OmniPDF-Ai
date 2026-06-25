@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Login.css';
 import { supabase } from '../lib/supabase';
 
@@ -8,19 +8,14 @@ interface LoginProps {
 
 export const Login: React.FC<LoginProps> = ({ onBack }) => {
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
-    const [showFallback, setShowFallback] = useState(false);
-    const fallbackRef = useRef<HTMLDivElement>(null);
 
-    // Form States
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
 
     useEffect(() => {
-        if (showFallback && fallbackRef.current) {
-            supabase.auth.initGoogleButton(fallbackRef.current);
-        }
-    }, [showFallback]);
+        supabase.auth.handleRedirect();
+    }, []);
 
     const getNetworkErrorMessage = (error: any): string => {
         if (!navigator.onLine) return 'You are offline. Please check your internet connection.';
@@ -32,10 +27,11 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
 
     const handleGoogleLogin = async (e: React.MouseEvent) => {
         e.preventDefault();
-        const { error } = await supabase.auth.signInWithOAuth();
-        if (error?.code === 'auth/popup-blocked') {
-            setShowFallback(true);
-        } else if (error) {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth();
+            if (error) throw error;
+        } catch (error: any) {
+            console.error('Login error:', error);
             alert(`Authentication failed: ${getNetworkErrorMessage(error)}`);
         }
     };
@@ -154,22 +150,6 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                 </div>
 
             </div>
-
-            {showFallback && (
-                <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowFallback(false)}>
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-2xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Sign in with Google</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Popup was blocked. Use the button below instead.</p>
-                        <div ref={fallbackRef} className="flex justify-center"></div>
-                        <button
-                            onClick={() => setShowFallback(false)}
-                            className="mt-6 w-full text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

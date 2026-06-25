@@ -2,8 +2,8 @@ import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   onAuthStateChanged,
-  signInWithPopup,
-  signInWithCredential,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -23,8 +23,6 @@ const firebaseConfig = {
   measurementId: "G-HVMP4GXK59"
 };
 
-const GOOGLE_CLIENT_ID = "1044154368370-do81h015m74j9qbbjj77adsibc3tdqpg.apps.googleusercontent.com";
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
@@ -43,36 +41,6 @@ const mapFirebaseUser = (user: User | null) => {
 
 const mapToSession = (user: User | null) => {
   return user ? { user: mapFirebaseUser(user) } : null;
-};
-
-const loadGIS = (): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    if (document.getElementById('google-identity-services')) {
-      resolve();
-      return;
-    }
-    const script = document.createElement('script');
-    script.id = 'google-identity-services';
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
-    document.head.appendChild(script);
-  });
-};
-
-const waitForGIS = (): Promise<void> => {
-  return new Promise((resolve) => {
-    const check = () => {
-      if (typeof (window as any).google?.accounts?.id) {
-        resolve();
-      } else {
-        setTimeout(check, 100);
-      }
-    };
-    check();
-  });
 };
 
 const supabase = {
@@ -112,10 +80,22 @@ const supabase = {
       try {
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
-        await signInWithPopup(auth, provider);
+        await signInWithRedirect(auth, provider);
         return { error: null };
       } catch (error: any) {
         return { error };
+      }
+    },
+
+    handleRedirect: async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          return { data: { user: result.user }, error: null };
+        }
+        return { data: null, error: null };
+      } catch (error: any) {
+        return { data: null, error };
       }
     },
 
@@ -147,36 +127,6 @@ const supabase = {
     resetPasswordForEmail: async (email: string) => {
       await sendPasswordResetEmail(auth, email);
       return { data: {}, error: null };
-    },
-
-    initGoogleButton: async (container: HTMLElement) => {
-      try {
-        await loadGIS();
-        await waitForGIS();
-        (window as any).google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: async (response: { credential: string }) => {
-            try {
-              const credential = GoogleAuthProvider.credential(response.credential);
-              await signInWithCredential(auth, credential);
-            } catch (err: any) {
-              console.error('Google sign-in error:', err);
-            }
-          },
-        });
-        container.innerHTML = '';
-        (window as any).google.accounts.id.renderButton(container, {
-          type: 'standard',
-          size: 'large',
-          text: 'signin_with',
-          shape: 'rectangular',
-          theme: 'outline',
-          logo_alignment: 'left',
-          width: 300,
-        });
-      } catch (err: any) {
-        console.error('Failed to init Google button:', err);
-      }
     },
   },
 };
