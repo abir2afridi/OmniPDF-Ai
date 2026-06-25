@@ -1743,6 +1743,13 @@ const App: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
 
+    // Handle Firebase redirect result explicitly on mount
+    supabase.auth.handleRedirect().then(({ data, error }) => {
+      if (!cancelled && data?.session) {
+        setLoginToast('Logged in successfully');
+      }
+    });
+
     const {
       data: { subscription: sub },
     } = supabase.auth.onAuthStateChange((_event, session) => {

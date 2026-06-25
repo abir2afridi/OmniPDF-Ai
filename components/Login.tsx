@@ -6,20 +6,6 @@ interface LoginProps {
     onBack?: () => void;
 }
 
-function initGoogleOneTap() {
-    if (typeof google === 'undefined' || !google.accounts?.id) return;
-    google.accounts.id.initialize({
-        client_id: '1044154368370-do81h015m74j9qbbjj77adsibc3tdqpg.apps.googleusercontent.com',
-        cancel_on_tap_outside: false,
-        callback: async (response: any) => {
-            if (response.credential) {
-                const { error } = await supabase.auth.signInWithGoogleIdToken(response.credential);
-                if (error) console.error('Google OneTap sign-in error:', error);
-            }
-        },
-    });
-}
-
 export const Login: React.FC<LoginProps> = ({ onBack }) => {
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
 
@@ -37,12 +23,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
 
     const handleGoogleLogin = (e: React.MouseEvent) => {
         e.preventDefault();
-        if (typeof google === 'undefined' || !google.accounts?.id) {
-            alert('Google Sign-In is loading. Please try again in a moment.');
-            return;
-        }
-        initGoogleOneTap();
-        google.accounts.id.prompt();
+        supabase.auth.signInWithGoogleRedirect();
     };
 
     const handleEmailSignUp = async (e: React.FormEvent) => {
@@ -162,9 +143,3 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
         </div>
     );
 };
-
-declare global {
-    interface Window {
-        google?: any;
-    }
-}

@@ -5,6 +5,8 @@ import {
   browserLocalPersistence,
   onAuthStateChanged,
   signInWithCredential,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -83,7 +85,21 @@ const supabase = {
       return { error: null };
     },
 
+    signInWithGoogleRedirect: () => {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      signInWithRedirect(auth, provider);
+    },
+
     handleRedirect: async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          return { data: { session: mapToSession(result.user) }, error: null };
+        }
+      } catch (error: any) {
+        return { data: null, error };
+      }
       return { data: null, error: null };
     },
 
