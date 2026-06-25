@@ -1735,6 +1735,7 @@ const App: React.FC = () => {
   const [language, setLanguage] = useState('en');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [loginToast, setLoginToast] = useState<string | null>(null);
 
   // State to bridge RightDock buttons with Workspace actions
   const [editAction, setEditAction] = useState<{ type: 'undo' | 'redo' | 'delete' | null, timestamp: number }>({ type: null, timestamp: 0 });
@@ -1742,10 +1743,27 @@ const App: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
 
+    // Handle Google OAuth redirect (id_token in URL hash)
+    const hash = window.location.hash;
+    if (hash && hash.includes('id_token=')) {
+      const params = new URLSearchParams(hash.substring(1));
+      const idToken = params.get('id_token');
+      if (idToken) {
+        supabase.auth.signInWithGoogleIdToken(idToken).then(({ error }) => {
+          if (!error && !cancelled) setLoginToast('Logged in successfully with Google');
+        });
+      }
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     const {
       data: { subscription: sub },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!cancelled) setIsAuthenticated(!!session);
+      if (cancelled) return;
+      setIsAuthenticated(!!session);
+      if (session && !hash?.includes('id_token=')) {
+        setLoginToast('Logged in successfully');
+      }
     });
 
     return () => {
@@ -1753,6 +1771,13 @@ const App: React.FC = () => {
       sub.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (loginToast) {
+      const timer = setTimeout(() => setLoginToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [loginToast]);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -2148,6 +2173,13 @@ const App: React.FC = () => {
           </main>
         </div>
       </div>
+
+      {loginToast && (
+        <div className="fixed bottom-6 right-6 z-[9999] bg-green-600 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-semibold animate-slide-up flex items-center gap-2">
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          {loginToast}
+        </div>
+      )}
     </AppContext.Provider>
   );
 };

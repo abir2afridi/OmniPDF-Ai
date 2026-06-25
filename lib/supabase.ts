@@ -11,8 +11,6 @@ import {
   signOut as fbSignOut,
   sendPasswordResetEmail,
   updateProfile,
-  signInWithRedirect,
-  getRedirectResult,
   User,
 } from 'firebase/auth';
 
@@ -85,21 +83,7 @@ const supabase = {
       return { error: null };
     },
 
-    signInWithGoogleRedirect: async () => {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-      await signInWithRedirect(auth, provider);
-    },
-
     handleRedirect: async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result?.user) {
-          return { data: { session: mapToSession(result.user) }, error: null };
-        }
-      } catch (error: any) {
-        return { data: null, error };
-      }
       return { data: null, error: null };
     },
 
