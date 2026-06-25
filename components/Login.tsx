@@ -53,7 +53,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
         return error?.message || 'An unexpected error occurred. Please try again.';
     };
 
-    const handleGoogleLogin = async (e: React.MouseEvent) => {
+    const handleGoogleLogin = (e: React.MouseEvent) => {
         e.preventDefault();
         try {
             const client = getGisClient();
@@ -61,7 +61,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
             client.requestAccessToken();
         } catch (error: any) {
             console.error('Login error:', error);
-            alert(`Authentication failed: ${getNetworkErrorMessage(error)}`);
+            alert(`Authentication failed: ${error.message}`);
         }
     };
 
