@@ -4,7 +4,7 @@ import {
     Send, Copy, Volume2, RefreshCw, ArrowRight, Check, Sparkles, BrainCircuit, Zap, Globe2, Ear,
 
 } from 'lucide-react';
-import { chatWithAI, translateText, generateRefinedFilename, generateAudioOverview, chatWithPDF } from '../services/aiService';
+import { chatWithAIStreaming, translateText, generateRefinedFilename, generateAudioOverview, chatWithPDF } from '../services/aiService';
 import { AppContext } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -13,6 +13,7 @@ interface ChatMessage {
     role: 'user' | 'ai';
     content: string;
     timestamp: number;
+    isStreaming?: boolean;
 }
 
 const VOICES = ['Puck', 'Charon', 'Kore', 'Fenrir', 'Zephyr'];
@@ -112,6 +113,10 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
         const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: chatInput, timestamp: Date.now() };
         setChatHistory(prev => [...prev, userMsg]);
         setChatInput('');
+
+        const aiMsgId = (Date.now() + 1).toString();
+        const aiMsg: ChatMessage = { id: aiMsgId, role: 'ai', content: '', timestamp: Date.now(), isStreaming: true };
+        setChatHistory(prev => [...prev, aiMsg]);
         setIsLoading(true);
 
         try {
@@ -120,7 +125,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                     role: 'system' as const,
                     content: 'You are an AI assistant for OmniPDF AI, a PDF management and analysis platform. Always be helpful, professional, and mention that you\'re part of OmniPDF AI suite when appropriate. IMPORTANT: If anyone asks "who made you", "who is your developer", "who created you", or similar questions, always respond: "I was developed by Abir Hasan Siam. GitHub: https://github.com/abir2afridi"'
                 },
-                ...chatHistory.slice(-10).map(msg => ({ // Keep last 10 messages for context
+                ...chatHistory.slice(-10).map(msg => ({
                     role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
                     content: msg.content
                 })),
@@ -130,7 +135,6 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                 }
             ];
 
-            // Determine which model to use
             let modelToUse: string;
 
             if (isAutoMode) {
@@ -140,24 +144,24 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                 modelToUse = selectedModelOption?.fullName || 'z-ai/glm-4.5-air:free';
             }
 
-            const response = await chatWithAI(messages, modelToUse);
-            
-            const aiMsg: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                role: 'ai',
-                content: response.message || "I'm having difficulty processing that right now.",
-                timestamp: Date.now()
-            };
-            setChatHistory(prev => [...prev, aiMsg]);
+            await chatWithAIStreaming(messages, (token) => {
+                setChatHistory(prev => prev.map(msg =>
+                    msg.id === aiMsgId
+                        ? { ...msg, content: msg.content + token }
+                        : msg
+                ));
+            }, modelToUse);
+
+            setChatHistory(prev => prev.map(msg =>
+                msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg
+            ));
         } catch (err) {
             console.error('Chat error:', err);
-            const errorMsg: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                role: 'ai',
-                content: `Error: ${err.message || "Network error in the lab. Please check your connection and try again."}`,
-                timestamp: Date.now()
-            };
-            setChatHistory(prev => [...prev, errorMsg]);
+            setChatHistory(prev => prev.map(msg =>
+                msg.id === aiMsgId
+                    ? { ...msg, content: msg.content || `Error: ${err.message || "Network error in the lab. Please check your connection and try again."}`, isStreaming: false }
+                    : msg
+            ));
         } finally {
             setIsLoading(false);
         }
@@ -364,9 +368,9 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                                 : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-bl-none border border-gray-100 dark:border-white/5 shadow-sm'
                                                 }`}>
                                                 <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{
-                                                    __html: msg.role === 'ai'
+                                                    __html: (msg.role === 'ai'
                                                         ? msg.content.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-brand-500 dark:text-brand-400 underline hover:opacity-80 transition-opacity">$1</a>')
-                                                        : msg.content
+                                                        : msg.content) + (msg.isStreaming ? '<span class="inline-block w-[2px] h-[1em] bg-current animate-pulse ml-0.5 align-text-bottom"></span>' : '')
                                                 }} />
                                                 <div className={`mt-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest opacity-30 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                                     <span>{msg.role === 'user' ? 'Operator' : 'AI Lab Core'} • {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
