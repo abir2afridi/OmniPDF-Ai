@@ -1741,32 +1741,18 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
-    let subscription: { unsubscribe: () => void } | null = null;
 
-    const timeoutId = setTimeout(() => {
-      if (!cancelled) setIsAuthenticated(false);
-    }, 8000);
-
-    supabase.auth.handleRedirect()
-      .then(() => supabase.auth.getSession())
-      .then(({ data: { session } }) => {
-        if (!cancelled) setIsAuthenticated(!!session);
-      })
-      .catch(() => {
-        if (!cancelled) setIsAuthenticated(false);
-      })
-      .finally(() => clearTimeout(timeoutId));
+    supabase.auth.handleRedirect().catch(() => {});
 
     const {
       data: { subscription: sub },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!cancelled) setIsAuthenticated(!!session);
     });
-    subscription = sub;
 
     return () => {
       cancelled = true;
-      subscription?.unsubscribe();
+      sub.unsubscribe();
     };
   }, []);
 
