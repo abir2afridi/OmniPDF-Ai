@@ -1741,7 +1741,7 @@ const App: React.FC = () => {
   const [editAction, setEditAction] = useState<{ type: 'undo' | 'redo' | 'delete' | null, timestamp: number }>({ type: null, timestamp: 0 });
 
   useEffect(() => {
-    console.log('[Auth] App origin:', window.location.origin);
+    let cancelled = false;
 
     // Subscribe to auth state changes FIRST (persistent listener handles all events)
     const {
