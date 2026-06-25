@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   onAuthStateChanged,
+  signInWithPopup,
   signInWithCredential,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
@@ -43,8 +44,6 @@ const mapFirebaseUser = (user: User | null) => {
 const mapToSession = (user: User | null) => {
   return user ? { user: mapFirebaseUser(user) } : null;
 };
-
-let gisInitialized = false;
 
 const loadGIS = (): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -154,22 +153,17 @@ const supabase = {
       try {
         await loadGIS();
         await waitForGIS();
-
-        if (!gisInitialized) {
-          (window as any).google.accounts.id.initialize({
-            client_id: GOOGLE_CLIENT_ID,
-            callback: async (response: { credential: string }) => {
-              try {
-                const credential = GoogleAuthProvider.credential(response.credential);
-                await signInWithCredential(auth, credential);
-              } catch (err: any) {
-                console.error('Google sign-in error:', err);
-              }
-            },
-          });
-          gisInitialized = true;
-        }
-
+        (window as any).google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: async (response: { credential: string }) => {
+            try {
+              const credential = GoogleAuthProvider.credential(response.credential);
+              await signInWithCredential(auth, credential);
+            } catch (err: any) {
+              console.error('Google sign-in error:', err);
+            }
+          },
+        });
         container.innerHTML = '';
         (window as any).google.accounts.id.renderButton(container, {
           type: 'standard',
@@ -178,7 +172,7 @@ const supabase = {
           shape: 'rectangular',
           theme: 'outline',
           logo_alignment: 'left',
-          width: container.offsetWidth || 300,
+          width: 300,
         });
       } catch (err: any) {
         console.error('Failed to init Google button:', err);
