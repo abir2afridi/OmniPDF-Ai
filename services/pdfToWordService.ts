@@ -130,12 +130,15 @@ async function extractPageItems(
     const items: TextItem[] = [];
 
     for (const raw of content.items) {
-        if (!('str' in raw) || !raw.str.trim()) continue;
+        if (!('str' in raw)) continue;
         const item = raw as any;
+        const str: string = item.str ?? '';
+        // Keep items with actual characters (including spaces — they separate words)
+        if (str.length === 0) continue;
 
         // Transform matrix: [scaleX, shearY, shearX, scaleY, transX, transY]
         const [, , , scaleY, tx, ty] = item.transform ?? [1, 0, 0, 1, 0, 0];
-        const fontSize = Math.abs(scaleY);
+        const fontSize = Math.abs(scaleY) || 12;
         const x = tx;
         const y = pageHeight - ty;   // flip Y so top-of-page = small y
 
@@ -144,7 +147,7 @@ async function extractPageItems(
         const italic = /italic|oblique/i.test(fname);
 
         items.push({
-            str: item.str,
+            str,
             x,
             y: Math.round(y * 10) / 10,
             width: item.width ?? 0,
@@ -205,7 +208,29 @@ function groupIntoLines(items: TextItem[]): TextLine[] {
 
     return lines.map(lineItems => {
         const sortedX = [...lineItems].sort((a, b) => a.x - b.x);
-        const text = sortedX.map(it => it.str).join('').trim();
+
+        // Build text with intelligent spacing based on x-gap between items
+        let text = '';
+        for (let i = 0; i < sortedX.length; i++) {
+            const item = sortedX[i];
+            const str = item.str;
+            if (i === 0) {
+                text += str;
+                continue;
+            }
+            const prev = sortedX[i - 1];
+            // Estimate character width from font size (~0.5 × fontSize in PDF points)
+            const avgCharWidth = (prev.fontSize || 12) * 0.5;
+            const gap = item.x - (prev.x + (prev.width || avgCharWidth * prev.str.length));
+            // If gap > ~half a character width, insert a space
+            if (gap > avgCharWidth * 0.3 && !text.endsWith(' ') && !str.startsWith(' ')) {
+                text += ' ' + str;
+            } else {
+                text += str;
+            }
+        }
+        text = text.trim();
+
         const maxFontSize = Math.max(...lineItems.map(it => it.fontSize));
         const avgFontSize = lineItems.reduce((s, it) => s + it.fontSize, 0) / lineItems.length;
         const isBold = lineItems.some(it => it.bold);
@@ -250,16 +275,48 @@ function estimateBodyFontSize(lines: TextLine[]): number {
  * Convert a TextLine to a docx Paragraph with appropriate styling.
  */
 function lineToParagraph(line: TextLine, kind: LineKind, bodyFontSize: number): Paragraph {
-    // Build TextRun children from individual items to preserve bold/italic spans
-    const runs = line.items.map(item =>
-        new TextRun({
+    // Use the reconstructed text (with intelligent spacing) as a single TextRun
+    // to ensure correct word separation, while preserving font size from body size
+    const fontSize = line.avgFontSize || bodyFontSize;
+
+    const runs: TextRun[] = [];
+
+    // Try to preserve per-item formatting by building runs with spacing
+    for (let i = 0; i < line.items.length; i++) {
+        const item = line.items[i];
+        let prefix = '';
+        if (i > 0) {
+            const prev = line.items[i - 1];
+            const avgCharWidth = (prev.fontSize || 12) * 0.5;
+            const gap = item.x - (prev.x + (prev.width || avgCharWidth * prev.str.length));
+            if (gap > avgCharWidth * 0.3) {
+                prefix = ' ';
+            }
+        }
+        if (prefix) {
+            runs.push(new TextRun({
+                text: prefix,
+                size: Math.round(fontSize * 2),
+                font: 'Calibri',
+            }));
+        }
+        runs.push(new TextRun({
             text: item.str,
             bold: item.bold,
             italics: item.italic,
-            size: Math.round(item.fontSize * 2),    // docx uses half-points
+            size: Math.round(item.fontSize * 2),
             font: 'Calibri',
-        })
-    );
+        }));
+    }
+
+    // Fallback: if no runs were created (shouldn't happen), use the full text
+    if (runs.length === 0 && line.text) {
+        runs.push(new TextRun({
+            text: line.text,
+            size: Math.round(fontSize * 2),
+            font: 'Calibri',
+        }));
+    }
 
     const headingMap = {
         h1: HeadingLevel.HEADING_1,
@@ -365,55 +422,66 @@ export async function convertPdfToWord(
             continue;
         }
 
+        // ── Always render full page as image (preserves images, layout, formatting)
+        let pageImgBytes: Uint8Array | null = null;
+        let imgW = 0, imgH = 0;
+        try {
+            const imgDataUrl = await renderPageAsImage(pdfDoc, pageIdx, 2);
+            if (imgDataUrl) {
+                const base64 = imgDataUrl.split(',')[1];
+                pageImgBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+                const maxImgW = Math.min(pageW / 20 - 120, 520); // twips→pt minus margins, cap at 520pt
+                const imgScale = maxImgW / pageWidthPt;
+                imgW = Math.round(maxImgW);
+                imgH = Math.round(pageHeightPt * imgScale);
+            }
+        } catch { /* image render failed, continue with text only */ }
+
         const lines = groupIntoLines(items);
         const bodySize = estimateBodyFontSize(lines);
 
-        if (lines.length === 0) {
-            // No extractable text — render page as image fallback
-            try {
-                const imgDataUrl = await renderPageAsImage(pdfDoc, pageIdx, 2);
-                if (imgDataUrl) {
-                    const base64 = imgDataUrl.split(',')[1];
-                    const imgBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-                    // Scale image to fit within the DOCX page width (minus margins)
-                    const maxImgW = Math.min(pageW / 20 - 120, 520); // twips→pt minus margins, cap at 520pt
-                    const imgScale = maxImgW / pageWidthPt;
-                    const imgW = Math.round(maxImgW);
-                    const imgH = Math.round(pageHeightPt * imgScale);
-                    allPageParagraphs.push(
-                        new Paragraph({
-                            children: [
-                                new ImageRun({
-                                    data: imgBytes,
-                                    transformation: { width: imgW, height: imgH },
-                                    type: 'jpg',
-                                }),
-                            ],
-                            alignment: AlignmentType.CENTER,
-                            spacing: { after: 100 },
-                        })
-                    );
-                } else {
-                    allPageParagraphs.push(
-                        new Paragraph({
-                            children: [new TextRun({
-                                text: `[Page ${pageIdx + 1} — no extractable text (scanned/image PDF)]`,
-                                italics: true, color: '999999',
-                            })],
-                        })
-                    );
-                }
-            } catch {
+        if (lines.length === 0 || !pageImgBytes) {
+            // No text or no image — show what we have
+            if (pageImgBytes) {
+                allPageParagraphs.push(
+                    new Paragraph({
+                        children: [
+                            new ImageRun({
+                                data: pageImgBytes,
+                                transformation: { width: imgW, height: imgH },
+                                type: 'jpg',
+                            }),
+                        ],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { after: 100 },
+                    })
+                );
+            } else {
                 allPageParagraphs.push(
                     new Paragraph({
                         children: [new TextRun({
-                            text: `[Page ${pageIdx + 1} — could not render]`,
-                            italics: true, color: 'FF0000',
+                            text: `[Page ${pageIdx + 1} — could not be rendered]`,
+                            italics: true, color: '999999',
                         })],
                     })
                 );
             }
         } else {
+            // Page has extractable text — embed image first (so images are preserved),
+            // then add editable text below
+            allPageParagraphs.push(
+                new Paragraph({
+                    children: [
+                        new ImageRun({
+                            data: pageImgBytes,
+                            transformation: { width: imgW, height: imgH },
+                            type: 'jpg',
+                        }),
+                    ],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 200 },
+                })
+            );
             for (const line of lines) {
                 const kind = classifyLine(line, bodySize);
                 if (kind === 'blank') continue;
