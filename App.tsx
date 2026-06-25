@@ -1743,20 +1743,21 @@ const App: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
 
-    // Handle Firebase redirect result explicitly on mount
-    supabase.auth.handleRedirect().then(({ data, error }) => {
-      if (!cancelled && data?.session) {
-        setLoginToast('Logged in successfully');
-      }
-    });
-
     const {
       data: { subscription: sub },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
       setIsAuthenticated(!!session);
-      if (session) {
-        setLoginToast('Logged in successfully');
+      if (session) setLoginToast('Logged in successfully');
+    });
+
+    // Process any pending redirect result after listener is registered
+    supabase.auth.handleRedirect();
+
+    // Also try to restore session from IndexedDB on mount
+    supabase.auth.getSession().then(({ data }) => {
+      if (!cancelled && data?.session) {
+        setIsAuthenticated(true);
       }
     });
 
