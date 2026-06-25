@@ -30,9 +30,18 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
     const [selectedModel, setSelectedModel] = useState<'glm' | 'stepfun'>('glm');
     const [isAutoMode, setIsAutoMode] = useState<boolean>(true); // Default to auto mode
 
+    const aiStatus = (() => {
+        if (activeTab !== 'chat') return 'idle';
+        const streamingMsg = chatHistory.findLast(msg => msg.role === 'ai' && msg.isStreaming);
+        if (streamingMsg) {
+            return streamingMsg.content ? 'streaming' : 'loading';
+        }
+        return 'idle';
+    })();
+
     const modelOptions = [
         { id: 'glm' as const, name: 'GLM (Fast)', fullName: 'openrouter/free', description: 'Fast responses, general purpose' },
-        { id: 'stepfun' as const, name: 'StepFun (Reasoning)', fullName: 'stepfun/step-3.5-flash:free', description: 'Advanced reasoning, conversation continuity' }
+        { id: 'stepfun' as const, name: 'Auto (Best Free)', fullName: 'openrouter/free', description: 'Automatically picks best free model' }
     ];
 
     // Intelligent model selection based on context
@@ -53,19 +62,19 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
 
         // For ongoing conversations (more than 3 exchanges), use reasoning model
         if (conversationLength > 6) { // 3 user + 3 AI messages
-            return 'stepfun/step-3.5-flash:free';
+            return 'openrouter/free';
         }
 
         // For complex questions (containing keywords), use reasoning model
         const complexKeywords = ['explain', 'analyze', 'compare', 'why', 'how', 'what if', 'reasoning', 'logic'];
         if (complexKeywords.some(keyword => lastMessage.includes(keyword))) {
-            return 'stepfun/step-3.5-flash:free';
+            return 'openrouter/free';
         }
 
         // For questions about PDFs or technical topics, use reasoning model
         const technicalTopics = ['pdf', 'document', 'file', 'convert', 'merge', 'split', 'ocr', 'extract'];
         if (technicalTopics.some(topic => lastMessage.includes(topic))) {
-            return 'stepfun/step-3.5-flash:free';
+            return 'openrouter/free';
         }
 
         // Default to fast model for general queries
@@ -326,7 +335,14 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                             </div>
                             <div>
                                 <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">AI Laboratory</h1>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5">Advanced Document Intelligence</p>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+                                    <span className={`inline-block w-2 h-2 rounded-full transition-colors duration-300 ${
+                                        aiStatus === 'streaming' ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]' :
+                                        aiStatus === 'loading' ? 'bg-yellow-500 shadow-[0_0_6px_rgba(234,179,8,0.6)]' :
+                                        'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]'
+                                    }`} />
+                                    Advanced Document Intelligence
+                                </p>
                             </div>
                         </div>
 
