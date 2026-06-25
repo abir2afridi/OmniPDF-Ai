@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, useContext, createContext } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect, useContext, createContext } from 'react';
 import {
   Files, Scissors, ArrowRightLeft, FileText, Image,
   Lock, Wand2, PenTool, Search, Type, Grid, Shield,
