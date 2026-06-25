@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
   signInWithCredential,
   signInWithRedirect,
+  signInWithPopup,
   getRedirectResult,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
@@ -51,23 +52,25 @@ const mapToSession = (user: User | null) => {
 const supabase = {
   auth: {
     getSession: async () => {
-      const user = await new Promise<User | null>((resolve) => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-          unsubscribe();
-          resolve(user);
-        });
-      });
-      return { data: { session: mapToSession(user) } };
+      try {
+        await auth.authStateReady();
+        const user = auth.currentUser;
+        return { data: { session: mapToSession(user) } };
+      } catch (error) {
+        console.error('getSession error:', error);
+        return { data: { session: null } };
+      }
     },
 
     getUser: async () => {
-      const user = await new Promise<User | null>((resolve) => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-          unsubscribe();
-          resolve(user);
-        });
-      });
-      return { data: { user: mapFirebaseUser(user) } };
+      try {
+        await auth.authStateReady();
+        const user = auth.currentUser;
+        return { data: { user: mapFirebaseUser(user) } };
+      } catch (error) {
+        console.error('getUser error:', error);
+        return { data: { user: null } };
+      }
     },
 
     onAuthStateChange: (callback: (event: string, session: any) => void) => {
@@ -88,16 +91,32 @@ const supabase = {
     signInWithGoogleRedirect: () => {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      signInWithRedirect(auth, provider);
+      return signInWithRedirect(auth, provider);
+    },
+
+    signInWithGooglePopup: async () => {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      try {
+        const result = await signInWithPopup(auth, provider);
+        return { data: { session: mapToSession(result.user) }, error: null };
+      } catch (error: any) {
+        if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/cancelled-popup-request') {
+          return { data: null, error };
+        }
+        return { data: null, error };
+      }
     },
 
     handleRedirect: async () => {
       try {
         const result = await getRedirectResult(auth);
         if (result?.user) {
+          await auth.authStateReady();
           return { data: { session: mapToSession(result.user) }, error: null };
         }
       } catch (error: any) {
+        console.error('handleRedirect error:', error);
         return { data: null, error };
       }
       return { data: null, error: null };

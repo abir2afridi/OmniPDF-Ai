@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback, useEffect, useContext, createContext } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useContext, createContext } from 'react';
 import {
   Files, Scissors, ArrowRightLeft, FileText, Image,
   Lock, Wand2, PenTool, Search, Type, Grid, Shield,
@@ -1736,7 +1736,6 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [loginToast, setLoginToast] = useState<string | null>(null);
-  const authInitialized = useRef(false);
 
   // State to bridge RightDock buttons with Workspace actions
   const [editAction, setEditAction] = useState<{ type: 'undo' | 'redo' | 'delete' | null, timestamp: number }>({ type: null, timestamp: 0 });
@@ -1745,13 +1744,16 @@ const App: React.FC = () => {
     let cancelled = false;
 
     async function init() {
-      // 1. Process any pending redirect result first
-      await supabase.auth.handleRedirect();
-      // 2. Get session (waits for auth state to restore from IndexedDB)
+      // Process any pending redirect result first
+      const { data: redirectData, error: redirectError } = await supabase.auth.handleRedirect();
+      if (redirectError) {
+        console.error('Redirect sign-in error:', redirectError);
+      }
+
+      // Get session (waits for auth state to restore from IndexedDB)
       const { data } = await supabase.auth.getSession();
       if (!cancelled) {
         setIsAuthenticated(!!data?.session);
-        authInitialized.current = true;
       }
     }
     init();
@@ -1759,9 +1761,8 @@ const App: React.FC = () => {
     const {
       data: { subscription: sub },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (cancelled || !authInitialized.current) return;
+      if (cancelled) return;
       setIsAuthenticated(!!session);
-      if (session) setLoginToast('Logged in successfully');
     });
 
     return () => {

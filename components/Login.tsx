@@ -12,6 +12,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
+    const [googleLoading, setGoogleLoading] = useState(false);
 
     const getNetworkErrorMessage = (error: any): string => {
         if (!navigator.onLine) return 'You are offline. Please check your internet connection.';
@@ -21,9 +22,25 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
         return error?.message || 'An unexpected error occurred. Please try again.';
     };
 
-    const handleGoogleLogin = (e: React.MouseEvent) => {
+    const handleGoogleLogin = async (e: React.MouseEvent) => {
         e.preventDefault();
-        supabase.auth.signInWithGoogleRedirect();
+        setGoogleLoading(true);
+        try {
+            const { error } = await supabase.auth.signInWithGooglePopup();
+            if (error) {
+                if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+                    supabase.auth.signInWithGoogleRedirect();
+                } else {
+                    console.error('Google login error:', error);
+                    alert(`Google login failed: ${getNetworkErrorMessage(error)}`);
+                }
+            }
+        } catch (error: any) {
+            console.warn('Google popup failed, falling back to redirect:', error);
+            supabase.auth.signInWithGoogleRedirect();
+        } finally {
+            setGoogleLoading(false);
+        }
     };
 
     const handleEmailSignUp = async (e: React.FormEvent) => {
@@ -81,7 +98,9 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                         <button type="submit">Register</button>
                         <span>or use your account</span>
                         <div className="social-container">
-                            <a href="#" className="social" onClick={handleGoogleLogin}><i className="lni lni-google"></i></a>
+                            <a href="#" className={`social ${googleLoading ? 'disabled' : ''}`} onClick={handleGoogleLogin}>
+                                {googleLoading ? <span className="loading-spinner"></span> : <i className="lni lni-google"></i>}
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -103,7 +122,9 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                         </div>
                         <span>or use your account</span>
                         <div className="social-container">
-                            <a href="#" className="social" onClick={handleGoogleLogin}><i className="lni lni-google"></i></a>
+                            <a href="#" className={`social ${googleLoading ? 'disabled' : ''}`} onClick={handleGoogleLogin}>
+                                {googleLoading ? <span className="loading-spinner"></span> : <i className="lni lni-google"></i>}
+                            </a>
                         </div>
                     </form>
                 </div>
