@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import './Login.css';
 import { supabase } from '../lib/supabase';
-import { getAuthRedirectUrl, isDevelopment } from '../lib/config';
 
 interface LoginProps {
     onBack?: () => void;
@@ -26,15 +25,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
     const handleGoogleLogin = async (e: React.MouseEvent) => {
         e.preventDefault();
         try {
-            const redirectUrl = getAuthRedirectUrl();
-            console.log(`🔐 OAuth redirect → ${redirectUrl} (${isDevelopment ? 'dev' : 'prod'})`);
-
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: redirectUrl,
-                }
-            });
+            const { error } = await supabase.auth.signInWithOAuth();
             if (error) throw error;
         } catch (error: any) {
             console.error('Login error:', error);

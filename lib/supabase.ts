@@ -2,8 +2,7 @@ import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -78,23 +77,14 @@ const supabase = {
 
     signInWithOAuth: async () => {
       try {
-        const googleProvider = new GoogleAuthProvider();
-        googleProvider.setCustomParameters({ prompt: 'select_account' });
-        await signInWithRedirect(auth, googleProvider);
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        await signInWithPopup(auth, provider);
         return { error: null };
       } catch (error: any) {
-        return { error };
-      }
-    },
-
-    getRedirectResult: async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          return { data: { user: result.user }, error: null };
+        if (error.code === 'auth/popup-blocked') {
+          return { error: { message: 'Popup blocked. Please allow popups for this site and try again.' } };
         }
-        return { data: null, error: null };
-      } catch (error: any) {
         return { error };
       }
     },

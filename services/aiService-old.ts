@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/firebase'
 
 export const chatWithAI = async (
   messages: ChatMessage[],
