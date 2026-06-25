@@ -1736,6 +1736,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [loginToast, setLoginToast] = useState<string | null>(null);
+  const authInitialized = useRef(false);
 
   // State to bridge RightDock buttons with Workspace actions
   const [editAction, setEditAction] = useState<{ type: 'undo' | 'redo' | 'delete' | null, timestamp: number }>({ type: null, timestamp: 0 });
@@ -1743,22 +1744,24 @@ const App: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
 
+    async function init() {
+      // 1. Process any pending redirect result first
+      await supabase.auth.handleRedirect();
+      // 2. Get session (waits for auth state to restore from IndexedDB)
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled) {
+        setIsAuthenticated(!!data?.session);
+        authInitialized.current = true;
+      }
+    }
+    init();
+
     const {
       data: { subscription: sub },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (cancelled) return;
+      if (cancelled || !authInitialized.current) return;
       setIsAuthenticated(!!session);
       if (session) setLoginToast('Logged in successfully');
-    });
-
-    // Process any pending redirect result after listener is registered
-    supabase.auth.handleRedirect();
-
-    // Also try to restore session from IndexedDB on mount
-    supabase.auth.getSession().then(({ data }) => {
-      if (!cancelled && data?.session) {
-        setIsAuthenticated(true);
-      }
     });
 
     return () => {
