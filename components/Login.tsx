@@ -6,38 +6,6 @@ interface LoginProps {
     onBack?: () => void;
 }
 
-let gisClient: any = null;
-
-function getGisClient() {
-    if (!gisClient && typeof google !== 'undefined' && google.accounts?.oauth2) {
-        const clientIds = [
-            '1044154368370-do81h015m74j9qbbjj77adsibc3tdqpg.apps.googleusercontent.com',
-            '1044154368370-do81h015m74j9qbbjj77adsibc3tdqpg',
-        ];
-        for (const clientId of clientIds) {
-            try {
-                gisClient = google.accounts.oauth2.initTokenClient({
-                    client_id: clientId,
-                    scope: 'openid profile email',
-                    callback: async (response: any) => {
-                        if (response.error) {
-                            console.error('GIS error:', response);
-                            return;
-                        }
-                        if (response.id_token) {
-                            await supabase.auth.signInWithGoogleIdToken(response.id_token);
-                        }
-                    },
-                });
-                break;
-            } catch (e) {
-                console.warn('GIS init failed with client ID:', clientId, e);
-            }
-        }
-    }
-    return gisClient;
-}
-
 export const Login: React.FC<LoginProps> = ({ onBack }) => {
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
 
@@ -55,14 +23,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
 
     const handleGoogleLogin = (e: React.MouseEvent) => {
         e.preventDefault();
-        try {
-            const client = getGisClient();
-            if (!client) throw new Error('Google sign-in is not available. Please try again.');
-            client.requestAccessToken();
-        } catch (error: any) {
-            console.error('Login error:', error);
-            alert(`Authentication failed: ${error.message}`);
-        }
+        supabase.auth.signInWithGoogleRedirect();
     };
 
     const handleEmailSignUp = async (e: React.FormEvent) => {
@@ -182,9 +143,3 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
         </div>
     );
 };
-
-declare global {
-    interface Window {
-        google?: any;
-    }
-}
