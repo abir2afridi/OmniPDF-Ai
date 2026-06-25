@@ -23,7 +23,7 @@ const firebaseConfig = {
   measurementId: "G-HVMP4GXK59"
 };
 
-const GOOGLE_CLIENT_ID = "619952563506-dg0jv4cvg1t4h0va8qhf8g7at7gh5fur.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "1044154368370-do81h015m74j9qbbjj77adsibc3tdqpg.apps.googleusercontent.com";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
