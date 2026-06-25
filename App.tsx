@@ -1741,7 +1741,7 @@ const App: React.FC = () => {
   const [editAction, setEditAction] = useState<{ type: 'undo' | 'redo' | 'delete' | null, timestamp: number }>({ type: null, timestamp: 0 });
 
   useEffect(() => {
-    let cancelled = false;
+    console.log('[Auth] App origin:', window.location.origin);
 
     // Subscribe to auth state changes FIRST (persistent listener handles all events)
     const {
@@ -1754,10 +1754,6 @@ const App: React.FC = () => {
     // Process any pending redirect result (subscription catches the sign-in event)
     supabase.auth.handleRedirect().then(({ error }) => {
       if (error) console.error('Redirect sign-in error:', error);
-    });
-
-    supabase.auth.handleGoogleOAuthRedirect().then(({ error }) => {
-      if (error) console.error('Google OAuth redirect error:', error);
     });
 
     return () => {
