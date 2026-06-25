@@ -1,9 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Login.css';
 import { supabase } from '../lib/supabase';
 
 interface LoginProps {
     onBack?: () => void;
+}
+
+let gisClient: any = null;
+
+function getGisClient() {
+    if (!gisClient && typeof google !== 'undefined' && google.accounts?.oauth2) {
+        gisClient = google.accounts.oauth2.initTokenClient({
+            client_id: '1044154368370-do81h015m74j9qbbjj77adsibc3tdqpg.apps.googleusercontent.com',
+            scope: 'openid profile email',
+            callback: async (response: any) => {
+                if (response.error) {
+                    console.error('GIS error:', response);
+                    return;
+                }
+                if (response.id_token) {
+                    await supabase.auth.signInWithGoogleIdToken(response.id_token);
+                }
+            },
+        });
+    }
+    return gisClient;
 }
 
 export const Login: React.FC<LoginProps> = ({ onBack }) => {
@@ -24,8 +45,9 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
     const handleGoogleLogin = async (e: React.MouseEvent) => {
         e.preventDefault();
         try {
-            const { error } = await supabase.auth.signInWithOAuth();
-            if (error) throw error;
+            const client = getGisClient();
+            if (!client) throw new Error('Google sign-in is not available. Please try again.');
+            client.requestAccessToken();
         } catch (error: any) {
             console.error('Login error:', error);
             alert(`Authentication failed: ${getNetworkErrorMessage(error)}`);
@@ -149,3 +171,9 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
         </div>
     );
 };
+
+declare global {
+    interface Window {
+        google?: any;
+    }
+}
