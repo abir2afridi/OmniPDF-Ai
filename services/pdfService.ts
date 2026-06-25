@@ -235,10 +235,10 @@ export async function mergePDFsAdvanced(
     const mergedDoc = await PDFDocument.create();
 
     // Helper: copy pages from a source doc and add them
-    const addPagesFromDoc = (docIndex: number, indices: number[]) => {
+    const addPagesFromDoc = async (docIndex: number, indices: number[]) => {
         if (indices.length === 0) return;
         const srcDoc = (inputs[docIndex] as any).__srcDoc as PDFDocument;
-        const copied = mergedDoc.copyPages(srcDoc, indices);
+        const copied = await mergedDoc.copyPages(srcDoc, indices);
         copied.forEach(p => mergedDoc.addPage(p));
     };
 
@@ -258,7 +258,7 @@ export async function mergePDFsAdvanced(
                     if (addBlankBetween && lastDocIndex !== -1 && lastDocIndex !== d) {
                         mergedDoc.addPage(PageSizes.A4);
                     }
-                    addPagesFromDoc(allPageEntries[d][round].docIndex, [allPageEntries[d][round].pageIndex]);
+                    await addPagesFromDoc(allPageEntries[d][round].docIndex, [allPageEntries[d][round].pageIndex]);
                     lastDocIndex = d;
                 }
             }
@@ -270,7 +270,7 @@ export async function mergePDFsAdvanced(
             if (entries.length === 0) continue;
 
             const indices = entries.map(e => e.pageIndex);
-            addPagesFromDoc(d, indices);
+            await addPagesFromDoc(d, indices);
 
             // Blank separator between documents (not after the last one)
             if (addBlankBetween && d < allPageEntries.length - 1) {
