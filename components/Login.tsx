@@ -39,17 +39,20 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
         setAuthError(null);
         setGoogleLoading(true);
         try {
+            const { error: oneTapError } = await supabase.auth.signInWithGoogleOneTap();
+            if (!oneTapError) return;
+            console.warn('[Login] OneTap failed, trying popup:', oneTapError);
+        } catch (_) {}
+        try {
             const { error: popupError } = await supabase.auth.signInWithGooglePopup();
             if (!popupError) return;
             if (popupError.code === 'auth/popup-blocked' || popupError.code === 'auth/cancelled-popup-request') {
-                console.warn('[Login] Popup blocked, redirecting to Google...');
+                console.warn('[Login] Popup blocked, trying redirect...');
                 supabase.auth.signInWithGoogleRedirect();
             } else {
-                console.error('[Login] Google login error:', popupError);
                 setAuthError(getNetworkErrorMessage(popupError));
             }
-        } catch (error: any) {
-            console.warn('[Login] Popup failed, redirecting to Google...', error);
+        } catch (_) {
             supabase.auth.signInWithGoogleRedirect();
         }
     };

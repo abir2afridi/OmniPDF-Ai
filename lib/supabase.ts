@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
   signInWithCredential,
   signInWithPopup,
+  signInWithRedirect,
   getRedirectResult,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
@@ -25,6 +26,8 @@ const firebaseConfig = {
   appId: "1:619952563506:web:bcf59b3582f0bca808a32b",
   measurementId: "G-HVMP4GXK59"
 };
+
+declare const google: any;
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -87,51 +90,98 @@ const supabase = {
       return { error: null };
     },
 
-    signInWithGoogleRedirect: async () => {
-      const clientId = GOOGLE_CLIENT_ID;
-      if (!clientId) {
+    loadGSIScript: async () => {
+      if (document.getElementById('gsi-script')) return;
+      if (typeof google !== 'undefined' && google.accounts?.id) return;
+      await new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script');
+        script.id = 'gsi-script';
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load GSI script'));
+        document.head.appendChild(script);
+      });
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          if (typeof google !== 'undefined' && google.accounts?.id) resolve();
+          else setTimeout(check, 50);
+        };
+        check();
+      });
+    },
+
+    signInWithGoogleOneTap: async () => {
+      const gsiClientId = GOOGLE_CLIENT_ID;
+      if (!gsiClientId) {
         return { data: null, error: new Error('VITE_GOOGLE_CLIENT_ID not set') };
       }
-      const state = Math.random().toString(36).substring(2) + Date.now().toString(36);
-      const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
-      sessionStorage.setItem('omni_google_oauth_state', state);
-      sessionStorage.setItem('omni_google_oauth_nonce', nonce);
-      const redirectUri = window.location.origin;
-      const url = 'https://accounts.google.com/o/oauth2/v2/auth?' +
-        'client_id=' + clientId +
-        '&response_type=id_token%20token' +
-        '&redirect_uri=' + encodeURIComponent(redirectUri) +
-        '&scope=' + encodeURIComponent('openid email profile') +
-        '&state=' + state +
-        '&nonce=' + nonce +
-        '&prompt=select_account';
-      window.location.assign(url);
-      return { data: null, error: null };
+      try {
+        await supabase.auth.loadGSIScript();
+      } catch (e: any) {
+        return { data: null, error: e };
+      }
+      const ONETAP_TIMEOUT = 10000;
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          google.accounts.id.cancel?.();
+          resolve({ data: null, error: new Error('One Tap timed out') });
+        }, ONETAP_TIMEOUT);
+        try {
+          google.accounts.id.initialize({
+            client_id: gsiClientId,
+            cancel_on_tap_outside: false,
+            callback: async (response: any) => {
+              clearTimeout(timeout);
+              if (!response.credential) {
+                resolve({ data: null, error: new Error('No credential from One Tap') });
+                return;
+              }
+              try {
+                const credential = GoogleAuthProvider.credential(response.credential);
+                const result = await signInWithCredential(auth, credential);
+                resolve({ data: { session: mapToSession(result.user) }, error: null });
+              } catch (err: any) {
+                console.error('[Auth] One Tap credential exchange error:', err);
+                resolve({ data: null, error: err });
+              }
+            },
+          });
+          google.accounts.id.prompt();
+        } catch (err: any) {
+          clearTimeout(timeout);
+          console.error('[Auth] One Tap error:', err);
+          resolve({ data: null, error: err });
+        }
+      });
+    },
+
+    signInWithGoogleRedirect: async () => {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      try {
+        await signInWithRedirect(auth, provider);
+      } catch (error: any) {
+        console.error('Google redirect error:', error);
+        const errMsg = `Google login failed: ${error?.code || error?.message || 'Unknown error'}. Check Firebase Console → Authentication → Settings → Authorized domains.`;
+        sessionStorage.setItem('omni_google_auth_error', errMsg);
+      }
     },
 
     handleGoogleOAuthRedirect: async () => {
-      const hash = window.location.hash;
-      if (!hash || hash.length < 5) return { data: null, error: null };
-      const params = new URLSearchParams(hash.substring(1));
-      const idToken = params.get('id_token');
-      const state = params.get('state');
-      const savedState = sessionStorage.getItem('omni_google_oauth_state');
-      sessionStorage.removeItem('omni_google_oauth_state');
-      sessionStorage.removeItem('omni_google_oauth_nonce');
-      if (!idToken || !state || state !== savedState) {
-        return { data: null, error: null };
-      }
-      window.history.replaceState({}, document.title, window.location.pathname);
       try {
-        const credential = GoogleAuthProvider.credential(idToken);
-        const result = await signInWithCredential(auth, credential);
-        return { data: { session: mapToSession(result.user) }, error: null };
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          sessionStorage.removeItem('omni_google_auth_error');
+          await auth.authStateReady();
+          return { data: { session: mapToSession(result.user) }, error: null };
+        }
       } catch (error: any) {
-        console.error('[Auth] Google OAuth credential exchange error:', error);
-        const errMsg = 'Google login failed: ' + (error?.code || error?.message || 'Unknown error');
+        console.error('handleGoogleOAuthRedirect error:', error);
+        const errMsg = `Google login failed: ${error?.code || error?.message || 'Unknown error'}.`;
         sessionStorage.setItem('omni_google_auth_error', errMsg);
         return { data: null, error };
       }
+      return { data: null, error: null };
     },
 
     signInWithGooglePopup: async () => {
