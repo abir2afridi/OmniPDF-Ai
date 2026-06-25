@@ -173,19 +173,24 @@ const supabase = {
     signInWithGoogleGSI: async () => {
       const gsiClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
       if (!gsiClientId) {
-        return { data: null, error: new Error('VITE_GOOGLE_CLIENT_ID not set. Get it from Firebase Console → Project Settings → General → Your apps → Web client ID') };
+        return { data: null, error: new Error('VITE_GOOGLE_CLIENT_ID not set') };
       }
       try {
         await supabase.auth.loadGSIScript();
       } catch (e: any) {
         return { data: null, error: e };
       }
+      const GSITIMEOUT = 8000;
       return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          resolve({ data: null, error: new Error('GSI popup timed out (blocked or closed)') });
+        }, GSITIMEOUT);
         try {
           const client = google.accounts.oauth2.initTokenClient({
             client_id: gsiClientId,
             scope: 'openid email profile',
             callback: async (response: any) => {
+              clearTimeout(timeout);
               if (response.error) {
                 resolve({ data: null, error: new Error(response.error) });
                 return;
@@ -206,6 +211,7 @@ const supabase = {
           });
           client.requestAccessToken({ prompt: 'select_account' });
         } catch (err: any) {
+          clearTimeout(timeout);
           console.error('[Auth] GSI init error:', err);
           resolve({ data: null, error: err });
         }
