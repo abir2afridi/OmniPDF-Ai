@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Login.css';
 import { supabase } from '../lib/supabase';
 
@@ -13,30 +13,44 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [googleLoading, setGoogleLoading] = useState(false);
+    const [authError, setAuthError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const err = supabase.auth.getRedirectError();
+        if (err) {
+            setAuthError(err);
+            supabase.auth.clearRedirectError();
+        }
+    }, []);
 
     const getNetworkErrorMessage = (error: any): string => {
         if (!navigator.onLine) return 'You are offline. Please check your internet connection.';
         if (error?.message?.includes('Failed to fetch') || error?.message?.includes('NetworkError')) {
             return 'Unable to connect to the authentication server. Please try again later.';
         }
+        if (error?.code) {
+            return `Error ${error.code}: ${error.message || 'Check Firebase Console → Authentication → Settings → Authorized domains'}`;
+        }
         return error?.message || 'An unexpected error occurred. Please try again.';
     };
 
     const handleGoogleLogin = async (e: React.MouseEvent) => {
         e.preventDefault();
+        setAuthError(null);
         setGoogleLoading(true);
         try {
             const { error } = await supabase.auth.signInWithGooglePopup();
             if (error) {
                 if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+                    console.warn('Google popup blocked, trying redirect...');
                     supabase.auth.signInWithGoogleRedirect();
                 } else {
                     console.error('Google login error:', error);
-                    alert(`Google login failed: ${getNetworkErrorMessage(error)}`);
+                    setAuthError(getNetworkErrorMessage(error));
                 }
             }
         } catch (error: any) {
-            console.warn('Google popup failed, falling back to redirect:', error);
+            console.warn('Google popup failed, trying redirect...', error);
             supabase.auth.signInWithGoogleRedirect();
         } finally {
             setGoogleLoading(false);
@@ -45,6 +59,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
 
     const handleEmailSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
+        setAuthError(null);
         try {
             const { error } = await supabase.auth.signUp({
                 email,
@@ -59,12 +74,13 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
             alert('Signup successful! Check your email to verify your account.');
         } catch (error: any) {
             console.error('Signup error:', error);
-            alert(`Signup failed: ${getNetworkErrorMessage(error)}`);
+            setAuthError(`Signup failed: ${getNetworkErrorMessage(error)}`);
         }
     };
 
     const handleEmailSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
+        setAuthError(null);
         try {
             const { error } = await supabase.auth.signInWithPassword({
                 email,
@@ -73,7 +89,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
             if (error) throw error;
         } catch (error: any) {
             console.error('Login error:', error);
-            alert(`Login failed: ${getNetworkErrorMessage(error)}`);
+            setAuthError(`Login failed: ${getNetworkErrorMessage(error)}`);
         }
     };
 
@@ -86,6 +102,14 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                 >
                     &larr; Back to App
                 </button>
+            )}
+            {authError && (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[2000] max-w-lg w-full px-4">
+                    <div className="bg-red-500/90 text-white px-4 py-3 rounded-lg shadow-lg text-sm flex items-start gap-2">
+                        <span className="flex-1">{authError}</span>
+                        <button onClick={() => setAuthError(null)} className="text-white/80 hover:text-white font-bold cursor-pointer">&times;</button>
+                    </div>
+                </div>
             )}
             <div className={`doubleslider-container ${isRightPanelActive ? 'right-panel-active' : ''}`}>
 

@@ -91,9 +91,10 @@ const supabase = {
       provider.setCustomParameters({ prompt: 'select_account' });
       try {
         await signInWithRedirect(auth, provider);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Google redirect error:', error);
-        throw error;
+        const errMsg = `Google login failed: ${error?.code || error?.message || 'Unknown error'}. Check Firebase Console → Authentication → Settings → Authorized domains.`;
+        sessionStorage.setItem('omni_google_auth_error', errMsg);
       }
     },
 
@@ -115,14 +116,25 @@ const supabase = {
       try {
         const result = await getRedirectResult(auth);
         if (result?.user) {
+          sessionStorage.removeItem('omni_google_auth_error');
           await auth.authStateReady();
           return { data: { session: mapToSession(result.user) }, error: null };
         }
       } catch (error: any) {
         console.error('handleRedirect error:', error);
+        const errMsg = `Google login failed: ${error?.code || error?.message || 'Unknown error'}. Check Firebase Console → Authentication → Settings → Authorized domains has your app domain added.`;
+        sessionStorage.setItem('omni_google_auth_error', errMsg);
         return { data: null, error };
       }
       return { data: null, error: null };
+    },
+
+    getRedirectError: () => {
+      return sessionStorage.getItem('omni_google_auth_error');
+    },
+
+    clearRedirectError: () => {
+      sessionStorage.removeItem('omni_google_auth_error');
     },
 
     signInWithGoogleIdToken: async (idToken: string) => {
