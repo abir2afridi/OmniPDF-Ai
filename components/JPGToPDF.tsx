@@ -20,7 +20,7 @@ import {
     ImagePlus, Upload, X, Download, Loader2, CheckCircle2,
     AlertCircle, ArrowLeft, GripVertical, Settings2,
     ChevronDown, ChevronUp, Trash2, FileDown, ArrowUpDown,
-    Info,
+    Info, Plus,
 } from 'lucide-react';
 import {
     loadImageMeta, validateImageFile, convertImagesToPdf, fmtSize,
@@ -345,7 +345,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
             </div>
 
             {/* Header */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack}
@@ -356,55 +356,67 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                     <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
                         <ImagePlus className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">JPG to PDF</h1>
-                        <p className="text-[11px] text-gray-400 font-medium">
+                        <p className="text-[11px] text-gray-400 font-medium truncate">
                             Convert images to PDF — reorder, resize, set margins
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 lg:gap-2">
                     {images.length > 0 && (
                         <button onClick={clearAll}
                             className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center gap-1.5">
-                            <Trash2 className="w-3.5 h-3.5" /> Clear All
+                            <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear All</span>
                         </button>
                     )}
                 </div>
             </div>
 
             {/* Body */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
 
                 {/* LEFT: uploads + grid */}
-                <div className="flex-1 flex flex-col overflow-hidden p-4 lg:p-6 gap-4 min-w-0">
+                <div className="flex-1 lg:flex-1 flex flex-col lg:overflow-hidden p-4 lg:p-6 gap-4 min-w-0">
 
                     {/* Drop zone */}
                     <div ref={dropRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
                         onClick={() => fileRef.current?.click()}
-                        className={`shrink-0 flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-2xl py-9 cursor-pointer transition-all duration-200
-              ${isDragOver ? 'border-violet-500 bg-violet-500/5 scale-[0.99]' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636]'}
+                        className={`shrink-0 border-2 border-dashed rounded-2xl transition-all duration-200 cursor-pointer
+              ${isDragOver ? 'border-violet-500 bg-violet-500/5 scale-[0.99]'
+                            : images.length > 0
+                                ? 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636] py-4'
+                                : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636] py-9'}
               hover:border-violet-400 dark:hover:border-violet-500/50 hover:bg-violet-50/30 dark:hover:bg-violet-900/10`}>
                         <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden"
                             onChange={e => e.target.files && addFiles(e.target.files)} />
 
-                        <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                            className="p-4 bg-violet-100 dark:bg-violet-900/30 rounded-2xl shadow-lg shadow-violet-200 dark:shadow-violet-900/30">
-                            <Upload className="w-7 h-7 text-violet-600 dark:text-violet-400" />
-                        </motion.div>
+                        {images.length === 0 && loadingCount === 0 ? (
+                            <div className="flex flex-col items-center justify-center gap-3">
+                                <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                                    className="p-4 bg-violet-100 dark:bg-violet-900/30 rounded-2xl shadow-lg shadow-violet-200 dark:shadow-violet-900/30 mx-auto">
+                                    <Upload className="w-7 h-7 text-violet-600 dark:text-violet-400" />
+                                </motion.div>
 
-                        <div className="text-center">
-                            <p className="text-base font-black dark:text-white">Drop images here</p>
-                            <p className="text-sm text-gray-400 mt-0.5">
-                                or <span className="text-violet-500 font-bold underline underline-offset-2">click to browse</span>
-                            </p>
-                        </div>
+                                <div className="text-center">
+                                    <p className="text-base font-black dark:text-white">Drop images here</p>
+                                    <p className="text-sm text-gray-400 mt-0.5">
+                                        or <span className="text-violet-500 font-bold underline underline-offset-2">click to browse</span>
+                                    </p>
+                                </div>
 
-                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600">
-                            {['JPG', 'PNG', 'WebP', 'BMP', 'GIF', 'TIFF'].map(ext => (
-                                <span key={ext}>{ext}</span>
-                            )).reduce<React.ReactNode[]>((acc, el, i) => i === 0 ? [el] : [...acc, <span key={`dot-${i}`} className="opacity-40">·</span>, el], [])}
-                        </div>
+                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600">
+                                    {['JPG', 'PNG', 'WebP', 'BMP', 'GIF', 'TIFF'].map(ext => (
+                                        <span key={ext}>{ext}</span>
+                                    )).reduce<React.ReactNode[]>((acc, el, i) => i === 0 ? [el] : [...acc, <span key={`dot-${i}`} className="opacity-40">·</span>, el], [])}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center gap-3 text-sm text-gray-400 font-medium">
+                                <Plus className="w-4 h-4 text-violet-500" />
+                                <span>Click or drag to <span className="text-violet-500 font-bold">add more images</span></span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Reorder hint */}
@@ -419,20 +431,9 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                     )}
 
                     {/* Image Grid */}
-                    <div className="flex-1 overflow-y-auto min-h-0">
-                        <AnimatePresence mode="popLayout">
-                            {images.length === 0 && loadingCount === 0 ? (
-                                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    className="flex flex-col items-center justify-center h-full gap-3 text-center py-16">
-                                    <div className="p-5 bg-gray-100 dark:bg-white/5 rounded-2xl">
-                                        <ImagePlus className="w-10 h-10 text-gray-300 dark:text-gray-600" />
-                                    </div>
-                                    <p className="text-sm font-bold text-gray-400">No images yet</p>
-                                    <p className="text-xs text-gray-300 dark:text-gray-600 max-w-xs leading-relaxed">
-                                        Upload images above. Each image becomes one PDF page. You can reorder them before converting.
-                                    </p>
-                                </motion.div>
-                            ) : (
+                    <div className="flex-1 lg:overflow-y-auto lg:min-h-0">
+                        {(images.length > 0 || loadingCount > 0) && (
+                            <AnimatePresence mode="popLayout">
                                 <div className="grid gap-3 pb-4"
                                     style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
 
@@ -465,13 +466,13 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                                         <SkeletonCard key={`skel-${i}`} />
                                     ))}
                                 </div>
-                            )}
-                        </AnimatePresence>
+                            </AnimatePresence>
+                        )}
                     </div>
                 </div>
 
                 {/* RIGHT: controls */}
-                <div className="w-80 shrink-0 flex flex-col border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto">
+                <div className="lg:w-80 w-full shrink-0 flex flex-col border-l-0 lg:border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] lg:overflow-y-auto">
 
                     {/* Stats */}
                     {images.length > 0 && (
@@ -653,7 +654,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                     <div className="flex-1" />
 
                     {/* Action buttons */}
-                    <div className="p-5 border-t border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#262636]/80 backdrop-blur-sm space-y-3">
+                    <div className="p-5 border-t border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#262636]/80 backdrop-blur-sm sticky bottom-0 z-10 space-y-3">
 
                         {/* Convert */}
                         <button

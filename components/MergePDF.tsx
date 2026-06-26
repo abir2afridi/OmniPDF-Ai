@@ -172,7 +172,7 @@ const FileCard = ({
                 </div>
 
                 {/* Thumbnail */}
-                <div className={`shrink-0 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center transition-all duration-300 ${showThumbs ? 'w-14 h-[72px]' : 'w-9 h-10'}`}>
+                <div className={`shrink-0 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center transition-all duration-300 ${showThumbs ? 'sm:w-14 w-10 h-[72px]' : 'w-9 h-10'}`}>
                     {item.loading ? (
                         <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
                     ) : item.thumbnail ? (
@@ -249,7 +249,7 @@ const FileCard = ({
                     {/* Duplicate */}
                     <button
                         onClick={onDuplicate}
-                        className="p-1.5 rounded-lg text-gray-300 dark:text-white/20 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                        className="hidden sm:flex p-1.5 rounded-lg text-gray-300 dark:text-white/20 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                         title="Duplicate"
                     >
                         <Copy className="w-3.5 h-3.5" />
@@ -294,7 +294,7 @@ const FileCard = ({
                             </div>
 
                             {/* Thumbnail grid */}
-                            <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-1.5">
+                            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-1.5">
                                 {item.selectedPages.map((selected, idx) => {
                                     const pageNum = idx + 1;
                                     const thumb = item.pageThumbnails[idx] ?? null;
@@ -665,7 +665,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
             </AnimatePresence>
 
             {/* ── Header ── */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack}
@@ -676,9 +676,9 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                     <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
                         <Layers className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Merge PDF</h1>
-                        <p className="text-[11px] text-gray-400 font-medium">
+                        <p className="text-[11px] text-gray-400 font-medium truncate">
                             {files.length > 0
                                 ? `${files.length} file${files.length > 1 ? 's' : ''} · ${totalPages} pages · ${formatBytes(totalSize)}`
                                 : 'Combine multiple PDFs into one document'}
@@ -686,7 +686,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 lg:gap-2">
                     {/* Toggle thumbnails */}
                     <button
                         onClick={() => setShowThumbs(v => !v)}
@@ -699,23 +699,23 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                     {files.length > 1 && (
                         <button onClick={sortAlphabetically}
                             className="px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors flex items-center gap-1.5">
-                            <ArrowDownUp className="w-3.5 h-3.5" /> Sort
+                            <ArrowDownUp className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Sort</span>
                         </button>
                     )}
                     {files.length > 0 && (
                         <button onClick={clearAll}
                             className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center gap-1.5">
-                            <Trash2 className="w-3.5 h-3.5" /> Clear All
+                            <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear All</span>
                         </button>
                     )}
                 </div>
             </div>
 
             {/* ── Body ── */}
-            <div className="flex-1 flex gap-0 overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-y-auto lg:overflow-hidden">
 
                 {/* ── LEFT: Upload + File List ── */}
-                <div className="flex-1 flex flex-col overflow-hidden p-4 lg:p-6 gap-4">
+                <div className="flex-1 lg:flex-1 flex flex-col lg:overflow-hidden p-4 lg:p-6 gap-4">
 
                     {/* Drop Zone */}
                     <div
@@ -793,7 +793,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                     )}
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+                                <div className="flex-1 lg:overflow-y-auto lg:min-h-0 custom-scrollbar pr-1">
                                     <Reorder.Group
                                         axis="y"
                                         values={files}
@@ -833,7 +833,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                 </div>
 
                 {/* ── RIGHT: Options + Action ── */}
-                <div className="w-80 shrink-0 flex flex-col border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto custom-scrollbar">
+                <div className="lg:w-80 w-full shrink-0 flex flex-col border-l-0 lg:border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] lg:overflow-y-auto custom-scrollbar">
 
                     {/* Stats summary */}
                     {files.length > 0 && (
@@ -1013,7 +1013,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                     <div className="flex-1" />
 
                     {/* ── Action Button ── */}
-                    <div className="p-5 border-t border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#262636]/80 backdrop-blur-sm">
+                    <div className="p-5 border-t border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#262636]/80 backdrop-blur-sm sticky bottom-0 z-10">
                         {/* Order preview strip */}
                         {files.length > 1 && (
                             <div className="flex items-center gap-1 mb-4 overflow-hidden">

@@ -502,7 +502,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
             </AnimatePresence>
 
             {/* ── Header ── */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack}
@@ -513,9 +513,9 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                     <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
                         <Scissors className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Split PDF</h1>
-                        <p className="text-[11px] text-gray-400 font-medium">
+                        <p className="text-[11px] text-gray-400 font-medium truncate">
                             {file
                                 ? `${file.name} · ${totalPages} pages · ${formatBytes(file.size)}`
                                 : 'Extract pages or split into multiple files'}
@@ -523,7 +523,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 lg:gap-2">
                     {file && (
                         <>
                             <button
@@ -537,7 +537,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                                 onClick={() => { setFile(null); setThumbs([]); setTotalPages(0); setSelectedPages(new Set()); }}
                                 className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center gap-1.5"
                             >
-                                <Trash2 className="w-3.5 h-3.5" /> Remove
+                                <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Remove</span>
                             </button>
                         </>
                     )}
@@ -545,10 +545,10 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
             </div>
 
             {/* ── Body ── */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
 
                 {/* ── LEFT: Upload + Page Grid ── */}
-                <div className="flex-1 flex flex-col overflow-hidden p-4 lg:p-6 gap-4">
+                <div className="flex-1 lg:flex-1 flex flex-col lg:overflow-hidden p-4 lg:p-6 gap-4">
 
                     {/* Drop Zone */}
                     {!file ? (
@@ -607,8 +607,8 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                                 >
                                     {/* Grid toolbar */}
                                     <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/5">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 truncate">
                                                 Page Preview · {selectedPages.size > 0 ? `${selectedPages.size} selected` : `${totalPages} total`}
                                             </span>
                                             {loadingThumbs && (
@@ -656,7 +656,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                 </div>
 
                 {/* ── RIGHT: Options + Action ── */}
-                <div className="w-80 shrink-0 flex flex-col border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto custom-scrollbar">
+                <div className="lg:w-80 w-full shrink-0 flex flex-col border-l-0 lg:border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] lg:overflow-y-auto custom-scrollbar">
 
                     {/* File summary */}
                     {file && totalPages > 0 && (
@@ -879,7 +879,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                     <div className="flex-1" />
 
                     {/* ── Action Button ── */}
-                    <div className="p-5 border-t border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#262636]/80 backdrop-blur-sm">
+                    <div className="p-5 border-t border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#262636]/80 backdrop-blur-sm sticky bottom-0 z-10">
                         <button
                             onClick={handleSplit}
                             disabled={!file || isProcessing || totalPages === 0 || loadingFile}

@@ -403,7 +403,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
             </div>
 
             {/* Header */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-gray-500">
@@ -418,7 +418,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                         <p className="text-[11px] text-gray-400 font-medium">Visual signatures · RSA-SHA256 digital certificates · Verification</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 lg:gap-2">
                     {currentActiveBlob && (
                         <button onClick={() => downloadBlob(currentActiveBlob, currentOutputName)}
                             className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl flex items-center gap-2 shadow-sm">

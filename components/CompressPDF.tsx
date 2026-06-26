@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
     Minimize2, Upload, X, Download, Loader2, CheckCircle2,
     AlertCircle, ArrowLeft, Trash2, RotateCcw, Info,
-    ChevronDown, ChevronUp, Archive, FileDown, Gauge, Shield,
+    ChevronDown, ChevronUp, Archive, FileDown, Gauge, Shield, Plus,
 } from 'lucide-react';
 import {
     compressPdf, validatePdfForCompress, fmtSize, LEVEL_PROFILES, COMPRESS_MAX_MB,
@@ -136,7 +136,7 @@ const FileCard: React.FC<FileCardProps> = ({
                     <div className={`w-2 h-2 rounded-full shrink-0 ${dot[entry.status]}`} />
 
                     {/* File icon */}
-                    <div className="w-10 h-12 shrink-0 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-500/20 flex flex-col items-center justify-center gap-0.5">
+                    <div className="sm:w-10 w-8 sm:h-12 h-10 shrink-0 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-500/20 flex flex-col items-center justify-center gap-0.5">
                         <Minimize2 className="w-4 h-4 text-violet-500" />
                         <span className="text-[7px] font-black text-violet-400 uppercase tracking-wide">PDF</span>
                     </div>
@@ -180,7 +180,7 @@ const FileCard: React.FC<FileCardProps> = ({
                                 </button>
                                 <button onClick={onDownload}
                                     className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm">
-                                    <Download className="w-3.5 h-3.5" /> .pdf
+                                    <Download className="w-3.5 h-3.5" /> <span className="hidden sm:inline">.pdf</span>
                                 </button>
                             </>
                         )}
@@ -224,7 +224,7 @@ const SavingsBadge = ({ files }: { files: ManagedFile[] }) => {
     const saved = totalOrig - totalComp;
     const pct = totalOrig > 0 ? Math.round((saved / totalOrig) * 100) : 0;
     return (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/30 rounded-xl text-[10px] font-black text-emerald-700 dark:text-emerald-300">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/30 rounded-xl text-[10px] font-black text-emerald-700 dark:text-emerald-300 max-w-[200px] sm:max-w-none truncate">
             <CheckCircle2 className="w-3.5 h-3.5" />
             Saved {fmtSize(saved)} across {done.length} file{done.length !== 1 ? 's' : ''} ({pct}% avg)
         </div>
@@ -348,7 +348,7 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
             </div>
 
             {/* Header */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500">
@@ -358,79 +358,80 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
                     <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
                         <Minimize2 className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Compress PDF</h1>
-                        <p className="text-[11px] text-gray-400 font-medium">Reduce file size · Before vs After comparison</p>
+                        <p className="text-[11px] text-gray-400 font-medium truncate">Reduce file size · Before vs After comparison</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 lg:gap-2">
                     <SavingsBadge files={files} />
                     {doneCount > 1 && (
                         <button onClick={downloadAll}
                             className="px-3 py-2 text-xs font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-xl flex items-center gap-1.5 transition-colors">
-                            <Archive className="w-3.5 h-3.5" /> Download All ({doneCount})
+                            <Archive className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Download All ({doneCount})</span>
                         </button>
                     )}
                     {readyCount > 1 && (
                         <button onClick={compressAll} disabled={isCompressing}
                             className="px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
-                            <FileDown className="w-3.5 h-3.5" /> Compress All ({readyCount})
+                            <FileDown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Compress All ({readyCount})</span>
                         </button>
                     )}
                     {files.length > 0 && (
                         <button onClick={() => setFiles([])}
                             className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl flex items-center gap-1.5 transition-colors">
-                            <Trash2 className="w-3.5 h-3.5" /> Clear
+                            <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
                 </div>
             </div>
 
             {/* Body */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
 
                 {/* LEFT */}
-                <div className="flex-1 flex flex-col overflow-hidden p-4 lg:p-6 gap-4 min-w-0">
+                <div className="flex-1 lg:flex-1 flex flex-col lg:overflow-hidden p-4 lg:p-6 gap-4 min-w-0">
 
                     {/* Drop zone */}
                     <div ref={dropRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
                         onClick={() => fileRef.current?.click()}
-                        className={`shrink-0 flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-2xl py-10 cursor-pointer transition-all duration-200
-              ${isDragOver ? 'border-violet-500 bg-violet-500/5 scale-[0.99]' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636]'}
+                        className={`shrink-0 border-2 border-dashed rounded-2xl transition-all duration-200 cursor-pointer
+              ${isDragOver ? 'border-violet-500 bg-violet-500/5 scale-[0.99]'
+                            : files.length > 0
+                                ? 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636] py-4'
+                                : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636] py-10'}
               hover:border-violet-400 dark:hover:border-violet-500/50 hover:bg-violet-50/30 dark:hover:bg-violet-900/10`}>
                         <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden"
                             onChange={e => e.target.files && addFiles(e.target.files)} />
-                        <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                            className="p-4 bg-violet-100 dark:bg-violet-900/30 rounded-2xl shadow-lg shadow-violet-200 dark:shadow-violet-900/30">
-                            <Upload className="w-7 h-7 text-violet-600 dark:text-violet-400" />
-                        </motion.div>
-                        <div className="text-center">
-                            <p className="text-base font-black dark:text-white">Drop PDF files here</p>
-                            <p className="text-sm text-gray-400 mt-0.5">
-                                or <span className="text-violet-500 font-bold underline underline-offset-2">click to browse</span>
-                            </p>
-                        </div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600">
-                            PDF only · Max {COMPRESS_MAX_MB} MB per file
-                        </p>
+                        {files.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center gap-3">
+                                <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                                    className="p-4 bg-violet-100 dark:bg-violet-900/30 rounded-2xl shadow-lg shadow-violet-200 dark:shadow-violet-900/30 mx-auto">
+                                    <Upload className="w-7 h-7 text-violet-600 dark:text-violet-400" />
+                                </motion.div>
+                                <div className="text-center">
+                                    <p className="text-base font-black dark:text-white">Drop PDF files here</p>
+                                    <p className="text-sm text-gray-400 mt-0.5">
+                                        or <span className="text-violet-500 font-bold underline underline-offset-2">click to browse</span>
+                                    </p>
+                                </div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600">
+                                    PDF only · Max {COMPRESS_MAX_MB} MB per file
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center gap-3 text-sm text-gray-400 font-medium">
+                                <Plus className="w-4 h-4 text-violet-500" />
+                                <span>Click or drag to <span className="text-violet-500 font-bold">add more PDFs</span></span>
+                            </div>
+                        )}
                     </div>
 
                     {/* File list */}
-                    <div className="flex-1 overflow-y-auto min-h-0 space-y-3 pb-4">
-                        <AnimatePresence mode="popLayout">
-                            {files.length === 0 ? (
-                                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    className="flex flex-col items-center justify-center h-full gap-3 text-center py-16">
-                                    <div className="p-5 bg-gray-100 dark:bg-white/5 rounded-2xl">
-                                        <Minimize2 className="w-10 h-10 text-gray-300 dark:text-gray-600" />
-                                    </div>
-                                    <p className="text-sm font-bold text-gray-400">No PDFs added yet</p>
-                                    <p className="text-xs text-gray-300 dark:text-gray-600 max-w-xs leading-relaxed">
-                                        Upload your PDFs and see the before/after size comparison instantly after compression.
-                                    </p>
-                                </motion.div>
-                            ) : (
-                                files.map(entry => (
+                    <div className="flex-1 lg:overflow-y-auto lg:min-h-0 space-y-3 pb-4">
+                        {files.length > 0 && (
+                            <AnimatePresence mode="popLayout">
+                                {files.map(entry => (
                                     <FileCard key={entry.id} entry={entry} level={level}
                                         stripMetadata={stripMetadata}
                                         isAnyCompressing={isCompressing}
@@ -439,14 +440,14 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
                                         onDownload={() => downloadOne(entry.id)}
                                         onRename={name => updateFile(entry.id, { outputName: name })}
                                     />
-                                ))
-                            )}
-                        </AnimatePresence>
+                                ))}
+                            </AnimatePresence>
+                        )}
                     </div>
                 </div>
 
                 {/* RIGHT: settings */}
-                <div className="w-72 shrink-0 flex flex-col border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto">
+                <div className="lg:w-72 w-full shrink-0 flex flex-col border-l-0 lg:border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] lg:overflow-y-auto">
 
                     {/* Stats */}
                     {files.length > 0 && (
@@ -578,7 +579,7 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
                     <div className="flex-1" />
 
                     {/* Badge */}
-                    <div className="p-5 border-t border-gray-100 dark:border-white/5">
+                    <div className="p-5 border-t border-gray-100 dark:border-white/5 sticky bottom-0 z-10">
                         <div className="flex items-center gap-3 p-3 bg-violet-50 dark:bg-violet-900/20 rounded-xl">
                             <div className="w-8 h-8 shrink-0 rounded-lg bg-violet-600 flex items-center justify-center">
                                 <Minimize2 className="w-4 h-4 text-white" />

@@ -261,7 +261,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                               handleSafeNavigation(sub.id);
                               if (window.innerWidth < 1024 && onClose) onClose();
                             }}
-                            className={`flex items-center w-full h-9 pl-4 pr-4 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200 gap-3
+                            className={`flex items-center w-full h-10 lg:h-9 pl-4 pr-4 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200 gap-3
                               ${isSubActive
                                 ? 'text-brand-400 bg-white/5'
                                 : 'text-white/40 hover:text-white hover:bg-white/5'}`}
@@ -295,7 +295,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                               handleSafeNavigation(sub.id);
                               if (window.innerWidth < 1024 && onClose) onClose();
                             }}
-                            className={`flex items-center w-full h-9 pl-4 pr-4 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200 gap-3
+                            className={`flex items-center w-full h-10 lg:h-9 pl-4 pr-4 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200 gap-3
                               ${isSubActive
                                 ? 'text-brand-400 bg-white/5'
                                 : 'text-white/40 hover:text-white hover:bg-white/5'}`}

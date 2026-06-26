@@ -298,7 +298,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                   )}
 
                   {/* Floating Action Buttons for the file - Premium Style */}
-                  <div className="absolute top-6 -right-16 flex flex-col gap-3 group-hover:right-6 transition-all duration-500">
+                  <div className="absolute top-6 right-0 lg:-right-16 flex flex-col gap-3 lg:group-hover:right-6 transition-all duration-500">
                     <button className="w-12 h-12 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl text-gray-500 hover:text-brand-500 hover:scale-110 active:scale-95 transition-all flex items-center justify-center">
                       <RotateCw className="w-5 h-5" />
                     </button>
@@ -378,7 +378,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   return (
     <div className="flex-1 bg-[#f3f1ea] dark:bg-[#1e1e2e] flex flex-col h-full overflow-hidden transition-colors duration-300">
       {/* Header */}
-      <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
+      <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
         <div className="flex items-center gap-3">
           {onBack && (
             <button onClick={onBack}

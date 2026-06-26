@@ -492,7 +492,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
             </AnimatePresence>
 
             {/* ── Header ── */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack}
@@ -503,9 +503,9 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                     <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
                         <Eraser className="w-5 h-5 text-red-600 dark:text-red-400" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Delete Pages</h1>
-                        <p className="text-[11px] text-gray-400 font-medium">
+                        <p className="text-[11px] text-gray-400 font-medium truncate">
                             {file
                                 ? `${file.name} · ${totalPages} pages · ${formatBytes(file.size)}`
                                 : 'Remove unwanted pages from your PDF'}
@@ -513,7 +513,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 lg:gap-2">
                     {file && (
                         <>
                             {undoStack.length > 0 && (
@@ -538,10 +538,10 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
             </div>
 
             {/* ── Body ── */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
 
                 {/* ── LEFT: Upload + Page Grid ── */}
-                <div className="flex-1 flex flex-col overflow-hidden p-4 lg:p-6 gap-4 min-w-0">
+                <div className="flex-1 lg:flex-1 flex flex-col lg:overflow-hidden p-4 lg:p-6 gap-4 min-w-0">
 
                     {/* Drop Zone */}
                     {!file ? (
@@ -669,7 +669,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                 </div>
 
                 {/* ── RIGHT: Options + Action ── */}
-                <div className="w-80 shrink-0 flex flex-col border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto">
+                <div className="lg:w-80 w-full shrink-0 flex flex-col border-l-0 lg:border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] lg:overflow-y-auto">
 
                     {/* File summary */}
                     {file && totalPages > 0 && (
@@ -824,7 +824,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                     <div className="flex-1" />
 
                     {/* ── Action Buttons ── */}
-                    <div className="p-5 border-t border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#262636]/80 backdrop-blur-sm space-y-3">
+                    <div className="p-5 border-t border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#262636]/80 backdrop-blur-sm sticky bottom-0 z-10 space-y-3">
                         {/* Delete button */}
                         <button
                             onClick={handleDelete}

@@ -279,7 +279,7 @@ const FileCard: React.FC<FileCardProps> = ({
                                 <button onClick={onDownload}
                                     className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm">
                                     {formatIcons[outputFormat]}
-                                    .{r?.format}
+                                    <span className="hidden sm:inline">.{r?.format}</span>
                                 </button>
                             </>
                         )}
@@ -560,7 +560,7 @@ export const OCRPDF: React.FC<Props> = ({ onBack }) => {
             </div>
 
             {/* Header */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500">
@@ -570,41 +570,41 @@ export const OCRPDF: React.FC<Props> = ({ onBack }) => {
                     <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
                         <ScanText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight flex items-center gap-2">
                             OCR PDF
                             <span className="text-[10px] font-black bg-gradient-to-r from-indigo-500 to-violet-500 text-white px-2 py-0.5 rounded-full">HYBRID AI</span>
                         </h1>
-                        <p className="text-[11px] text-gray-400 font-medium">Tesseract OCR + AI text reconstruction</p>
+                        <p className="text-[11px] text-gray-400 font-medium truncate">Tesseract OCR + AI text reconstruction</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 lg:gap-2">
                     {doneCount > 1 && (
                         <button onClick={downloadAll}
                             className="px-3 py-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl flex items-center gap-1.5 transition-colors">
-                            <Archive className="w-3.5 h-3.5" /> Download All ({doneCount})
+                            <Archive className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Download All ({doneCount})</span>
                         </button>
                     )}
                     {readyCount > 1 && (
                         <button onClick={processAll} disabled={isProcessing}
                             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
-                            <ScanText className="w-3.5 h-3.5" /> OCR All ({readyCount})
+                            <ScanText className="w-3.5 h-3.5" /> <span className="hidden sm:inline">OCR All ({readyCount})</span>
                         </button>
                     )}
                     {files.length > 0 && (
                         <button onClick={() => setFiles([])}
                             className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl flex items-center gap-1.5 transition-colors">
-                            <Trash2 className="w-3.5 h-3.5" /> Clear
+                            <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
                 </div>
             </div>
 
             {/* Body */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
 
                 {/* LEFT */}
-                <div className="flex-1 flex flex-col overflow-hidden p-4 lg:p-6 gap-4 min-w-0">
+                <div className="flex-1 lg:flex-1 flex flex-col lg:overflow-hidden p-4 lg:p-6 gap-4 min-w-0">
 
                     {/* Drop zone */}
                     <div ref={dropRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
@@ -630,21 +630,10 @@ export const OCRPDF: React.FC<Props> = ({ onBack }) => {
                     </div>
 
                     {/* File list */}
-                    <div className="flex-1 overflow-y-auto min-h-0 space-y-3 pb-4">
-                        <AnimatePresence mode="popLayout">
-                            {files.length === 0 ? (
-                                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    className="flex flex-col items-center justify-center h-full gap-3 text-center py-16">
-                                    <div className="p-5 bg-gray-100 dark:bg-white/5 rounded-2xl">
-                                        <ScanText className="w-10 h-10 text-gray-300 dark:text-gray-600" />
-                                    </div>
-                                    <p className="text-sm font-bold text-gray-400">No PDFs added yet</p>
-                                    <p className="text-xs text-gray-300 dark:text-gray-600 max-w-xs leading-relaxed">
-                                        Upload scanned or image-based PDFs. The AI pipeline will extract, clean, and reconstruct readable text.
-                                    </p>
-                                </motion.div>
-                            ) : (
-                                files.map(entry => (
+                    <div className="flex-1 lg:overflow-y-auto lg:min-h-0 space-y-3 pb-4">
+                        {files.length > 0 && (
+                            <AnimatePresence mode="popLayout">
+                                {files.map(entry => (
                                     <FileCard key={entry.id} entry={entry}
                                         language={language} aiEnhancement={aiEnhancement} outputFormat={outputFormat}
                                         isAnyRunning={isProcessing}
@@ -656,14 +645,14 @@ export const OCRPDF: React.FC<Props> = ({ onBack }) => {
                                         })}
                                         onTogglePreview={() => updateFile(entry.id, { showPreview: !entry.showPreview })}
                                     />
-                                ))
-                            )}
-                        </AnimatePresence>
+                                ))}
+                            </AnimatePresence>
+                        )}
                     </div>
                 </div>
 
                 {/* RIGHT: settings */}
-                <div className="w-72 shrink-0 flex flex-col border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto">
+                <div className="lg:w-72 w-full shrink-0 flex flex-col border-l-0 lg:border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] lg:overflow-y-auto">
 
                     {/* Stats */}
                     {files.length > 0 && (
@@ -785,7 +774,7 @@ export const OCRPDF: React.FC<Props> = ({ onBack }) => {
                     <div className="flex-1" />
 
                     {/* Badge */}
-                    <div className="p-5 border-t border-gray-100 dark:border-white/5">
+                    <div className="p-5 border-t border-gray-100 dark:border-white/5 sticky bottom-0 z-10">
                         <div className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
                             <div className="w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center">
                                 <Sparkles className="w-4 h-4 text-white" />

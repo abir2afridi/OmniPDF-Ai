@@ -18,7 +18,7 @@ import {
     FileImage, Upload, X, Download, Loader2, CheckCircle2,
     AlertCircle, Info, ArrowLeft, ChevronDown, ChevronUp,
     Settings2, Trash2, Package, ZoomIn, ZoomOut,
-    LayoutGrid, SlidersHorizontal, RefreshCw, Image,
+    LayoutGrid, SlidersHorizontal, RefreshCw, Image, Plus,
 } from 'lucide-react';
 import {
     convertPdfToImages, getPdfPageMeta, validatePdfForImage, packPagesToZip,
@@ -538,7 +538,7 @@ export const PDFToJPG: React.FC<PDFToJPGProps> = ({ onBack }) => {
             </div>
 
             {/* Header */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
+            <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500 dark:text-gray-400">
@@ -548,73 +548,74 @@ export const PDFToJPG: React.FC<PDFToJPGProps> = ({ onBack }) => {
                     <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl">
                         <FileImage className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">PDF to JPG</h1>
-                        <p className="text-[11px] text-gray-400 font-medium">
+                        <p className="text-[11px] text-gray-400 font-medium truncate">
                             Convert PDF pages to high-quality images — select pages, set quality
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 lg:gap-2">
                     {totalConvertedImages > 0 && (
                         <button onClick={downloadAllZip}
                             className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors">
-                            <Package className="w-3.5 h-3.5" /> Bundle All ({totalConvertedImages})
+                            <Package className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Bundle All ({totalConvertedImages})</span>
                         </button>
                     )}
                     {files.length > 0 && (
                         <button onClick={clearAll} className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center gap-1.5">
-                            <Trash2 className="w-3.5 h-3.5" /> Clear All
+                            <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear All</span>
                         </button>
                     )}
                 </div>
             </div>
 
             {/* Body */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
 
                 {/* LEFT: drop zone + file sections */}
-                <div className="flex-1 flex flex-col overflow-hidden p-4 lg:p-6 gap-4 min-w-0">
+                <div className="flex-1 lg:flex-1 flex flex-col lg:overflow-hidden p-4 lg:p-6 gap-4 min-w-0">
 
                     {/* Drop Zone */}
                     <div ref={dropRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
                         onClick={() => inputRef.current?.click()}
-                        className={`shrink-0 flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-2xl py-10 cursor-pointer transition-all duration-200
-              ${isDragOver ? 'border-yellow-500 bg-yellow-500/5 scale-[0.99]' : 'border-gray-200 dark:border-white/10 bg-[#f3f1ea] dark:bg-[#262636]'}
+                        className={`shrink-0 border-2 border-dashed rounded-2xl transition-all duration-200 cursor-pointer
+              ${isDragOver ? 'border-yellow-500 bg-yellow-500/5 scale-[0.99]'
+                            : files.length > 0
+                                ? 'border-gray-200 dark:border-white/10 bg-[#f3f1ea] dark:bg-[#262636] py-4'
+                                : 'border-gray-200 dark:border-white/10 bg-[#f3f1ea] dark:bg-[#262636] py-10'}
               hover:border-yellow-400 dark:hover:border-yellow-500/50 hover:bg-yellow-50/30 dark:hover:bg-yellow-900/10`}>
                         <input ref={inputRef} type="file" accept={ACCEPT} multiple className="hidden"
                             onChange={e => e.target.files && addFiles(e.target.files)} />
 
-                        <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                            className="p-4 bg-yellow-100 dark:bg-yellow-900/30 rounded-2xl shadow-lg shadow-yellow-200 dark:shadow-yellow-900/30">
-                            <Upload className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
-                        </motion.div>
-                        <div className="text-center">
-                            <p className="text-base font-black dark:text-white">Drop PDF files here</p>
-                            <p className="text-sm text-gray-400 mt-0.5">
-                                or <span className="text-yellow-500 font-bold underline underline-offset-2">click to browse</span>
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600">
-                            <span>.pdf</span><span>·</span><span>Max {PDF_MAX_FILE_MB} MB each</span><span>·</span><span>Shift+click for range select</span>
-                        </div>
+                        {files.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center gap-3">
+                                <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                                    className="p-4 bg-yellow-100 dark:bg-yellow-900/30 rounded-2xl shadow-lg shadow-yellow-200 dark:shadow-yellow-900/30 mx-auto">
+                                    <Upload className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+                                </motion.div>
+                                <div className="text-center">
+                                    <p className="text-base font-black dark:text-white">Drop PDF files here</p>
+                                    <p className="text-sm text-gray-400 mt-0.5">
+                                        or <span className="text-yellow-500 font-bold underline underline-offset-2">click to browse</span>
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600">
+                                    <span>.pdf</span><span>·</span><span>Max {PDF_MAX_FILE_MB} MB each</span><span>·</span><span>Shift+click for range select</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center gap-3 text-sm text-gray-400 font-medium">
+                                <Plus className="w-4 h-4 text-yellow-500" />
+                                <span>Click or drag to <span className="text-yellow-500 font-bold">add more PDFs</span></span>
+                            </div>
+                        )}
                     </div>
 
                     {/* File sections */}
-                    <div className="flex-1 overflow-y-auto min-h-0">
-                        <AnimatePresence mode="popLayout">
-                            {files.length === 0 ? (
-                                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    className="flex flex-col items-center justify-center h-full gap-3 text-center py-16">
-                                    <div className="p-5 bg-gray-100 dark:bg-white/5 rounded-2xl">
-                                        <FileImage className="w-10 h-10 text-gray-300 dark:text-gray-600" />
-                                    </div>
-                                    <p className="text-sm font-bold text-gray-400">No PDFs added yet</p>
-                                    <p className="text-xs text-gray-300 dark:text-gray-600 max-w-xs leading-relaxed">
-                                        Upload one or more PDFs. Each page will appear as a thumbnail you can click to select, then convert to JPG, PNG, or WebP.
-                                    </p>
-                                </motion.div>
-                            ) : (
+                    <div className="flex-1 lg:overflow-y-auto lg:min-h-0">
+                        {files.length > 0 && (
+                            <AnimatePresence mode="popLayout">
                                 <div className="flex flex-col gap-4">
                                     {files.map(entry => (
                                         <motion.div key={entry.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }}>
@@ -636,13 +637,13 @@ export const PDFToJPG: React.FC<PDFToJPGProps> = ({ onBack }) => {
                                         </motion.div>
                                     ))}
                                 </div>
-                            )}
-                        </AnimatePresence>
+                            </AnimatePresence>
+                        )}
                     </div>
                 </div>
 
                 {/* RIGHT: Control panel */}
-                <div className="w-80 shrink-0 flex flex-col border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto">
+                <div className="lg:w-80 w-full shrink-0 flex flex-col border-l-0 lg:border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] lg:overflow-y-auto">
 
                     {/* Thumb size slider */}
                     {files.some(f => f.meta.length > 0) && (
@@ -786,7 +787,7 @@ export const PDFToJPG: React.FC<PDFToJPGProps> = ({ onBack }) => {
                     <div className="flex-1" />
 
                     {/* Action Buttons */}
-                    <div className="p-5 border-t border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#262636]/80 backdrop-blur-sm space-y-3">
+                    <div className="p-5 border-t border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#262636]/80 backdrop-blur-sm sticky bottom-0 z-10 space-y-3">
                         <button
                             onClick={convertAll}
                             disabled={readyCount === 0 || isAnyConverting}
@@ -808,7 +809,7 @@ export const PDFToJPG: React.FC<PDFToJPGProps> = ({ onBack }) => {
                                 <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
                                     onClick={downloadAllZip}
                                     className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-black text-sm bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all">
-                                    <Package className="w-5 h-5" /> Download All {totalConvertedImages} Images
+                                    <Package className="w-5 h-5" /> <span className="hidden sm:inline">Download All {totalConvertedImages} Images</span>
                                 </motion.button>
                             )}
                         </AnimatePresence>
