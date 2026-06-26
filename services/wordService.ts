@@ -91,18 +91,18 @@ function buildStyledHtml(bodyHtml: string): string {
     background: #fff;
     line-height: 1.5;
   }
-  body { padding: 25.4mm 25.4mm 25.4mm 25.4mm; } /* A4 margins */
-  h1, h2, h3, h4, h5, h6 { margin: 0.6em 0 0.3em; font-weight: 700; }
+  body { padding: 20mm 20mm 20mm 20mm; }
+  h1, h2, h3, h4, h5, h6 { margin: 0.6em 0 0.3em; font-weight: 700; break-after: avoid; }
   h1 { font-size: 20pt; } h2 { font-size: 16pt; } h3 { font-size: 13pt; }
   p  { margin: 0 0 0.5em; }
-  table { border-collapse: collapse; width: 100%; margin: 0.5em 0; }
+  table { border-collapse: collapse; width: 100%; margin: 0.5em 0; break-inside: avoid; }
   th, td { border: 1px solid #bbb; padding: 4px 8px; }
   th { background: #f0f0f0; font-weight: 700; }
   ul, ol { margin: 0.3em 0 0.3em 1.5em; padding: 0; }
   li { margin-bottom: 0.2em; }
-  img { max-width: 100%; height: auto; }
+  img { max-width: 100%; height: auto; break-inside: avoid; }
   a { color: #1a5fb4; text-decoration: underline; }
-  blockquote { margin: 0.5em 0 0.5em 1em; padding-left: 0.8em; border-left: 3px solid #ccc; color: #555; }
+  blockquote { margin: 0.5em 0 0.5em 1em; padding-left: 0.8em; border-left: 3px solid #ccc; color: #555; break-inside: avoid; }
   pre, code { font-family: 'Consolas', monospace; font-size: 9pt; background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
   hr { border: none; border-top: 1px solid #ddd; margin: 1em 0; }
   @page { size: A4; margin: 0; }
@@ -180,9 +180,8 @@ export async function convertWordToPDF(
     // ── 4. Mount hidden iframe for accurate rendering ─────
     const styledHtml = buildStyledHtml(extractedHtml);
 
-    // Create an off-screen iframe at A4 proportions
-    const PAGE_W_PX = 794;  // ~210mm at 96dpi
-    const PAGE_H_PX = 1123; // ~297mm at 96dpi
+    const PAGE_W_PX = 794;
+    const PAGE_H_PX = 1123;
     const iframe = document.createElement('iframe');
     iframe.style.cssText = `
         position: fixed; top: -9999px; left: -9999px;
@@ -197,18 +196,18 @@ export async function convertWordToPDF(
         doc.write(styledHtml);
         doc.close();
 
-        // Small tick so the browser can lay out
-        await new Promise<void>(resolve => setTimeout(resolve, 80));
+        await new Promise<void>(resolve => setTimeout(resolve, 100));
         onProgress?.(55);
 
-        // ── 5. Rasterise via html2canvas ─────────────────
-        const h2c = await import('html2canvas');
-        const h2cDefault = (h2c as any).default ?? h2c;
+        const h2cMod = await import('html2canvas');
+        const h2c = (h2cMod as any).default ?? h2cMod;
+        const { jsPDF } = await import('jspdf');
 
         const bodyEl = doc.body;
         const fullHeight = Math.max(bodyEl.scrollHeight, PAGE_H_PX);
 
-        const canvas = await h2cDefault(bodyEl, {
+        // ── Render ONE perfect canvas — text/images at correct size ──
+        const canvas = await h2c(bodyEl, {
             scale,
             useCORS: true,
             allowTaint: false,
@@ -221,44 +220,76 @@ export async function convertWordToPDF(
         });
         onProgress?.(80);
 
-        // ── 6. Slice canvas into A4 pages and build PDF ──
-        const { jsPDF } = await import('jspdf');
+        // ── Find clean page breaks by scanning canvas pixels ──
         const pdfW = pageFormat === 'letter' ? 215.9 : pageFormat === 'legal' ? 215.9 : 210;
         const pdfH = pageFormat === 'letter' ? 279.4 : pageFormat === 'legal' ? 355.6 : 297;
         const isLandscape = orientation === 'landscape';
         const pw = isLandscape ? pdfH : pdfW;
         const ph = isLandscape ? pdfW : pdfH;
+        const MARGIN_MM = 20;
+        const contentW = pw - 2 * MARGIN_MM;
+        const contentH = ph - 2 * MARGIN_MM;
+        const mmPerPx = contentW / (PAGE_W_PX * scale);
+        const pageHeightPx = contentH / mmPerPx;
 
-        const pdf = new jsPDF({
-            orientation,
-            unit: 'mm',
-            format: pageFormat,
-            compress: true,
-        });
+        const ctx = canvas.getContext('2d')!;
+        const cw = canvas.width;
+        const ch = canvas.height;
 
-        const canvasWidthMM = pw;
-        const mmPerPx = canvasWidthMM / (PAGE_W_PX * scale);
-        const pageHeightPx = ph / mmPerPx;
-        const totalPages = Math.ceil((canvas.height) / pageHeightPx);
-
-        for (let page = 0; page < totalPages; page++) {
-            if (page > 0) pdf.addPage([pw, ph], orientation);
-
-            // Slice current page strip from canvas
-            const sliceCanvas = document.createElement('canvas');
-            const sliceH = Math.min(pageHeightPx, canvas.height - page * pageHeightPx);
-            sliceCanvas.width = canvas.width;
-            sliceCanvas.height = sliceH;
-            const ctx = sliceCanvas.getContext('2d')!;
-            ctx.drawImage(canvas, 0, page * pageHeightPx, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-
-            const sliceDataUrl = sliceCanvas.toDataURL('image/jpeg', 0.92);
-            pdf.addImage(sliceDataUrl, 'JPEG', 0, 0, pw, sliceH * mmPerPx);
+        // Check if a horizontal row of pixels is "clean" (mostly white background)
+        function isCleanRow(y: number): boolean {
+            if (y < 0 || y >= ch) return true;
+            const rowData = ctx.getImageData(0, y, cw, 1).data;
+            let nonBg = 0;
+            for (let x = 0; x < rowData.length; x += 16) { // sample every 4th pixel
+                const r = rowData[x], g = rowData[x + 1], b = rowData[x + 2], a = rowData[x + 3];
+                if (a > 10 && (r < 240 || g < 240 || b < 240)) nonBg++;
+            }
+            return nonBg < 5; // <5 non-white pixels = clean row
         }
 
-        onProgress?.(95);
-        const pdfBytes = pdf.output('arraybuffer');
+        // For a given cut position, scan ±searchRange to find nearest clean gap
+        function findCleanCut(cutY: number, searchRange: number): number {
+            // First check if cutY itself is clean
+            if (isCleanRow(cutY)) return cutY;
+            // Search downward (prefer keeping content on current page)
+            for (let d = 1; d <= searchRange; d++) {
+                if (isCleanRow(cutY + d)) return cutY + d;
+                if (isCleanRow(cutY - d)) return cutY - d;
+            }
+            return cutY; // fallback: exact cut
+        }
+
+        const cutPoints: number[] = [0];
+        let pos = 0;
+        while (pos + pageHeightPx < ch) {
+            const idealCut = Math.round(pos + pageHeightPx);
+            const cleanCut = findCleanCut(idealCut, Math.round(pageHeightPx * 0.08)); // search ±8% of page
+            cutPoints.push(cleanCut);
+            pos = cleanCut;
+        }
+        cutPoints.push(ch);
+
+        const totalPages = cutPoints.length - 1;
+        const pdf = new jsPDF({ orientation, unit: 'mm', format: pageFormat, compress: true });
+
+        for (let p = 0; p < totalPages; p++) {
+            if (p > 0) pdf.addPage([pw, ph], orientation);
+
+            const yStart = cutPoints[p];
+            const yEnd = cutPoints[p + 1];
+            const sliceH = yEnd - yStart;
+
+            const sc = document.createElement('canvas');
+            sc.width = cw;
+            sc.height = sliceH;
+            sc.getContext('2d')!.drawImage(canvas, 0, yStart, cw, sliceH, 0, 0, cw, sliceH);
+
+            pdf.addImage(sc.toDataURL('image/jpeg', 0.92), 'JPEG', MARGIN_MM, MARGIN_MM, contentW, sliceH * mmPerPx);
+        }
+
         onProgress?.(100);
+        const pdfBytes = pdf.output('arraybuffer');
 
         const base = sanitizeName(outputPrefix?.trim() || file.name.replace(/\.(docx?|DOC[XY]?)$/i, ''));
         return {
