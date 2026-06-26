@@ -22,6 +22,7 @@ import {
     ChevronDown, ChevronUp, FileDown,
     RefreshCw, Layers,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     getFilePageCount,
     generatePDFPageThumbnails,
@@ -582,6 +583,7 @@ export const RotatePDF: React.FC<RotatePDFProps> = ({ onBack }) => {
                             </button>
                         </>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

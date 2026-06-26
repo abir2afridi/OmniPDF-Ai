@@ -153,6 +153,22 @@ export const Workspace: React.FC<WorkspaceProps> = ({
           >
             <Download className="w-3.5 h-3.5" /> {getExportLabel()}
           </button>
+
+          <div className="h-8 w-px bg-gray-200 dark:bg-white/10 mx-2" />
+
+          <span className="text-xs font-mono text-gray-500 dark:text-gray-400 tabular-nums">
+            {now.toLocaleDateString([], { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+            {' · '}
+            {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          </span>
+
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="p-2 inline-flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-400"
+            title={theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-yellow-500" /> : <Moon className="w-4 h-4" />}
+          </button>
         </div>
       </div>
 

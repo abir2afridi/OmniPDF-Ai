@@ -22,6 +22,7 @@ import {
     ChevronDown, ChevronUp, Info, Archive, FileImage, ZoomIn,
     ChevronLeft, ChevronRight, Grid3x3,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     extractImagesFromPdf, validatePdfForExtract, revokeImageUrls, fmtSize,
     EXTRACT_MAX_MB,
@@ -612,6 +613,7 @@ export const ExtractImages: React.FC<Props> = ({ onBack }) => {
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

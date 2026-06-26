@@ -25,6 +25,7 @@ import {
     RotateCw, RefreshCw, Package, FileText, FileSpreadsheet,
     Presentation, Shield, Plus,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     convertOpenOfficeToPDF,
     validateOpenOfficeFile,
@@ -479,6 +480,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                             </button>
                         </>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

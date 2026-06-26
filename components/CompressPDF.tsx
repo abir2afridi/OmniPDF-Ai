@@ -21,6 +21,7 @@ import {
     AlertCircle, ArrowLeft, Trash2, RotateCcw, Info,
     ChevronDown, ChevronUp, Archive, FileDown, Gauge, Shield, Plus,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     compressPdf, validatePdfForCompress, fmtSize, LEVEL_PROFILES, COMPRESS_MAX_MB,
     type CompressResult, type CompressionLevel,
@@ -383,6 +384,7 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

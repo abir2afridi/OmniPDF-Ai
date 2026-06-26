@@ -22,6 +22,7 @@ import {
     ChevronDown, ChevronUp, Trash2, FileDown, ArrowUpDown,
     Info, Plus,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     loadImageMeta, validateImageFile, convertImagesToPdf, fmtSize,
     IMG_MAX_COUNT,
@@ -370,6 +371,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear All</span>
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

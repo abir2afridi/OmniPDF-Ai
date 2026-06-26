@@ -12,6 +12,7 @@ import {
     Settings2, Grid3x3, Layers, ArchiveIcon,
     FileDown, ZapIcon, BookOpen, Eye, EyeOff,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     getFilePageCount,
     generatePDFThumbnail,
@@ -541,6 +542,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                             </button>
                         </>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

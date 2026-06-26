@@ -20,6 +20,7 @@ import {
     Settings2, Trash2, Package, ZoomIn, ZoomOut,
     LayoutGrid, SlidersHorizontal, RefreshCw, Image, Plus,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     convertPdfToImages, getPdfPageMeta, validatePdfForImage, packPagesToZip,
     PDF_MAX_FILE_MB, QUALITY_SCALE,
@@ -567,6 +568,7 @@ export const PDFToJPG: React.FC<PDFToJPGProps> = ({ onBack }) => {
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear All</span>
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

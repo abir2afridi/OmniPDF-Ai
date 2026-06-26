@@ -22,6 +22,7 @@ import {
     Settings2, FileDown, Eye, EyeOff, Layers, Trash2,
     RotateCw, RefreshCw, Package, Plus,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     convertWordToPDF,
     batchConvertWordToPDF,
@@ -453,6 +454,7 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
                             </button>
                         </>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

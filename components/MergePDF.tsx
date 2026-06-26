@@ -14,6 +14,7 @@ import {
     Layers, FileInput, Zap, BookOpen, FilePlus2,
     ArrowLeft, ArrowDownUp, Trash2, Eye, EyeOff, Copy, Check,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     getFilePageCount,
     generatePDFThumbnail,
@@ -708,6 +709,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear All</span>
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

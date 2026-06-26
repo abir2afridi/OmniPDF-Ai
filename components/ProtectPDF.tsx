@@ -19,6 +19,7 @@ import {
     Pencil, MessageSquare, FormInput, Accessibility, BookOpen,
     ChevronDown, ChevronUp, Archive,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     protectPdf, unlockPdf, validatePdfForProtect, scorePassword, fmtSize,
     STRENGTH_CONFIG, FULL_PERMISSIONS, READ_ONLY_PERMISSIONS, PROTECT_MAX_MB,
@@ -523,6 +524,7 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) 
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

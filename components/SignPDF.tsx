@@ -20,6 +20,7 @@ import {
     Pen, Image, Type, Lock, Calendar, AlignLeft, BadgeCheck,
     XCircle, FileWarning,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     visualSignPdf, digitalSignPdf, verifyPdfSignature, parseP12,
     generateTypedSignatureDataUrl, validateSignFile, fmtSize,
@@ -425,6 +426,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                             <Download className="w-3.5 h-3.5" /> Download
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

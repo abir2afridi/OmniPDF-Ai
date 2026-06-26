@@ -21,6 +21,7 @@ import {
     AlertCircle, ArrowLeft, Trash2, RotateCcw, Settings2,
     ChevronDown, ChevronUp, FileDown, Info, Archive, Monitor, Square,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     convertPdfToPpt, validatePdfForPpt, fmtSize,
     PDF_TO_PPT_MAX_MB,
@@ -447,6 +448,7 @@ export const PDFToPPT: React.FC<Props> = ({ onBack }) => {
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

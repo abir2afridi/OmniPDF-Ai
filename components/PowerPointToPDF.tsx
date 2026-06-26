@@ -17,6 +17,7 @@ import {
     Settings2, FileDown, Trash2, RotateCw, Package,
     Play, Layers, SlidersHorizontal, Film, Plus,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     convertPptToPDF, getPresentationSlides, validatePptFile, PPT_MAX_FILE_MB,
     type SlideInfo, type PptConversionResult,
@@ -469,6 +470,7 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear All</span>
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

@@ -20,6 +20,7 @@ import {
     AlertCircle, ArrowLeft, Trash2, RotateCcw, Settings2,
     ChevronDown, ChevronUp, FileDown, Info, Archive, Layers,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     convertPdfToExcel, validatePdfForExcel, fmtSize,
     PDF_TO_XLS_MAX_MB,
@@ -451,6 +452,7 @@ export const PDFToExcel: React.FC<PDFToExcelProps> = ({ onBack }) => {
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

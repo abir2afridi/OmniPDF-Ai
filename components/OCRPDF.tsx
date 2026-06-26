@@ -27,6 +27,7 @@ import {
     ChevronDown, ChevronUp, Archive, Sparkles, Eye, EyeOff,
     Settings2, Languages, FileText, FileJson, FilePlus2,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     runOcr, validatePdfForOcr, fmtSize, OCR_LANGUAGES, OCR_MAX_MB, OCR_MAX_PAGES,
     type OcrResult, type OcrOptions, type OcrLang, type OutputFormat, type OcrStage,
@@ -597,6 +598,7 @@ export const OCRPDF: React.FC<Props> = ({ onBack }) => {
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

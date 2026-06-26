@@ -13,6 +13,7 @@ import {
     ChevronDown, ChevronUp, FileDown, Eye, EyeOff,
     ZapIcon,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     getFilePageCount,
     generatePDFPageThumbnails,
@@ -534,6 +535,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                             </button>
                         </>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

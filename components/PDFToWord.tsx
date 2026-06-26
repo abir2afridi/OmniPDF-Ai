@@ -20,6 +20,7 @@ import {
     AlertCircle, ArrowLeft, Trash2, RotateCcw, Settings2,
     ChevronDown, ChevronUp, FileDown, Info, Archive, Plus,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     convertPdfToWord, validatePdfForWord, fmtSize,
     PDF_TO_WORD_MAX_MB,
@@ -488,6 +489,7 @@ export const PDFToWord: React.FC<PDFToWordProps> = ({ onBack }) => {
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 

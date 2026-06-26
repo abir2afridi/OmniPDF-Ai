@@ -18,6 +18,7 @@ import {
     Settings2, FileDown, Trash2, RotateCw, Package,
     Table2, Layers, Grid3x3, Plus,
 } from 'lucide-react';
+import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     convertExcelToPDF, getWorkbookSheets,
     validateExcelFile, EXCEL_MAX_FILE_MB,
@@ -466,6 +467,7 @@ export const ExcelToPDF: React.FC<ExcelToPDFProps> = ({ onBack }) => {
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear All</span>
                         </button>
                     )}
+                    <ToolHeaderExtras />
                 </div>
             </div>
 
