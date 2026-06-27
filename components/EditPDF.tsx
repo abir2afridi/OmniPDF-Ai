@@ -4,14 +4,14 @@
  * watermarks, page ops, AI suggestions, OCR hooks, and batch editing.
  * Indigo brand color.
  */
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     ArrowLeft, Upload, Download, Loader2, CheckCircle2, AlertCircle, Info, X,
     ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Undo2, Redo2,
     Type, PenTool, Square, Circle, Image, Highlighter, Link2, Stamp, Eraser,
     MousePointer2, Minus, Strikethrough, Underline, Trash2, RotateCw,
-    Copy, Layers, Droplets, FileText, Sparkles, Settings2, Eye,
+    Copy, Layers, Droplets, FileText, Sparkles, Settings2, Settings, Eye, Maximize2,
 } from 'lucide-react';
 import {
     type EditAnnotation, type EditSession, type EditTool, type ShapeType,
@@ -23,8 +23,9 @@ import {
     getAiTextSuggestion, sanitizeText, uid, fmtSize,
     cleanupTempBlobs,
 } from '../services/editPdfService';
+import { PDFTool } from '../types';
 
-interface Props { onBack?: () => void; }
+interface Props { onBack?: () => void; activeTool?: PDFTool; }
 interface Toast { id: string; type: 'success' | 'error' | 'info' | 'warn'; msg: string; }
 
 const TOOLS: { id: EditTool; icon: any; label: string; }[] = [
@@ -66,7 +67,7 @@ const ToastItem = ({ t, onDismiss }: { t: Toast; onDismiss: () => void }) => (
     </motion.div>
 );
 
-export const EditPDF: React.FC<Props> = ({ onBack }) => {
+export const EditPDF: React.FC<Props> = ({ onBack, activeTool }) => {
     // ── Core state
     const [session, setSession] = useState<EditSession | null>(null);
     const [pdfDoc, setPdfDoc] = useState<any>(null);
@@ -74,11 +75,12 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
     const [curPage, setCurPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [scale, setScale] = useState(1.2);
+    const [autoFitScale, setAutoFitScale] = useState(false);
     const [thumbnails, setThumbnails] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
     // ── Tool state
-    const [activeTool, setActiveTool] = useState<EditTool>('select');
+    const [editTool, setEditTool] = useState<EditTool>('select');
     const [annotations, setAnnotations] = useState<EditAnnotation[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [shapeType, setShapeType] = useState<ShapeType>('rectangle');
@@ -111,6 +113,30 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
     const [isExporting, setIsExporting] = useState(false);
     const [exportProgress, setExportProgress] = useState(0);
     const [editedBlob, setEditedBlob] = useState<Blob | null>(null);
+
+    // ── Mobile properties panel
+    const [showPropsPanel, setShowPropsPanel] = useState(false);
+
+    // ── Link / Text edit modals
+    const [showLinkModal, setShowLinkModal] = useState(false);
+    const [linkUrlInput, setLinkUrlInput] = useState('');
+    const [pendingLinkRect, setPendingLinkRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+    const [showTextModal, setShowTextModal] = useState(false);
+    const [textModalValue, setTextModalValue] = useState('');
+    const [editingTextId, setEditingTextId] = useState<string | null>(null);
+
+    // ── Live drag preview
+    const [dragPreview, setDragPreview] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+
+    // ── Image cache for overlay rendering
+    const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
+    const preloadImage = useCallback((dataUrl: string): HTMLImageElement | null => {
+        if (imageCacheRef.current.has(dataUrl)) return imageCacheRef.current.get(dataUrl)!;
+        const img = new window.Image();
+        img.src = dataUrl;
+        imageCacheRef.current.set(dataUrl, img);
+        return null; // not loaded yet, will show next frame
+    }, []);
 
     // ── AI state
     const [isAiLoading, setIsAiLoading] = useState(false);
@@ -169,6 +195,31 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
     }, [pdfDoc, curPage, scale]);
 
     useEffect(() => { renderCurrentPage(); }, [renderCurrentPage]);
+
+    // ── Auto-fit scale on mobile/tablet
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container || !pdfDoc) return;
+        let cancelled = false;
+        const fit = async () => {
+            const cw = container.clientWidth - 16;
+            const ch = container.clientHeight - 16;
+            if (cw >= 800 && ch >= 600) {
+                if (autoFitScale) { setAutoFitScale(false); setScale(1.2); }
+                return;
+            }
+            try {
+                const page = await pdfDoc.getPage(curPage + 1);
+                const vp = page.getViewport({ scale: 1 });
+                const fitS = Math.min(cw / vp.width, ch / vp.height, 1.2);
+                if (!cancelled) { setScale(fitS); setAutoFitScale(true); }
+            } catch { }
+        };
+        fit();
+        const ro = new ResizeObserver(() => fit());
+        ro.observe(container);
+        return () => { cancelled = true; ro.disconnect(); };
+    }, [pdfDoc, curPage]);
 
     // ── Draw overlay annotations
     const drawOverlay = useCallback(() => {
@@ -254,11 +305,15 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                     ctx.restore();
                     break;
                 case 'image':
-                    // Image rendering handled via img load
                     if (ann.imageDataUrl) {
-                        const img = new window.Image();
-                        img.src = ann.imageDataUrl;
-                        try { ctx.drawImage(img, x, y, w, h); } catch { }
+                        const cached = imageCacheRef.current.get(ann.imageDataUrl);
+                        if (cached && cached.complete && cached.naturalWidth > 0) {
+                            ctx.drawImage(cached, x, y, w, h);
+                        } else {
+                            preloadImage(ann.imageDataUrl);
+                            ctx.fillStyle = 'rgba(200,200,200,0.3)';
+                            ctx.fillRect(x, y, w, h);
+                        }
                     }
                     break;
             }
@@ -277,12 +332,33 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
             }
             ctx.globalAlpha = 1;
         }
-    }, [annotations, curPage, scale, selectedId]);
+
+        // Live drag preview
+        if (dragPreview && isDrawing && editTool !== 'draw' && editTool !== 'select' && editTool !== 'image') {
+            const px = dragPreview.x * scale, py = dragPreview.y * scale;
+            const pw = dragPreview.w * scale, ph = dragPreview.h * scale;
+            ctx.globalAlpha = 0.5;
+            ctx.setLineDash([6, 4]);
+            ctx.strokeStyle = '#6366f1';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(px, py, pw, ph);
+            if (editTool === 'highlight') {
+                ctx.fillStyle = 'rgba(255,255,0,0.35)';
+                ctx.fillRect(px, py, pw, ph);
+            } else if (editTool === 'whiteout') {
+                ctx.fillStyle = '#fff';
+                ctx.globalAlpha = 0.8;
+                ctx.fillRect(px, py, pw, ph);
+            }
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1;
+        }
+    }, [annotations, curPage, scale, selectedId, dragPreview, isDrawing, editTool]);
 
     useEffect(() => { drawOverlay(); }, [drawOverlay]);
 
     // ── Mouse handlers
-    const getCanvasPos = (e: React.MouseEvent): { x: number; y: number } => {
+    const getCanvasPos = (e: React.MouseEvent | Touch): { x: number; y: number } => {
         const rect = overlayRef.current!.getBoundingClientRect();
         return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
     };
@@ -300,30 +376,34 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
         if (!session) return;
         const pos = getCanvasPos(e);
 
-        if (activeTool === 'select') {
+        if (editTool === 'select') {
             const ann = findAnnotationAt(pos);
             setSelectedId(ann?.id || null);
             if (ann) setDragStart({ x: pos.x - ann.x, y: pos.y - ann.y });
             return;
         }
 
-        if (activeTool === 'draw') {
+        if (editTool === 'draw') {
             setIsDrawing(true);
             setDrawPoints([pos]);
             return;
         }
 
         // For shape-like tools, start drag
-        if (['shape', 'highlight', 'underline', 'strikethrough', 'whiteout', 'text', 'stamp', 'link', 'image'].includes(activeTool)) {
+        if (['shape', 'highlight', 'underline', 'strikethrough', 'whiteout', 'text', 'stamp', 'link'].includes(editTool)) {
             setDragStart(pos);
             setIsDrawing(true);
+        }
+        // Image tool: tap to upload directly
+        if (editTool === 'image') {
+            imageInputRef.current?.click();
         }
     };
 
     const onCanvasMouseMove = (e: React.MouseEvent) => {
         if (!isDrawing) {
             // Move selected annotation
-            if (selectedId && dragStart && activeTool === 'select') {
+            if (selectedId && dragStart && editTool === 'select') {
                 const pos = getCanvasPos(e);
                 setAnnotations(prev => prev.map(a =>
                     a.id === selectedId ? { ...a, x: pos.x - dragStart.x, y: pos.y - dragStart.y } : a
@@ -331,9 +411,20 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
             }
             return;
         }
-        if (activeTool === 'draw') {
+        if (editTool === 'draw') {
             const pos = getCanvasPos(e);
             setDrawPoints(prev => [...prev, pos]);
+            return;
+        }
+        // Live preview for shape tools
+        if (dragStart) {
+            const pos = getCanvasPos(e);
+            setDragPreview({
+                x: Math.min(dragStart.x, pos.x),
+                y: Math.min(dragStart.y, pos.y),
+                w: Math.abs(pos.x - dragStart.x),
+                h: Math.abs(pos.y - dragStart.y),
+            });
         }
     };
 
@@ -341,7 +432,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
         if (!session) return;
         const pos = getCanvasPos(e);
 
-        if (activeTool === 'select') {
+        if (editTool === 'select') {
             if (selectedId && dragStart) {
                 // Save drag result to undo stack
                 const before = [...annotations];
@@ -351,7 +442,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
             return;
         }
 
-        if (activeTool === 'draw' && drawPoints.length > 1) {
+        if (editTool === 'draw' && drawPoints.length > 1) {
             const before = [...annotations];
             const ann = createAnnotation('draw', curPage, 0, 0, {
                 drawPoints, drawColor, drawWidth, opacity,
@@ -362,6 +453,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
             setSession(prev => prev ? pushUndoAction(prev, 'add', 'Freehand drawing', before, after) : prev);
             setIsDrawing(false);
             setDrawPoints([]);
+            setDragPreview(null);
             return;
         }
 
@@ -374,7 +466,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
             const before = [...annotations];
             let ann: EditAnnotation;
 
-            switch (activeTool) {
+            switch (editTool) {
                 case 'text':
                     ann = createAnnotation('text', curPage, x, y, { width: w, height: h, fontSize, fontFamily, fontColor, opacity });
                     break;
@@ -397,23 +489,27 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                     ann = createAnnotation('stamp', curPage, x, y, { width: w, height: h, stampText, fontSize: 36, opacity: 0.6 });
                     break;
                 case 'link':
-                    const url = prompt('Enter URL:');
-                    if (!url) { setIsDrawing(false); setDragStart(null); return; }
-                    ann = createAnnotation('link', curPage, x, y, { width: w, height: h, linkUrl: url, text: url, fontSize: 12, fontColor: '#2563eb' });
-                    break;
+                    setPendingLinkRect({ x, y, w, h });
+                    setLinkUrlInput('');
+                    setShowLinkModal(true);
+                    setIsDrawing(false);
+                    setDragStart(null);
+                    setDragPreview(null);
+                    return;
                 case 'image':
                     imageInputRef.current?.click();
-                    setIsDrawing(false); setDragStart(null); return;
+                    setIsDrawing(false); setDragStart(null); setDragPreview(null); return;
                 default:
-                    setIsDrawing(false); setDragStart(null); return;
+                    setIsDrawing(false); setDragStart(null); setDragPreview(null); return;
             }
 
             const after = [...annotations, ann];
             setAnnotations(after);
-            setSession(prev => prev ? pushUndoAction(prev, 'add', `Add ${activeTool}`, before, after) : prev);
+            setSession(prev => prev ? pushUndoAction(prev, 'add', `Add ${editTool}`, before, after) : prev);
         }
         setIsDrawing(false);
         setDragStart(null);
+        setDragPreview(null);
     };
 
     // ── Image upload handler
@@ -433,6 +529,44 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
         reader.readAsDataURL(file);
         e.target.value = '';
     };
+
+    // ── Touch handlers for mobile (native addEventListener for non-passive)
+    const mouseDownRef = useRef(onCanvasMouseDown);
+    const mouseMoveRef = useRef(onCanvasMouseMove);
+    const mouseUpRef = useRef(onCanvasMouseUp);
+    mouseDownRef.current = onCanvasMouseDown;
+    mouseMoveRef.current = onCanvasMouseMove;
+    mouseUpRef.current = onCanvasMouseUp;
+
+    useEffect(() => {
+        const el = overlayRef.current;
+        if (!el) return;
+        const ts = (e: TouchEvent) => {
+            if (!e.touches.length) return;
+            e.preventDefault();
+            const t = e.touches[0];
+            mouseDownRef.current({ clientX: t.clientX, clientY: t.clientY } as React.MouseEvent);
+        };
+        const tm = (e: TouchEvent) => {
+            if (!e.touches.length) return;
+            e.preventDefault();
+            const t = e.touches[0];
+            mouseMoveRef.current({ clientX: t.clientX, clientY: t.clientY } as React.MouseEvent);
+        };
+        const te = (e: TouchEvent) => {
+            e.preventDefault();
+            const t = e.changedTouches[0];
+            mouseUpRef.current({ clientX: t.clientX, clientY: t.clientY } as React.MouseEvent);
+        };
+        el.addEventListener('touchstart', ts, { passive: false });
+        el.addEventListener('touchmove', tm, { passive: false });
+        el.addEventListener('touchend', te, { passive: false });
+        return () => {
+            el.removeEventListener('touchstart', ts);
+            el.removeEventListener('touchmove', tm);
+            el.removeEventListener('touchend', te);
+        };
+    }, []);
 
     // ── Undo / Redo
     const handleUndo = () => {
@@ -462,12 +596,49 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
         if (!selectedId) return;
         const ann = annotations.find(a => a.id === selectedId);
         if (!ann || (ann.type !== 'text' && ann.type !== 'link')) return;
-        const newText = prompt('Edit text:', ann.text || '');
-        if (newText === null) return;
-        const before = [...annotations];
-        const after = annotations.map(a => a.id === selectedId ? { ...a, text: sanitizeText(newText) } : a);
-        setAnnotations(after);
-        setSession(prev => prev ? pushUndoAction(prev, 'modify', 'Edit text', before, after) : prev);
+        if (ann.type === 'link') {
+            setLinkUrlInput(ann.linkUrl || '');
+            setPendingLinkRect(null);
+            setEditingTextId(selectedId);
+            setShowLinkModal(true);
+            return;
+        }
+        setTextModalValue(ann.text || '');
+        setEditingTextId(selectedId);
+        setShowTextModal(true);
+    };
+
+    // ── Link modal confirm
+    const handleLinkConfirm = () => {
+        if (!linkUrlInput.trim()) return;
+        if (pendingLinkRect && session) {
+            const { x, y, w, h } = pendingLinkRect;
+            const before = [...annotations];
+            const ann = createAnnotation('link', curPage, x, y, { width: w, height: h, linkUrl: linkUrlInput, text: linkUrlInput, fontSize: 12, fontColor: '#2563eb' });
+            const after = [...annotations, ann];
+            setAnnotations(after);
+            setSession(prev => prev ? pushUndoAction(prev, 'add', 'Add link', before, after) : prev);
+        } else if (editingTextId) {
+            const before = [...annotations];
+            const after = annotations.map(a => a.id === editingTextId ? { ...a, linkUrl: linkUrlInput, text: linkUrlInput } : a);
+            setAnnotations(after);
+            setSession(prev => prev ? pushUndoAction(prev, 'modify', 'Edit link URL', before, after) : prev);
+        }
+        setShowLinkModal(false);
+        setPendingLinkRect(null);
+        setEditingTextId(null);
+    };
+
+    // ── Text modal confirm
+    const handleTextConfirm = () => {
+        if (editingTextId) {
+            const before = [...annotations];
+            const after = annotations.map(a => a.id === editingTextId ? { ...a, text: sanitizeText(textModalValue) } : a);
+            setAnnotations(after);
+            setSession(prev => prev ? pushUndoAction(prev, 'modify', 'Edit text', before, after) : prev);
+        }
+        setShowTextModal(false);
+        setEditingTextId(null);
     };
 
     // ── AI Suggestion
@@ -539,27 +710,41 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
             <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
             {/* ── Header ─────────────────────────────────────────────────── */}
-            <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-3 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                    {onBack && <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-500"><ArrowLeft className="w-4 h-4" /></button>}
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-[5px]"><PenTool className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /></div>
+            <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    {onBack && <button onClick={onBack} className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-500 shrink-0"><ArrowLeft className="w-4 h-4" /></button>}
+                    <div className={`${activeTool?.toImageUrl ? 'h-7 sm:h-8 w-auto px-1.5' : 'w-7 h-7 sm:w-8 sm:h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-indigo-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1 shrink-0`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-4 h-4 sm:w-5 sm:h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-4 h-4 sm:w-5 sm:h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <PenTool className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
+                        )}
+                    </div>
                     <div className="min-w-0">
-                        <h1 className="text-lg font-black dark:text-white tracking-tight">Edit PDF</h1>
-                        <p className="text-[10px] text-gray-400 font-medium truncate">Text · Shapes · Images · Annotations · AI Suggestions · Watermarks</p>
+                        <h1 className="text-sm sm:text-lg font-black dark:text-white tracking-tight truncate">Edit PDF</h1>
+                        <p className="text-[9px] sm:text-[10px] text-gray-400 font-medium truncate hidden sm:block">Text · Shapes · Images · Annotations · AI · Watermarks</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-0.5 sm:gap-1 lg:gap-2 shrink-0">
                     {session && (
                         <>
-                            <button onClick={handleUndo} disabled={!session.undoStack.length} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-500 disabled:opacity-30" title="Undo (Ctrl+Z)"><Undo2 className="w-4 h-4" /></button>
-                            <button onClick={handleRedo} disabled={!session.redoStack.length} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-500 disabled:opacity-30" title="Redo (Ctrl+Y)"><Redo2 className="w-4 h-4" /></button>
-                            <div className="w-px h-6 bg-gray-200 dark:bg-white/10 mx-1" />
-                            <button onClick={handleExport} disabled={isExporting} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-[5px] flex items-center gap-2 shadow-sm disabled:opacity-50">
-                                {isExporting ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {exportProgress}%</> : <><Download className="w-3.5 h-3.5" /> Export</>}
+                            <button onClick={handleUndo} disabled={!session.undoStack.length} className="hidden lg:flex p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-500 disabled:opacity-30" title="Undo (Ctrl+Z)"><Undo2 className="w-4 h-4" /></button>
+                            <button onClick={handleRedo} disabled={!session.redoStack.length} className="hidden lg:flex p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-500 disabled:opacity-30" title="Redo (Ctrl+Y)"><Redo2 className="w-4 h-4" /></button>
+                            <div className="w-px h-6 bg-gray-200 dark:bg-white/10 mx-0.5 sm:mx-1 hidden sm:block" />
+                            <button onClick={handleExport} disabled={isExporting} className="px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] sm:text-xs font-black rounded-[5px] flex items-center gap-1.5 shadow-sm disabled:opacity-50">
+                                {isExporting ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {exportProgress}%</> : <><Download className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Export</span></>}
                             </button>
                             {editedBlob && (
-                                <button onClick={() => downloadEditedPdf(editedBlob, session.fileName)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-[5px] flex items-center gap-2 shadow-sm">
-                                    <Download className="w-3.5 h-3.5" /> Download
+                                <button onClick={() => downloadEditedPdf(editedBlob, session.fileName)} className="px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] sm:text-xs font-black rounded-[5px] flex items-center gap-1.5 shadow-sm">
+                                    <Download className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Download</span>
                                 </button>
                             )}
                         </>
@@ -568,13 +753,13 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
             </div>
 
             {/* ── Body ───────────────────────────────────────────────────── */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
 
-                {/* ── LEFT: Toolbar ── */}
-                <div className="w-14 shrink-0 flex flex-col items-center py-2 gap-1 border-r border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto">
+                {/* ── LEFT: Toolbar (desktop) ── */}
+                <div className="w-14 shrink-0 hidden lg:flex flex-col items-center py-2 gap-1 border-r border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto">
                     {TOOLS.map(t => (
-                        <button key={t.id} onClick={() => { setActiveTool(t.id); setSelectedId(null); }} title={t.label}
-                            className={`w-10 h-10 flex items-center justify-center rounded-[5px] transition-all ${activeTool === t.id ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'}`}>
+                        <button key={t.id} onClick={() => { setEditTool(t.id); setSelectedId(null); setDragPreview(null); }} title={t.label}
+                            className={`w-10 h-10 flex items-center justify-center rounded-[5px] transition-all ${editTool === t.id ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'}`}>
                             <t.icon className="w-4 h-4" />
                         </button>
                     ))}
@@ -582,9 +767,26 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                     <button onClick={() => imageInputRef.current?.click()} title="Add Image" className="w-10 h-10 flex items-center justify-center rounded-[5px] text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5"><Image className="w-4 h-4" /></button>
                 </div>
 
-                {/* ── THUMBNAILS ── */}
+                {/* ── Mobile Toolbar (horizontal) ── */}
+                <div className="lg:hidden shrink-0 flex items-center gap-1 px-2 py-1.5 border-b border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-x-auto">
+                    {TOOLS.map(t => (
+                        <button key={t.id} onClick={() => { setEditTool(t.id); setSelectedId(null); setDragPreview(null); }} title={t.label}
+                            className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-[5px] transition-all shrink-0 text-[11px] font-bold ${editTool === t.id ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'}`}>
+                            <t.icon className="w-3.5 h-3.5" />
+                            <span className="hidden min-[420px]:inline">{t.label}</span>
+                        </button>
+                    ))}
+                    <div className="w-px h-6 bg-gray-200 dark:bg-white/10 mx-1 shrink-0" />
+                    <button onClick={() => imageInputRef.current?.click()} title="Add Image"
+                        className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-[5px] text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 shrink-0 text-[11px] font-bold">
+                        <Image className="w-3.5 h-3.5" />
+                        <span className="hidden min-[420px]:inline">Image</span>
+                    </button>
+                </div>
+
+                {/* ── THUMBNAILS (desktop) ── */}
                 {session && (
-                    <div className="w-24 shrink-0 flex flex-col border-r border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto py-2 gap-2 px-2">
+                    <div className="w-24 shrink-0 hidden lg:flex flex-col border-r border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto py-2 gap-2 px-2">
                         {thumbnails.map((thumb, i) => (
                             <button key={i} onClick={() => setCurPage(i)}
                                 className={`relative rounded-[5px] overflow-hidden border-2 transition-all ${curPage === i ? 'border-indigo-500 shadow-lg' : 'border-transparent hover:border-indigo-300'}`}>
@@ -599,21 +801,24 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                 )}
 
                 {/* ── CENTER: Canvas ── */}
-                <div className="flex-1 flex flex-col min-w-0 bg-gray-100 dark:bg-[#16161f]">
+                <div className="flex-1 flex flex-col min-w-0 bg-gray-100 dark:bg-[#16161f] overflow-hidden min-h-0">
                     {/* Page controls */}
                     {session && (
-                        <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-white dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 text-xs">
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => setCurPage(p => Math.max(0, p - 1))} disabled={curPage === 0} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] disabled:opacity-30"><ChevronLeft className="w-3.5 h-3.5" /></button>
-                                <span className="font-bold dark:text-white">{curPage + 1} / {totalPages}</span>
-                                <button onClick={() => setCurPage(p => Math.min(totalPages - 1, p + 1))} disabled={curPage >= totalPages - 1} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] disabled:opacity-30"><ChevronRight className="w-3.5 h-3.5" /></button>
+                        <div className="shrink-0 flex items-center justify-between px-2 py-1 sm:py-1.5 bg-white dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 text-xs">
+                            <div className="flex items-center gap-0.5 sm:gap-1">
+                                <button onClick={() => setCurPage(p => Math.max(0, p - 1))} disabled={curPage === 0} className="p-1 sm:p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] disabled:opacity-30"><ChevronLeft className="w-3.5 h-3.5" /></button>
+                                <span className="font-bold dark:text-white text-[10px] sm:text-xs min-w-[40px] text-center">{curPage + 1}/{totalPages}</span>
+                                <button onClick={() => setCurPage(p => Math.min(totalPages - 1, p + 1))} disabled={curPage >= totalPages - 1} className="p-1 sm:p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] disabled:opacity-30"><ChevronRight className="w-3.5 h-3.5" /></button>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px]"><ZoomOut className="w-3.5 h-3.5" /></button>
-                                <span className="font-mono font-bold dark:text-white w-12 text-center">{Math.round(scale * 100)}%</span>
-                                <button onClick={() => setScale(s => Math.min(3, s + 0.2))} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px]"><ZoomIn className="w-3.5 h-3.5" /></button>
+                            <div className="flex items-center gap-0.5 sm:gap-1">
+                                <button onClick={() => setAutoFitScale(true)} className="p-1 sm:p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px]" title="Auto fit">
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => { setScale(s => Math.max(0.2, s - 0.2)); setAutoFitScale(false); }} className="p-1 sm:p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px]"><ZoomOut className="w-3.5 h-3.5" /></button>
+                                <span className="font-mono font-bold dark:text-white w-8 sm:w-12 text-center text-[10px] sm:text-xs">{Math.round(scale * 100)}%</span>
+                                <button onClick={() => { setScale(s => Math.min(3, s + 0.2)); setAutoFitScale(false); }} className="p-1 sm:p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px]"><ZoomIn className="w-3.5 h-3.5" /></button>
                             </div>
-                            <div className="flex items-center gap-1 text-gray-400">
+                            <div className="items-center gap-1 text-gray-400 hidden sm:flex">
                                 <Layers className="w-3 h-3" />
                                 <span>{annotations.filter(a => a.pageIndex === curPage).length} edits</span>
                             </div>
@@ -621,38 +826,37 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                     )}
 
                     {/* Canvas area */}
-                    <div ref={containerRef} className="flex-1 overflow-auto flex items-start justify-center p-4">
+                    <div ref={containerRef} className="flex-1 overflow-auto flex items-start justify-center p-2 sm:p-4 min-h-0">
                         {!session ? (
-                            /* Upload area */
-                            <div className={`w-full max-w-xl mx-auto mt-16 p-12 border-2 border-dashed rounded-[5px] transition-all cursor-pointer text-center
-                ${isDragOver ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-300 dark:border-white/10 hover:border-indigo-400'}`}
+                            <div className={`w-full max-w-xl mx-auto mt-6 sm:mt-8 lg:mt-16 p-4 sm:p-6 lg:p-12 border-2 border-dashed rounded-[5px] transition-all cursor-pointer text-center
+                                ${isDragOver ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-300 dark:border-white/10 hover:border-indigo-400'}`}
                                 onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
                                 onDragLeave={() => setIsDragOver(false)}
                                 onDrop={e => { e.preventDefault(); setIsDragOver(false); const f = e.dataTransfer.files[0]; if (f) loadPdf(f); }}
                                 onClick={() => fileInputRef.current?.click()}>
                                 {isLoading ? (
-                                    <div className="flex flex-col items-center gap-4">
-                                        <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
-                                        <p className="text-sm font-bold text-gray-500">Loading PDF…</p>
+                                    <div className="flex flex-col items-center gap-3 sm:gap-4">
+                                        <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 text-indigo-500 animate-spin" />
+                                        <p className="text-xs sm:text-sm font-bold text-gray-500">Loading PDF…</p>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center gap-4">
-                                        <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 rounded-[5px] flex items-center justify-center">
-                                            <Upload className="w-8 h-8 text-indigo-500" />
+                                    <div className="flex flex-col items-center gap-3 sm:gap-4">
+                                        <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-20 lg:h-20 bg-indigo-100 dark:bg-indigo-900/30 rounded-[5px] flex items-center justify-center">
+                                            <Upload className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-indigo-500" />
                                         </div>
                                         <div>
-                                            <p className="text-lg font-black dark:text-white">Drop PDF here to edit</p>
-                                            <p className="text-sm text-gray-400 mt-1">or click to browse • Max {200}MB</p>
+                                            <p className="text-sm sm:text-base lg:text-lg font-black dark:text-white">Drop PDF here to edit</p>
+                                            <p className="text-[10px] sm:text-xs lg:text-sm text-gray-400 mt-1">or click to browse · Max {200}MB</p>
                                         </div>
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <div className="relative inline-block shadow-2xl rounded-[5px] overflow-hidden">
-                                <canvas ref={canvasRef} className="block" />
+                            <div className="relative inline-block shadow-2xl rounded-[5px] overflow-hidden max-w-full">
+                                <canvas ref={canvasRef} className="block max-w-full" style={{ maxWidth: '100%' }} />
                                 <canvas ref={overlayRef}
-                                    className="absolute inset-0 cursor-crosshair"
-                                    style={{ cursor: activeTool === 'select' ? 'default' : activeTool === 'draw' ? 'crosshair' : 'cell' }}
+                                    className="absolute inset-0 cursor-crosshair max-w-full"
+                                    style={{ cursor: editTool === 'select' ? 'default' : editTool === 'draw' ? 'crosshair' : 'cell' }}
                                     onMouseDown={onCanvasMouseDown}
                                     onMouseMove={onCanvasMouseMove}
                                     onMouseUp={onCanvasMouseUp}
@@ -665,15 +869,20 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
 
                 {/* ── RIGHT: Properties Panel ── */}
                 {session && (
-                    <div className="w-64 shrink-0 flex flex-col border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto">
+                    <div className={`${showPropsPanel ? 'fixed inset-0 z-[100] bg-black/50 lg:relative lg:bg-transparent' : 'hidden'} lg:block`}>
+                        <div className={`${showPropsPanel ? 'absolute right-0 top-0 bottom-0 w-72 shadow-2xl animate-[slideInRight_0.2s_ease-out]' : ''} w-64 shrink-0 flex flex-col border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto h-full`}>
+                            <div className="p-3 border-b border-gray-100 dark:border-white/5 flex items-center justify-between lg:hidden sticky top-0 bg-[#f3f1ea] dark:bg-[#262636] z-10">
+                                <span className="text-xs font-bold dark:text-white">Properties</span>
+                                <button onClick={() => setShowPropsPanel(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px]"><X className="w-4 h-4" /></button>
+                            </div>
                         {/* Active tool settings */}
                         <div className="p-4 border-b border-gray-100 dark:border-white/5">
                             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
-                                {activeTool === 'select' ? 'Selection' : `${activeTool.charAt(0).toUpperCase() + activeTool.slice(1)} Tool`}
+                                {editTool === 'select' ? 'Selection' : `${editTool.charAt(0).toUpperCase() + editTool.slice(1)} Tool`}
                             </p>
 
                             {/* Text Settings */}
-                            {(activeTool === 'text' || (selectedAnn?.type === 'text')) && (
+                            {(editTool === 'text' || (selectedAnn?.type === 'text')) && (
                                 <div className="space-y-3">
                                     <div className="flex gap-2">
                                         <select value={fontFamily} onChange={e => setFontFamily(e.target.value)}
@@ -691,7 +900,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                             )}
 
                             {/* Shape Settings */}
-                            {(activeTool === 'shape') && (
+                            {(editTool === 'shape') && (
                                 <div className="space-y-3">
                                     <div className="flex gap-1">
                                         {SHAPES.map(s => (
@@ -716,7 +925,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                             )}
 
                             {/* Draw Settings */}
-                            {activeTool === 'draw' && (
+                            {editTool === 'draw' && (
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2">
                                         <label className="text-[10px] text-gray-500">Color</label>
@@ -730,7 +939,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                             )}
 
                             {/* Stamp Settings */}
-                            {activeTool === 'stamp' && (
+                            {editTool === 'stamp' && (
                                 <div className="space-y-2">
                                     <div className="flex flex-wrap gap-1">
                                         {STAMPS.map(s => (
@@ -796,6 +1005,67 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                                 <p className="text-[10px] text-gray-500">{totalPages} pages • {annotations.length} edits</p>
                                 <p className="text-[10px] text-gray-500">Undo: {session.undoStack.length} • Redo: {session.redoStack.length}</p>
                                 <p className="text-[10px] text-gray-400">{pdfFile ? fmtSize(pdfFile.size) : ''}</p>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Mobile properties toggle */}
+                {session && (
+                    <button onClick={() => setShowPropsPanel(true)}
+                        className="lg:hidden fixed bottom-4 right-4 z-[90] w-11 h-11 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white rounded-full shadow-lg flex items-center justify-center transition-transform">
+                        <Settings className="w-5 h-5" />
+                    </button>
+                )}
+
+                {/* Mobile quick actions bar */}
+                {session && (
+                    <div className="lg:hidden fixed bottom-4 left-4 z-[90] flex items-center gap-2">
+                        <button onClick={handleUndo} disabled={!session.undoStack.length}
+                            className="w-10 h-10 bg-white dark:bg-[#262636] hover:bg-gray-50 dark:hover:bg-[#2a2a3a] active:scale-95 text-gray-600 dark:text-gray-300 rounded-full shadow-lg flex items-center justify-center disabled:opacity-30 transition-transform border border-gray-200 dark:border-white/10">
+                            <Undo2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={handleRedo} disabled={!session.redoStack.length}
+                            className="w-10 h-10 bg-white dark:bg-[#262636] hover:bg-gray-50 dark:hover:bg-[#2a2a3a] active:scale-95 text-gray-600 dark:text-gray-300 rounded-full shadow-lg flex items-center justify-center disabled:opacity-30 transition-transform border border-gray-200 dark:border-white/10">
+                            <Redo2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
+
+                {/* ── Link URL Modal ── */}
+                {showLinkModal && (
+                    <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => { setShowLinkModal(false); setPendingLinkRect(null); setEditingTextId(null); }}>
+                        <div className="bg-white dark:bg-[#262636] rounded-[5px] shadow-2xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+                            <p className="text-sm font-black dark:text-white mb-3">Enter URL</p>
+                            <input autoFocus value={linkUrlInput} onChange={e => setLinkUrlInput(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') handleLinkConfirm(); if (e.key === 'Escape') { setShowLinkModal(false); setPendingLinkRect(null); setEditingTextId(null); } }}
+                                placeholder="https://example.com"
+                                className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] dark:text-white outline-none focus:border-indigo-500" />
+                            <div className="flex gap-2 mt-4">
+                                <button onClick={() => { setShowLinkModal(false); setPendingLinkRect(null); setEditingTextId(null); }}
+                                    className="flex-1 py-2 text-xs font-bold bg-gray-100 dark:bg-white/5 rounded-[5px] dark:text-white">Cancel</button>
+                                <button onClick={handleLinkConfirm} disabled={!linkUrlInput.trim()}
+                                    className="flex-1 py-2 text-xs font-bold bg-indigo-600 text-white rounded-[5px] disabled:opacity-40">Confirm</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Text Edit Modal ── */}
+                {showTextModal && (
+                    <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => { setShowTextModal(false); setEditingTextId(null); }}>
+                        <div className="bg-white dark:bg-[#262636] rounded-[5px] shadow-2xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+                            <p className="text-sm font-black dark:text-white mb-3">Edit Text</p>
+                            <textarea autoFocus value={textModalValue} onChange={e => setTextModalValue(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Escape') { setShowTextModal(false); setEditingTextId(null); } }}
+                                rows={4}
+                                className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] dark:text-white outline-none focus:border-indigo-500 resize-none" />
+                            <div className="flex gap-2 mt-4">
+                                <button onClick={() => { setShowTextModal(false); setEditingTextId(null); }}
+                                    className="flex-1 py-2 text-xs font-bold bg-gray-100 dark:bg-white/5 rounded-[5px] dark:text-white">Cancel</button>
+                                <button onClick={handleTextConfirm}
+                                    className="flex-1 py-2 text-xs font-bold bg-indigo-600 text-white rounded-[5px]">Save</button>
                             </div>
                         </div>
                     </div>

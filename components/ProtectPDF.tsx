@@ -155,7 +155,7 @@ const SecuritySummary = ({ result }: { result: ProtectResult }) => {
     const p = result.permissions;
 
     const strengthIcon = (s: string) =>
-        s === 'excellent' ? '🟢' : s === 'strong' ? '🟡' : '🔴';
+        s === 'excellent' ? CheckCircle2 : s === 'strong' ? AlertCircle : XCircle;
 
     return (
         <div className="mt-3 p-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-500/30 rounded-[5px] space-y-2">
@@ -239,13 +239,13 @@ const FileCard: React.FC<FileCardProps> = ({
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                             <span className="text-[10px] text-gray-400 font-mono">{fmtSize(entry.file.size)}</span>
                             {entry.status === 'done' && r && isProtectResult(r) && (
-                                <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold">
-                                    🔒 {r.encryptionLevel === 'aes256' ? 'AES-256' : 'AES-128'} · {fmtSize(r.encryptedSize)}
+                                <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold flex items-center gap-1">
+                                    <Lock className="w-3 h-3" /> {r.encryptionLevel === 'aes256' ? 'AES-256' : 'AES-128'} · {fmtSize(r.encryptedSize)}
                                 </span>
                             )}
                             {entry.status === 'done' && r && !isProtectResult(r) && (
-                                <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold">
-                                    🔓 Unlocked · {fmtSize((r as UnlockResult).unlockedSize)}
+                                <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold flex items-center gap-1">
+                                    <Unlock className="w-3 h-3" /> Unlocked · {fmtSize((r as UnlockResult).unlockedSize)}
                                     {(r as UnlockResult).detectedEncryption !== 'unknown' && (
                                         <> · was {(r as UnlockResult).detectedEncryption.toUpperCase()}</>
                                     )}
@@ -398,7 +398,7 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect', ac
                 onProgress: p => updateFile(id, { progress: p }),
             });
             updateFile(id, { status: 'done', result, progress: 100 });
-            toast('success', `🔒 "${entry.file.name}" protected with ${encLevel === 'aes256' ? 'AES-256' : 'AES-128'} encryption.`);
+            toast('success', `"${entry.file.name}" protected with ${encLevel === 'aes256' ? 'AES-256' : 'AES-128'} encryption.`);
         } catch (err: any) {
             const msg = err?.message ?? 'Protection failed.';
             updateFile(id, { status: 'error', error: msg, progress: 0 });
@@ -419,7 +419,7 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect', ac
                 onProgress: p => updateFile(id, { progress: p }),
             });
             updateFile(id, { status: 'done', result, progress: 100 });
-            toast('success', `🔓 Password removed from "${entry.file.name}".`);
+            toast('success', `Password removed from "${entry.file.name}".`);
         } catch (err: any) {
             const msg = err?.message ?? 'Unlock failed.';
             updateFile(id, { status: 'error', error: msg, progress: 0 });
@@ -491,13 +491,13 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect', ac
 
             {/* Header */}
             <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                     {onBack && (
-                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500">
+                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500 shrink-0">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-teal-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-teal-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1 shrink-0`}>
                         {activeTool?.imageUrl ? (
                             <>
                                 <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
@@ -513,11 +513,11 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect', ac
                         )}
                     </div>
                     <div className="min-w-0">
-                        <h1 className="text-lg font-black dark:text-white tracking-tight">Protect & Unlock PDF</h1>
-                        <p className="text-[11px] text-gray-400 font-medium truncate">AES-256 encryption · Real PDF security standards</p>
+                        <h1 className="text-lg font-black dark:text-white tracking-tight truncate">Protect & Unlock PDF</h1>
+                        <p className="text-[11px] text-gray-400 font-medium hidden sm:block truncate">AES-256 encryption · Real PDF security standards</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-1 lg:gap-2">
+                <div className="flex items-center gap-1 lg:gap-2 shrink-0">
                     {doneCount > 1 && (
                         <button onClick={downloadAll}
                             className="px-3 py-2 text-xs font-bold text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-[5px] flex items-center gap-1.5 transition-colors">
@@ -526,9 +526,9 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect', ac
                     )}
                     {readyCount > 1 && (
                         <button onClick={processAll} disabled={isProcessing}
-                            className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
+                            className="px-3 lg:px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
                             {tab === 'protect' ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                            {tab === 'protect' ? `Protect All (${readyCount})` : `Unlock All (${readyCount})`}
+                            <span className="hidden sm:inline">{tab === 'protect' ? `Protect All (${readyCount})` : `Unlock All (${readyCount})`}</span>
                         </button>
                     )}
                     {files.length > 0 && (
@@ -542,10 +542,10 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect', ac
             </div>
 
             {/* Tab bar */}
-            <div className="shrink-0 flex border-b border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] px-6">
-                {([['protect', Lock, '🔒 Protect'], ['unlock', Unlock, '🔓 Unlock']] as [Tab, any, string][]).map(([t, Icon, label]) => (
+            <div className="shrink-0 flex overflow-x-auto border-b border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] px-2 lg:px-6">
+                {([['protect', Lock, 'Protect'], ['unlock', Unlock, 'Unlock']] as [Tab, any, string][]).map(([t, Icon, label]) => (
                     <button key={t} onClick={() => { setTab(t); setFiles([]); }}
-                        className={`flex items-center gap-2 px-4 py-3 text-xs font-black border-b-2 transition-all
+                        className={`flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-3 text-[10px] lg:text-xs font-black border-b-2 transition-all whitespace-nowrap shrink-0
               ${tab === t
                                 ? 'border-teal-500 text-teal-600 dark:text-teal-400'
                                 : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
@@ -559,7 +559,7 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect', ac
             <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
 
                 {/* LEFT */}
-                <div className="flex-1 lg:flex-1 flex flex-col lg:overflow-hidden p-4 lg:p-6 gap-4 min-w-0">
+                <div className="flex-1 lg:flex-1 flex flex-col lg:overflow-hidden p-4 lg:p-6 gap-4 min-w-0 max-h-[50vh] lg:max-h-none">
                     {/* Drop zone */}
                     <div ref={dropRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
                         onClick={() => fileRef.current?.click()}
@@ -606,7 +606,7 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect', ac
                 </div>
 
                 {/* RIGHT: settings */}
-                <div className="lg:w-72 w-full shrink-0 flex flex-col border-l-0 lg:border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] lg:overflow-y-auto">
+                <div className="lg:w-72 w-full shrink-0 flex flex-col border-t lg:border-t-0 lg:border-l border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] lg:overflow-y-auto">
 
                     <AnimatePresence mode="wait">
                         {tab === 'protect' ? (
@@ -658,13 +658,15 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect', ac
                                 <div className="p-5 border-b border-gray-100 dark:border-white/5">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Encryption</p>
                                     <div className="space-y-1.5">
-                                        {([['aes256', 'AES-256', 'Recommended · PDF 1.7ext3 · SHA-256 key', '🟢'], ['aes128', 'AES-128', 'Compatible · PDF 1.6 · 128-bit key', '🟡']] as [EncryptionLevel, string, string, string][]).map(([val, label, desc, icon]) => (
+                                        {([['aes256', 'AES-256', 'Recommended · PDF 1.7ext3 · SHA-256 key'], ['aes128', 'AES-128', 'Compatible · PDF 1.6 · 128-bit key']] as [EncryptionLevel, string, string][]).map(([val, label, desc]) => (
                                             <button key={val} onClick={() => setEncLevel(val)}
                                                 className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-[5px] border-2 text-left transition-all
                           ${encLevel === val
                                                         ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30'
                                                         : 'border-gray-100 dark:border-white/10 hover:border-teal-200'}`}>
-                                                <span className="text-base shrink-0 mt-0.5">{icon}</span>
+                                                <div className={`w-5 h-5 shrink-0 mt-0.5 rounded-full flex items-center justify-center ${val === 'aes256' ? 'bg-emerald-500' : 'bg-amber-400'}`}>
+                                                    {val === 'aes256' ? <CheckCircle2 className="w-3 h-3 text-white" /> : <AlertCircle className="w-3 h-3 text-white" />}
+                                                </div>
                                                 <div>
                                                     <p className="text-xs font-black dark:text-white">{label}</p>
                                                     <p className="text-[9px] text-gray-400">{desc}</p>

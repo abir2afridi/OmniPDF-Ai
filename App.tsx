@@ -23,6 +23,7 @@ import { AppView, PDFTool, ToolCategory, UploadedFile } from './types';
 import { processFiles } from './services/pdfService';
 import { supabase } from './lib/supabase';
 import { MergePDF } from './components/MergePDF';
+import { ToastProvider } from './contexts/ToastContext';
 import { SplitPDF } from './components/SplitPDF';
 import { DeletePages } from './components/DeletePages';
 import { RotatePDF } from './components/RotatePDF';
@@ -39,6 +40,7 @@ import { CompressPDF } from './components/CompressPDF';
 import { OCRPDF } from './components/OCRPDF';
 import { ProtectPDF } from './components/ProtectPDF';
 import { SignPDF } from './components/SignPDF';
+import { EditPDF } from './components/EditPDF';
 import { AISummary } from './components/AISummary';
 
 // --- Context Setup ---
@@ -1960,6 +1962,7 @@ const App: React.FC = () => {
 
   return (
     <AppContext.Provider value={{ theme, setTheme, language, setLanguage, t }}>
+      <ToastProvider>
       <div className="flex h-screen w-screen bg-[#f3f1ea] dark:bg-slate-900 text-gray-900 dark:text-white overflow-hidden font-sans transition-colors duration-300">
         <Sidebar
           currentView={currentView}
@@ -2091,11 +2094,19 @@ const App: React.FC = () => {
               <ProtectPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
+            {currentView === AppView.WORKSPACE && activeTool?.id === 'unlock' && (
+              <ProtectPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} initialTab="unlock" />
+            )}
+
             {currentView === AppView.WORKSPACE && (activeTool?.id === 'sign' || activeTool?.id === 'esign') && (
               <SignPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
-            {currentView === AppView.WORKSPACE && activeTool?.id !== 'merge' && activeTool?.id !== 'split' && activeTool?.id !== 'delete-pages' && activeTool?.id !== 'rotate' && activeTool?.id !== 'word-to-pdf' && activeTool?.id !== 'excel-to-pdf' && activeTool?.id !== 'ppt-to-pdf' && activeTool?.id !== 'pdf-to-jpg' && activeTool?.id !== 'jpg-to-pdf' && activeTool?.id !== 'pdf-to-word' && activeTool?.id !== 'pdf-to-excel' && activeTool?.id !== 'pdf-to-ppt' && activeTool?.id !== 'extract-images' && activeTool?.id !== 'compress' && activeTool?.id !== 'ocr' && activeTool?.id !== 'protect' && activeTool?.id !== 'sign' && activeTool?.id !== 'esign' && (
+            {currentView === AppView.WORKSPACE && activeTool?.id === 'edit' && (
+              <EditPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
+            )}
+
+            {currentView === AppView.WORKSPACE && activeTool?.id !== 'merge' && activeTool?.id !== 'split' && activeTool?.id !== 'delete-pages' && activeTool?.id !== 'rotate' && activeTool?.id !== 'word-to-pdf' && activeTool?.id !== 'excel-to-pdf' && activeTool?.id !== 'ppt-to-pdf' && activeTool?.id !== 'pdf-to-jpg' && activeTool?.id !== 'jpg-to-pdf' && activeTool?.id !== 'pdf-to-word' && activeTool?.id !== 'pdf-to-excel' && activeTool?.id !== 'pdf-to-ppt' && activeTool?.id !== 'extract-images' && activeTool?.id !== 'compress' && activeTool?.id !== 'ocr' && activeTool?.id !== 'protect' && activeTool?.id !== 'unlock' && activeTool?.id !== 'sign' && activeTool?.id !== 'esign' && activeTool?.id !== 'edit' && (
               <div className="flex flex-1 overflow-hidden">
                 <Workspace
                   activeTool={activeTool}
@@ -2212,6 +2223,7 @@ const App: React.FC = () => {
           {loginToast}
         </div>
       )}
+      </ToastProvider>
     </AppContext.Provider>
   );
 };

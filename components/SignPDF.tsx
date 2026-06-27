@@ -337,7 +337,7 @@ export const SignPDF: React.FC<Props> = ({ onBack, activeTool }) => {
                 onProgress: setProgress,
             });
             setDigResult(result);
-            toast('success', '🔐 Digitally signed with RSA-SHA256!');
+                                    toast('success', 'Digitally signed with RSA-SHA256!');
         } catch (e: any) {
             toast('error', e?.message ?? 'Digital signing failed.');
         } finally {
@@ -406,13 +406,13 @@ export const SignPDF: React.FC<Props> = ({ onBack, activeTool }) => {
 
             {/* Header */}
             <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                     {onBack && (
-                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-500">
+                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-500 shrink-0">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-violet-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-violet-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1 shrink-0`}>
                         {activeTool?.imageUrl ? (
                             <>
                                 <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
@@ -427,16 +427,16 @@ export const SignPDF: React.FC<Props> = ({ onBack, activeTool }) => {
                             <PenLine className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                         )}
                     </div>
-                    <div>
-                        <h1 className="text-lg font-black dark:text-white tracking-tight">Sign PDF</h1>
-                        <p className="text-[11px] text-gray-400 font-medium">Visual signatures · RSA-SHA256 digital certificates · Verification</p>
+                    <div className="min-w-0">
+                        <h1 className="text-lg font-black dark:text-white tracking-tight truncate">Sign PDF</h1>
+                        <p className="text-[11px] text-gray-400 font-medium hidden sm:block">Visual signatures · RSA-SHA256 · Verification</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-1 lg:gap-2">
+                <div className="flex items-center gap-1 lg:gap-2 shrink-0">
                     {currentActiveBlob && (
                         <button onClick={() => downloadBlob(currentActiveBlob, currentOutputName)}
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-[5px] flex items-center gap-2 shadow-sm">
-                            <Download className="w-3.5 h-3.5" /> Download
+                            className="px-3 lg:px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-[5px] flex items-center gap-2 shadow-sm">
+                            <Download className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Download</span>
                         </button>
                     )}
                     <ToolHeaderExtras />
@@ -444,14 +444,14 @@ export const SignPDF: React.FC<Props> = ({ onBack, activeTool }) => {
             </div>
 
             {/* Tab bar */}
-            <div className="shrink-0 flex border-b border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] px-6">
+            <div className="shrink-0 flex overflow-x-auto border-b border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] px-2 lg:px-6">
                 {([
-                    ['visual', PenLine, '🖊 Visual Sign'],
-                    ['digital', ShieldCheck, '🔐 Digital Sign'],
-                    ['verify', Search, '🔍 Verify'],
+                    ['visual', PenLine, 'Visual Sign'],
+                    ['digital', ShieldCheck, 'Digital Sign'],
+                    ['verify', Search, 'Verify'],
                 ] as [Mode, any, string][]).map(([m, Icon, label]) => (
                     <button key={m} onClick={() => { setMode(m); setSignedBlob(null); setDigResult(null); setVerifyResult(null); }}
-                        className={`flex items-center gap-2 px-4 py-3 text-xs font-black border-b-2 transition-all
+                        className={`flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-3 text-[10px] lg:text-xs font-black border-b-2 transition-all whitespace-nowrap shrink-0
               ${mode === m
                                 ? 'border-violet-500 text-violet-600 dark:text-violet-400'
                                 : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
@@ -462,10 +462,10 @@ export const SignPDF: React.FC<Props> = ({ onBack, activeTool }) => {
             </div>
 
             {/* Body */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
 
                 {/* ── LEFT: Settings panel ── */}
-                <div className="w-72 shrink-0 flex flex-col border-r border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto">
+                <div className="w-full lg:w-72 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto max-h-[40vh] lg:max-h-none">
                     <AnimatePresence mode="wait">
 
                         {/* VISUAL settings */}
@@ -694,7 +694,7 @@ export const SignPDF: React.FC<Props> = ({ onBack, activeTool }) => {
                                 {/* Digital result */}
                                 {digResult && (
                                     <div className="p-4 border-b border-gray-100 dark:border-white/5 bg-emerald-50 dark:bg-emerald-900/20">
-                                        <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 mb-1">🔐 Signed Successfully</p>
+                                        <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 mb-1 flex items-center gap-1"><BadgeCheck className="w-3 h-3" /> Signed Successfully</p>
                                         <p className="text-[10px] text-gray-500">RSA-SHA256 · {new Date(digResult.timestamp).toLocaleString()}</p>
                                     </div>
                                 )}
@@ -765,8 +765,8 @@ export const SignPDF: React.FC<Props> = ({ onBack, activeTool }) => {
                                                     {!verifyResult.hasCryptographicSignature
                                                         ? 'No Signature Found'
                                                         : verifyResult.isValid
-                                                            ? '✅ Valid Signature'
-                                                            : '❌ Invalid / Tampered'}
+                                                            ? 'Valid Signature'
+                                                            : 'Invalid / Tampered'}
                                                 </p>
                                             </div>
 

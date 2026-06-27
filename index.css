@@ -241,3 +241,11 @@ body {
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.animate-\[slideInRight_0\.2s_ease-out\] {
+  animation: slideInRight 0.2s ease-out;
+}
