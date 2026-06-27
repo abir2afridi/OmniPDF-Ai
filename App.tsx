@@ -2176,7 +2176,7 @@ const App: React.FC = () => {
             )}
 
             {currentView === AppView.AI_SUMMARY && (
-              <AISummary />
+              <AISummary onBack={() => handleToolSelect(null)} />
             )}
 
             {currentView === AppView.ANALYTICS && (

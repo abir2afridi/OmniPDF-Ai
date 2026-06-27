@@ -14,7 +14,7 @@ import {
     Sparkles, Upload, FileText, AlignLeft, List, Lightbulb,
     Briefcase, ZapOff, Wand2, Loader2, Copy, Check, Download,
     X, ChevronDown, ChevronUp, Tag, Target, ArrowRight,
-    RotateCcw, Clock, BookOpen, Info, AlertCircle,
+    RotateCcw, Clock, BookOpen, Info, AlertCircle, ArrowLeft,
 } from 'lucide-react';
 import {
     summariseDocument, validateSummaryFile, downloadSummaryAsTxt, downloadSummaryAsPdf,
@@ -75,7 +75,7 @@ const ToastItem = ({ t, onDismiss }: { t: Toast; onDismiss: () => void }) => (
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export const AISummary: React.FC = () => {
+export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     // Input
     const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -206,31 +206,36 @@ export const AISummary: React.FC = () => {
             </div>
 
             {/* Header */}
-            <div className="shrink-0 px-8 py-5 bg-[#f3f1ea] dark:bg-[#21212f] border-b border-gray-100 dark:border-white/5">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-2xl shadow-sm">
-                            <Sparkles className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            <div className="shrink-0 px-4 lg:px-8 py-4 lg:py-5 bg-[#f3f1ea] dark:bg-[#21212f] border-b border-gray-100 dark:border-white/5">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 lg:gap-4 min-w-0">
+                        {onBack && (
+                            <button onClick={onBack} className="p-2 -ml-1 lg:-ml-2 hover:bg-amber-100 dark:hover:bg-white/5 rounded-xl transition-colors shrink-0">
+                                <ArrowLeft className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                            </button>
+                        )}
+                        <div className="p-2 lg:p-3 bg-amber-100 dark:bg-amber-900/30 rounded-2xl shadow-sm shrink-0">
+                            <Sparkles className="w-5 h-5 lg:w-6 lg:h-6 text-amber-600 dark:text-amber-400" />
                         </div>
-                        <div>
-                            <h1 className="text-2xl font-black dark:text-white tracking-tight">AI Summary</h1>
-                            <p className="text-xs text-gray-400 font-medium">PDF · DOCX · TXT · Text paste → Intelligent summaries via AI</p>
+                        <div className="min-w-0">
+                            <h1 className="text-lg lg:text-2xl font-black dark:text-white tracking-tight">AI Summary</h1>
+                            <p className="text-[10px] lg:text-xs text-gray-400 font-medium truncate">PDF · DOCX · TXT · Text paste → Intelligent summaries via AI</p>
                         </div>
                     </div>
                     <button onClick={() => setShowHistory(v => !v)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors border
+                        className={`shrink-0 flex items-center gap-1.5 lg:gap-2 px-2.5 lg:px-3 py-1.5 rounded-xl text-[10px] lg:text-xs font-bold transition-colors border
               ${showHistory ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300'
                                 : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500 hover:text-gray-700'}`}>
-                        <Clock className="w-3.5 h-3.5" />
-                        History ({history.length})
+                        <Clock className="w-3 h-3 lg:w-3.5 lg:h-3.5" />
+                        <span className="hidden sm:inline">History</span><span className="hidden sm:inline"> ({history.length})</span><span className="sm:hidden">({history.length})</span>
                     </button>
                 </div>
             </div>
 
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
 
                 {/* ── LEFT: Config panel ── */}
-                <div className="w-80 shrink-0 flex flex-col border-r border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#21212f] overflow-y-auto">
+                <div className="w-full lg:w-80 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#21212f] overflow-y-auto">
 
                     {/* Input mode */}
                     <div className="p-5 border-b border-gray-100 dark:border-white/5">
@@ -406,13 +411,13 @@ export const AISummary: React.FC = () => {
                 </div>
 
                 {/* ── RIGHT: Results panel ── */}
-                <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+                <div className="flex-1 flex flex-col overflow-visible lg:overflow-hidden min-w-0">
                     <AnimatePresence mode="wait">
 
                         {/* History panel */}
                         {showHistory && (
                             <motion.div key="history" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                className="absolute top-0 right-0 w-96 h-full z-30 bg-white dark:bg-[#21212f] border-l border-gray-100 dark:border-white/5 flex flex-col shadow-2xl">
+                                className="absolute top-0 right-0 w-full sm:w-96 h-full z-30 bg-white dark:bg-[#21212f] border-l border-gray-100 dark:border-white/5 flex flex-col shadow-2xl">
                                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-white/5">
                                     <p className="text-sm font-black dark:text-white">Summary History</p>
                                     <button onClick={() => setShowHistory(false)} className="text-gray-400 hover:text-gray-600">
@@ -448,18 +453,18 @@ export const AISummary: React.FC = () => {
                         {/* Empty state */}
                         {!result && !isProcessing && (
                             <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                className="flex-1 flex flex-col items-center justify-center gap-6 px-8">
+                                className="flex-1 flex flex-col items-center justify-center gap-4 lg:gap-6 px-4 lg:px-8 py-4 lg:py-0">
                                 <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 4 }}
-                                    className="p-6 bg-amber-100 dark:bg-amber-900/30 rounded-3xl shadow-xl">
-                                    <Sparkles className="w-12 h-12 text-amber-500" />
+                                    className="p-4 lg:p-6 bg-amber-100 dark:bg-amber-900/30 rounded-3xl shadow-xl">
+                                    <Sparkles className="w-8 h-8 lg:w-12 lg:h-12 text-amber-500" />
                                 </motion.div>
                                 <div className="text-center max-w-md">
-                                    <h2 className="text-2xl font-black dark:text-white">AI Document Summary</h2>
-                                    <p className="text-sm text-gray-400 mt-2 leading-relaxed">
+                                    <h2 className="text-xl lg:text-2xl font-black dark:text-white">AI Document Summary</h2>
+                                    <p className="text-xs lg:text-sm text-gray-400 mt-2 leading-relaxed">
                                         Upload a PDF, DOCX, or TXT file — or paste raw text — and choose your preferred summary style. The AI will extract, clean, chunk, and intelligently summarize your document.
                                     </p>
                                 </div>
-                                <div className="grid grid-cols-3 gap-3 w-full max-w-lg">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
                                     {[
                                         ['📄 PDF + OCR', 'Text extraction with OCR fallback for scanned PDFs'],
                                         ['🧩 Smart Chunking', 'Large docs split into context-aware windows'],
@@ -500,7 +505,7 @@ export const AISummary: React.FC = () => {
                         {/* Results */}
                         {result && !isProcessing && (
                             <motion.div key="result" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                                className="flex-1 overflow-y-auto p-6 space-y-5">
+                                className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 lg:space-y-5">
 
                                 {/* Stats bar */}
                                 <div className="flex flex-wrap items-center gap-3 p-4 bg-white dark:bg-[#21212f] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">

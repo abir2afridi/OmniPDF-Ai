@@ -39,13 +39,13 @@ async function loadPdfjs() {
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-// Fallback models in order of preference (free tier models with different rate limits)
+// Fallback models in order of preference (free tier models, June 2026)
 const FALLBACK_MODELS = [
-    'openrouter/free',           // Primary - good performance
-    'openrouter/free',     // Fallback - auto pick best free
-    'meta-llama/llama-3.2-1b-instruct:free', // Fast - for simple tasks
-    'google/gemma-2-9b-it:free',       // Alternative
-    'microsoft/phi-3-mini-128k-instruct:free' // Last resort
+    'openrouter/free',                              // Auto-pick best free model
+    'meta-llama/llama-3.3-70b-instruct:free',       // Solid all-purpose
+    'deepseek/deepseek-v3:free',                    // Strong general-purpose
+    'meta-llama/llama-4-scout:free',                // 10M context
+    'google/gemma-3-12b-it:free',                   // Google's open model
 ];
 
 const MAX_FILE_MB = 50;
@@ -142,7 +142,15 @@ export async function extractPdfText(
 ): Promise<{ text: string; pageCount: number; method: 'text' | 'ocr' }> {
     const pdfjsLib = await loadPdfjs();
     const bytes = await file.arrayBuffer();
-    const pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
+
+    let pdfDoc: any;
+    try {
+        pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
+    } catch (docErr: any) {
+        console.error('[summaryService] Failed to open PDF:', docErr?.message);
+        throw new Error(`Cannot open PDF: ${docErr?.message || 'File may be encrypted or corrupted'}`);
+    }
+
     const total = pdfDoc.numPages;
     let full = '';
 
@@ -157,13 +165,19 @@ export async function extractPdfText(
         onProgress?.(Math.round((i / total) * 40));
     }
 
+    console.log(`[summaryService] Extracted ${full.length} chars raw from ${total} pages`);
+
     const cleaned = cleanText(full);
+
+    console.log(`[summaryService] After clean: ${cleaned.length} chars`);
 
     // If text is too sparse → try OCR
     if (cleaned.length < MIN_TEXT_CHARS) {
         onProgress?.(40);
         const ocrText = await ocrPdfFallback(pdfDoc, total, onProgress);
-        return { text: cleanText(ocrText), pageCount: total, method: 'ocr' };
+        const cleanedOcr = cleanText(ocrText);
+        console.log(`[summaryService] OCR returned ${cleanedOcr.length} chars`);
+        return { text: cleanedOcr, pageCount: total, method: 'ocr' };
     }
 
     return { text: cleaned, pageCount: total, method: 'text' };
@@ -176,27 +190,59 @@ async function ocrPdfFallback(
     onProgress?: (p: number) => void,
 ): Promise<string> {
     let out = '';
+    let worker: any = null;
     try {
         const Tesseract = await import('tesseract.js');
-        const worker = await (Tesseract as any).createWorker('eng');
-        await worker.loadLanguage('eng');
-        await worker.initialize('eng');
+        console.log('[summaryService] Tesseract loaded');
+
+        // v7 API: createWorker accepts lang + options, auto-initializes
+        worker = await (Tesseract as any).createWorker('eng', 1, {
+            logger: (m: any) => {
+                if (m.status === 'recognizing text') {
+                    onProgress?.(40 + Math.round((m.progress || 0) * 25));
+                }
+            },
+        });
 
         for (let i = 1; i <= total; i++) {
             const page = await pdfDoc.getPage(i);
-            const vp = page.getViewport({ scale: 2 });
-            const c = document.createElement('canvas');
-            c.width = vp.width; c.height = vp.height;
-            const ctx = c.getContext('2d')!;
+            const vp = page.getViewport({ scale: 1.5 });
+            const canvas = document.createElement('canvas');
+            canvas.width = vp.width;
+            canvas.height = vp.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.error('[summaryService] Failed to get canvas 2d context');
+                break;
+            }
             await page.render({ canvasContext: ctx, viewport: vp }).promise;
 
-            const { data } = await worker.recognize(c);
-            out += data.text + '\n';
+            // Convert canvas to blob then to image data for Tesseract
+            const blob = await new Promise<Blob | null>(resolve =>
+                canvas.toBlob(resolve, 'image/png')
+            );
+            if (!blob) {
+                console.error('[summaryService] canvas.toBlob returned null');
+                continue;
+            }
+            const imgUrl = URL.createObjectURL(blob);
+
+            try {
+                const { data } = await worker.recognize(imgUrl);
+                console.log(`[summaryService] OCR page ${i}/${total}: ${data.text.length} chars`);
+                out += data.text + '\n';
+            } catch (recErr: any) {
+                console.error(`[summaryService] OCR recognize page ${i} failed:`, recErr?.message);
+            } finally {
+                URL.revokeObjectURL(imgUrl);
+            }
+
             onProgress?.(40 + Math.round((i / total) * 25));
         }
-        await worker.terminate();
-    } catch {
-        /* No Tesseract available — return empty, caller handles */
+    } catch (ocrErr: any) {
+        console.error('[summaryService] OCR setup failed:', ocrErr?.message || ocrErr);
+    } finally {
+        try { await worker?.terminate(); } catch {}
     }
     return out;
 }
@@ -272,29 +318,23 @@ export function cleanText(raw: string): string {
  * Split text into overlapping chunks at sentence boundaries where possible.
  */
 export function chunkText(text: string, chunkSize = CHUNK_CHARS, overlap = CHUNK_OVERLAP): string[] {
+    if (!text || text.length === 0) return [];
     if (text.length <= chunkSize) return [text];
 
+    const safeChunkSize = Math.max(100, chunkSize);
+    const safeOverlap = Math.min(overlap, Math.floor(safeChunkSize / 2));
     const chunks: string[] = [];
-    let start = 0;
+    let pos = 0;
 
-    while (start < text.length) {
-        let end = Math.min(start + chunkSize, text.length);
+    while (pos < text.length) {
+        const end = Math.min(pos + safeChunkSize, text.length);
+        const chunk = text.substring(pos, end);
+        if (chunk.trim().length > 0) chunks.push(chunk.trim());
 
-        // Try to break at sentence boundary
-        if (end < text.length) {
-            const slice = text.slice(start, end);
-            const lastPeriod = Math.max(
-                slice.lastIndexOf('. '),
-                slice.lastIndexOf('.\n'),
-                slice.lastIndexOf('? '),
-                slice.lastIndexOf('! '),
-            );
-            if (lastPeriod > chunkSize * 0.6) end = start + lastPeriod + 2;
-        }
-
-        chunks.push(text.slice(start, end).trim());
-        start = end - overlap;
-        if (start >= text.length) break;
+        if (end >= text.length) break;
+        const nextPos = end - safeOverlap;
+        if (nextPos <= pos) break;
+        pos = nextPos;
     }
 
     return chunks.filter(c => c.length > 50);
@@ -404,15 +444,15 @@ async function callAI(
     // Use provided model or auto-select best available model
     let modelsToTry: string[];
 
-    if (preferredModel === 'auto') {
+    if (preferredModel === 'auto' || !preferredModel) {
         // Smart selection: try models in order of preference
         modelsToTry = FALLBACK_MODELS;
-    } else if (preferredModel) {
-        // Use specific model
-        modelsToTry = [preferredModel];
+    } else if (preferredModel === 'openrouter/free') {
+        // OpenRouter free router — try it first, then fall back to specific models
+        modelsToTry = [preferredModel, ...FALLBACK_MODELS.filter(m => m !== preferredModel)];
     } else {
-        // Default to first available model
-        modelsToTry = FALLBACK_MODELS;
+        // Use specific model, but fall back to free models if it fails
+        modelsToTry = [preferredModel, ...FALLBACK_MODELS.filter(m => m !== preferredModel)];
     }
 
     // Check cache first
@@ -534,13 +574,30 @@ export async function summariseDocument(
     try {
         // ── Step 1: Extract text ────────────────────────────────────────────────
         progressFn(5, 'Extracting text…');
-        const { text, pageCount, method } = await extractText(source, (p, stage) =>
-            progressFn(Math.round(p * 0.4), stage),
-        );
+        let text: string;
+        let pageCount: number;
+        let method: 'text' | 'ocr' | 'raw';
 
-        if (!text || text.length < 20) {
+        try {
+            const extracted = await extractText(source, (p, stage) =>
+                progressFn(Math.round(p * 0.4), stage),
+            );
+            text = extracted.text;
+            pageCount = extracted.pageCount;
+            method = extracted.method;
+        } catch (extractErr: any) {
+            console.error('[summaryService] Text extraction failed:', extractErr);
             throw new Error(
-                'Could not extract readable text from this document. It may be image-only — try uploading a text-based PDF or pasting text directly.',
+                `Failed to read this document: ${extractErr?.message || 'Unknown error'}. Try a different file or paste text directly.`,
+            );
+        }
+
+        console.log(`[summaryService] Got ${text?.length ?? 0} chars, method=${method}, pages=${pageCount}`);
+
+        if (!text || text.length < 10) {
+            const preview = text ? text.slice(0, 100).replace(/\n/g, '\\n') : '(empty)';
+            throw new Error(
+                `Extracted only ${text?.length ?? 0} chars from ${pageCount} pages (method: ${method}). Preview: "${preview}" — The document may be image-only, encrypted, or have an unusual text encoding. Try pasting text directly.`,
             );
         }
 
@@ -549,6 +606,10 @@ export async function summariseDocument(
         // ── Step 2: Chunk ───────────────────────────────────────────────────────
         const chunks = chunkText(text);
         const numChunks = chunks.length;
+
+        if (numChunks === 0) {
+            throw new Error(`Text was chunked into 0 valid chunks (${text.length} chars total). The content may be too fragmented. Try pasting text directly.`);
+        }
 
         // ── Step 3: Per-chunk summarization ─────────────────────────────────────
         let summaries: string[] = [];
