@@ -55,12 +55,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                     >
                         <button
                             onClick={onStart}
-                            className="px-10 py-5 bg-brand-600 text-white rounded-2xl text-lg font-black shadow-2xl shadow-brand-500/30 hover:bg-brand-500 hover:-translate-y-1 transition-all flex items-center gap-3 group"
+                            className="px-10 py-5 bg-brand-600 text-white rounded-[5px] text-lg font-black shadow-2xl shadow-brand-500/30 hover:bg-brand-500 hover:-translate-y-1 transition-all flex items-center gap-3 group"
                         >
                             Get Started for Free
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </button>
-                        <button className="px-10 py-5 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white rounded-2xl text-lg font-bold hover:bg-gray-50 dark:hover:bg-white/10 transition-all">
+                        <button className="px-10 py-5 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white rounded-[5px] text-lg font-bold hover:bg-gray-50 dark:hover:bg-white/10 transition-all">
                             Watch Demo
                         </button>
                     </motion.div>
@@ -87,9 +87,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                             <motion.div
                                 whileHover={{ y: -10 }}
                                 key={i}
-                                className="p-8 bg-white dark:bg-[#1e1e2e] rounded-3xl border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-xl transition-all"
+                                className="p-8 bg-white dark:bg-[#1e1e2e] rounded-[5px] border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-xl transition-all"
                             >
-                                <div className={`w-14 h-14 rounded-2xl ${f.bg} ${f.color} flex items-center justify-center mb-6`}>
+                                <div className={`w-14 h-14 rounded-[5px] ${f.bg} ${f.color} flex items-center justify-center mb-6`}>
                                     <f.icon className="w-7 h-7" />
                                 </div>
                                 <h3 className="text-xl font-bold dark:text-white mb-3">{f.title}</h3>
@@ -110,7 +110,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                         {/* Free Plan */}
-                        <div className="p-10 bg-white dark:bg-[#1e1e2e] rounded-3xl border border-gray-200 dark:border-white/5 shadow-sm">
+                        <div className="p-10 bg-white dark:bg-[#1e1e2e] rounded-[5px] border border-gray-200 dark:border-white/5 shadow-sm">
                             <h3 className="text-xl font-bold dark:text-white mb-2">Free</h3>
                             <div className="flex items-baseline gap-1 mb-6">
                                 <span className="text-4xl font-black dark:text-white">$0</span>
@@ -129,13 +129,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                                     </li>
                                 ))}
                             </ul>
-                            <button className="w-full py-4 bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-white/10 transition-all">
+                            <button className="w-full py-4 bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white rounded-[5px] font-bold hover:bg-gray-200 dark:hover:bg-white/10 transition-all">
                                 Sign Up Free
                             </button>
                         </div>
 
                         {/* Pro Plan */}
-                        <div className="p-10 bg-white dark:bg-[#1e1e2e] rounded-3xl border-2 border-brand-500 shadow-2xl relative overflow-hidden">
+                        <div className="p-10 bg-white dark:bg-[#1e1e2e] rounded-[5px] border-2 border-brand-500 shadow-2xl relative overflow-hidden">
                             <div className="absolute top-0 right-0 px-4 py-1 bg-brand-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-bl-xl">Most Popular</div>
                             <h3 className="text-xl font-bold dark:text-white mb-2">Pro</h3>
                             <div className="flex items-baseline gap-1 mb-6">
@@ -156,7 +156,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                                     </li>
                                 ))}
                             </ul>
-                            <button className="w-full py-4 bg-brand-600 text-white rounded-2xl font-bold shadow-lg shadow-brand-500/20 hover:bg-brand-500 transition-all">
+                            <button className="w-full py-4 bg-brand-600 text-white rounded-[5px] font-bold shadow-lg shadow-brand-500/20 hover:bg-brand-500 transition-all">
                                 Get Pro Access
                             </button>
                         </div>
@@ -168,7 +168,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             <footer className="py-20 border-t border-gray-100 dark:border-white/5">
                 <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
                     <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center text-white font-black">OP</div>
+                        <div className="w-10 h-10 bg-brand-600 rounded-[5px] flex items-center justify-center text-white font-black">OP</div>
                         <span className="text-xl font-bold dark:text-white">OmniPDF</span>
                     </div>
                     <div className="flex gap-8 text-sm font-medium text-gray-500">

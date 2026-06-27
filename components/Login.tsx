@@ -98,14 +98,14 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
             {onBack && (
                 <button
                     onClick={onBack}
-                    className="fixed top-6 left-6 z-[1000] px-4 py-2 bg-black/40 hover:bg-black/60 text-white rounded-lg backdrop-blur-md transition-all border border-white/20 text-sm font-semibold flex items-center gap-2 cursor-pointer shadow-lg"
+                    className="fixed top-6 left-6 z-[1000] px-4 py-2 bg-black/40 hover:bg-black/60 text-white rounded-[5px] backdrop-blur-md transition-all border border-white/20 text-sm font-semibold flex items-center gap-2 cursor-pointer shadow-lg"
                 >
                     &larr; Back to App
                 </button>
             )}
             {authError && (
                 <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[2000] max-w-lg w-full px-4">
-                    <div className="bg-red-500/90 text-white px-4 py-3 rounded-lg shadow-lg text-sm flex items-start gap-2">
+                    <div className="bg-red-500/90 text-white px-4 py-3 rounded-[5px] shadow-lg text-sm flex items-start gap-2">
                         <span className="flex-1">{authError}</span>
                         <button onClick={() => setAuthError(null)} className="text-white/80 hover:text-white font-bold cursor-pointer">&times;</button>
                     </div>

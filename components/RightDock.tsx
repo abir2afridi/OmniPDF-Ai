@@ -37,7 +37,7 @@ const StyledSelect = ({ value, onChange, options }: { value: any, onChange: (e: 
         <select
             value={value}
             onChange={onChange}
-            className="w-full appearance-none bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
+            className="w-full appearance-none bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
         >
             {options.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
         </select>
@@ -50,7 +50,7 @@ const StyledSelect = ({ value, onChange, options }: { value: any, onChange: (e: 
 const StyledInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input
         {...props}
-        className="w-full bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
+        className="w-full bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
     />
 );
 
@@ -58,7 +58,7 @@ const ToolButton = ({ icon: Icon, active, onClick, label }: { icon: any, active:
     <button
         onClick={onClick}
         onMouseDown={preventFocusSteal}
-        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200
+        className={`flex flex-col items-center justify-center p-3 rounded-[5px] border transition-all duration-200
           ${active
                 ? 'bg-brand-600 border-brand-600 text-white shadow-md scale-105'
                 : 'bg-[#f3f1ea] dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-brand-400 dark:hover:border-brand-500/50 hover:bg-brand-50 dark:hover:bg-brand-900/20'}`}
@@ -118,7 +118,7 @@ export const RightDock: React.FC<RightDockProps> = ({
             case 'edit':
                 return (
                     <div className="space-y-6 animate-in slide-in-from-right-5 fade-in duration-300">
-                        <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-500/20 rounded-xl flex gap-3">
+                        <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-500/20 rounded-[5px] flex gap-3">
                             <Wand2 className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0" />
                             <p className="text-xs text-purple-700 dark:text-purple-300 leading-relaxed">
                                 <b>Edit Mode:</b> Add text, images, shapes, stamps or highlights. Click existing text to magic edit it. Use the <b>Zoom</b> controls on canvas for precision.
@@ -129,7 +129,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                             <button
                                 onClick={() => onTriggerEditAction?.('undo')}
                                 onMouseDown={preventFocusSteal}
-                                className="flex-1 flex items-center justify-center gap-2 p-3 bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-[#f3f1ea]/50 dark:hover:bg-white/10 hover:border-brand-300 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 transition-all shadow-sm"
+                                className="flex-1 flex items-center justify-center gap-2 p-3 bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-[#f3f1ea]/50 dark:hover:bg-white/10 hover:border-brand-300 rounded-[5px] text-xs font-bold text-gray-700 dark:text-gray-300 transition-all shadow-sm"
                                 title="Undo (Ctrl+Z)"
                             >
                                 <Undo className="w-4 h-4" /> Undo
@@ -137,7 +137,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                             <button
                                 onClick={() => onTriggerEditAction?.('redo')}
                                 onMouseDown={preventFocusSteal}
-                                className="flex-1 flex items-center justify-center gap-2 p-3 bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-[#f3f1ea]/50 dark:hover:bg-white/10 hover:border-brand-300 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 transition-all shadow-sm"
+                                className="flex-1 flex items-center justify-center gap-2 p-3 bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-[#f3f1ea]/50 dark:hover:bg-white/10 hover:border-brand-300 rounded-[5px] text-xs font-bold text-gray-700 dark:text-gray-300 transition-all shadow-sm"
                                 title="Redo (Ctrl+Shift+Z)"
                             >
                                 <Redo className="w-4 h-4" /> Redo
@@ -200,13 +200,13 @@ export const RightDock: React.FC<RightDockProps> = ({
 
                         {/* SHAPE SUB-TOOLS */}
                         {toolOptions.currentEditTool === 'shape' && (
-                            <div className="animate-in fade-in slide-in-from-top-2 p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10">
+                            <div className="animate-in fade-in slide-in-from-top-2 p-3 bg-gray-50 dark:bg-white/5 rounded-[5px] border border-gray-200 dark:border-white/10">
                                 <InputLabel>Shape Type</InputLabel>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => onOptionChange('editShapeType', 'rectangle')}
                                         onMouseDown={preventFocusSteal}
-                                        className={`flex-1 p-2 rounded-lg flex items-center justify-center transition-all ${toolOptions.editShapeType === 'rectangle' ? 'bg-brand-200 dark:bg-brand-600 text-brand-900 dark:text-white' : 'hover:bg-gray-200 dark:hover:bg-white/10'}`}
+                                        className={`flex-1 p-2 rounded-[5px] flex items-center justify-center transition-all ${toolOptions.editShapeType === 'rectangle' ? 'bg-brand-200 dark:bg-brand-600 text-brand-900 dark:text-white' : 'hover:bg-gray-200 dark:hover:bg-white/10'}`}
                                         title="Rectangle"
                                     >
                                         <Square className="w-5 h-5" />
@@ -214,7 +214,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                     <button
                                         onClick={() => onOptionChange('editShapeType', 'circle')}
                                         onMouseDown={preventFocusSteal}
-                                        className={`flex-1 p-2 rounded-lg flex items-center justify-center transition-all ${toolOptions.editShapeType === 'circle' ? 'bg-brand-200 dark:bg-brand-600 text-brand-900 dark:text-white' : 'hover:bg-gray-200 dark:hover:bg-white/10'}`}
+                                        className={`flex-1 p-2 rounded-[5px] flex items-center justify-center transition-all ${toolOptions.editShapeType === 'circle' ? 'bg-brand-200 dark:bg-brand-600 text-brand-900 dark:text-white' : 'hover:bg-gray-200 dark:hover:bg-white/10'}`}
                                         title="Circle"
                                     >
                                         <Circle className="w-5 h-5" />
@@ -222,7 +222,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                     <button
                                         onClick={() => onOptionChange('editShapeType', 'line')}
                                         onMouseDown={preventFocusSteal}
-                                        className={`flex-1 p-2 rounded-lg flex items-center justify-center transition-all ${toolOptions.editShapeType === 'line' ? 'bg-brand-200 dark:bg-brand-600 text-brand-900 dark:text-white' : 'hover:bg-gray-200 dark:hover:bg-white/10'}`}
+                                        className={`flex-1 p-2 rounded-[5px] flex items-center justify-center transition-all ${toolOptions.editShapeType === 'line' ? 'bg-brand-200 dark:bg-brand-600 text-brand-900 dark:text-white' : 'hover:bg-gray-200 dark:hover:bg-white/10'}`}
                                         title="Line"
                                     >
                                         <Minus className="w-5 h-5" />
@@ -230,7 +230,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                     <button
                                         onClick={() => onOptionChange('editShapeType', 'arrow')}
                                         onMouseDown={preventFocusSteal}
-                                        className={`flex-1 p-2 rounded-lg flex items-center justify-center transition-all ${toolOptions.editShapeType === 'arrow' ? 'bg-brand-200 dark:bg-brand-600 text-brand-900 dark:text-white' : 'hover:bg-gray-200 dark:hover:bg-white/10'}`}
+                                        className={`flex-1 p-2 rounded-[5px] flex items-center justify-center transition-all ${toolOptions.editShapeType === 'arrow' ? 'bg-brand-200 dark:bg-brand-600 text-brand-900 dark:text-white' : 'hover:bg-gray-200 dark:hover:bg-white/10'}`}
                                         title="Arrow"
                                     >
                                         <MoveRight className="w-5 h-5" />
@@ -241,7 +241,7 @@ export const RightDock: React.FC<RightDockProps> = ({
 
                         {/* STAMP SUB-TOOLS */}
                         {toolOptions.currentEditTool === 'stamp' && (
-                            <div className="animate-in fade-in slide-in-from-top-2 p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10">
+                            <div className="animate-in fade-in slide-in-from-top-2 p-3 bg-gray-50 dark:bg-white/5 rounded-[5px] border border-gray-200 dark:border-white/10">
                                 <InputLabel>Select Stamp</InputLabel>
                                 <div className="grid grid-cols-2 gap-2">
                                     {STAMPS.map(stamp => (
@@ -249,7 +249,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                             key={stamp.id}
                                             onClick={() => onOptionChange('editStampText', stamp.id)}
                                             onMouseDown={preventFocusSteal}
-                                            className={`px-2 py-1.5 rounded-lg border text-xs font-bold transition-all text-center uppercase tracking-wide
+                                            className={`px-2 py-1.5 rounded-[5px] border text-xs font-bold transition-all text-center uppercase tracking-wide
                                             ${toolOptions.editStampText === stamp.id
                                                     ? 'bg-white dark:bg-white/10 border-brand-500 ring-1 ring-brand-500 shadow-sm'
                                                     : 'border-transparent hover:bg-gray-200 dark:hover:bg-white/5 opacity-70 hover:opacity-100'}
@@ -287,7 +287,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                         <button
                                             onClick={() => onOptionChange('editFontStyle', toolOptions.editFontStyle.includes('Bold') ? toolOptions.editFontStyle.replace('Bold', '').trim() || 'Normal' : (toolOptions.editFontStyle === 'Normal' ? 'Bold' : `Bold ${toolOptions.editFontStyle}`))}
                                             onMouseDown={preventFocusSteal}
-                                            className={`flex-1 p-2.5 rounded-lg border flex items-center justify-center transition-all ${toolOptions.editFontStyle.includes('Bold') ? 'bg-brand-100 dark:bg-brand-900/40 border-brand-500 text-brand-700 dark:text-brand-300 shadow-inner' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400'}`}
+                                            className={`flex-1 p-2.5 rounded-[5px] border flex items-center justify-center transition-all ${toolOptions.editFontStyle.includes('Bold') ? 'bg-brand-100 dark:bg-brand-900/40 border-brand-500 text-brand-700 dark:text-brand-300 shadow-inner' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400'}`}
                                             title="Bold"
                                         >
                                             <Bold className="w-4 h-4" />
@@ -295,7 +295,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                         <button
                                             onClick={() => onOptionChange('editFontStyle', toolOptions.editFontStyle.includes('Italic') ? toolOptions.editFontStyle.replace('Italic', '').trim() || 'Normal' : (toolOptions.editFontStyle === 'Normal' ? 'Italic' : `${toolOptions.editFontStyle} Italic`))}
                                             onMouseDown={preventFocusSteal}
-                                            className={`flex-1 p-2.5 rounded-lg border flex items-center justify-center transition-all ${toolOptions.editFontStyle.includes('Italic') ? 'bg-brand-100 dark:bg-brand-900/40 border-brand-500 text-brand-700 dark:text-brand-300 shadow-inner' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400'}`}
+                                            className={`flex-1 p-2.5 rounded-[5px] border flex items-center justify-center transition-all ${toolOptions.editFontStyle.includes('Italic') ? 'bg-brand-100 dark:bg-brand-900/40 border-brand-500 text-brand-700 dark:text-brand-300 shadow-inner' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400'}`}
                                             title="Italic"
                                         >
                                             <Italic className="w-4 h-4" />
@@ -307,7 +307,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                         <button
                                             onClick={() => onOptionChange('editTextAlign', 'left')}
                                             onMouseDown={preventFocusSteal}
-                                            className={`flex-1 p-2 rounded-lg border flex items-center justify-center transition-all ${toolOptions.editTextAlign === 'left' ? 'bg-brand-100 dark:bg-brand-900/40 border-brand-500 text-brand-600 dark:text-brand-400' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500'}`}
+                                            className={`flex-1 p-2 rounded-[5px] border flex items-center justify-center transition-all ${toolOptions.editTextAlign === 'left' ? 'bg-brand-100 dark:bg-brand-900/40 border-brand-500 text-brand-600 dark:text-brand-400' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500'}`}
                                             title="Align Left"
                                         >
                                             <AlignLeft className="w-4 h-4" />
@@ -315,7 +315,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                         <button
                                             onClick={() => onOptionChange('editTextAlign', 'center')}
                                             onMouseDown={preventFocusSteal}
-                                            className={`flex-1 p-2 rounded-lg border flex items-center justify-center transition-all ${toolOptions.editTextAlign === 'center' ? 'bg-brand-100 dark:bg-brand-900/40 border-brand-500 text-brand-600 dark:text-brand-400' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500'}`}
+                                            className={`flex-1 p-2 rounded-[5px] border flex items-center justify-center transition-all ${toolOptions.editTextAlign === 'center' ? 'bg-brand-100 dark:bg-brand-900/40 border-brand-500 text-brand-600 dark:text-brand-400' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500'}`}
                                             title="Align Center"
                                         >
                                             <AlignCenter className="w-4 h-4" />
@@ -323,7 +323,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                         <button
                                             onClick={() => onOptionChange('editTextAlign', 'right')}
                                             onMouseDown={preventFocusSteal}
-                                            className={`flex-1 p-2 rounded-lg border flex items-center justify-center transition-all ${toolOptions.editTextAlign === 'right' ? 'bg-brand-100 dark:bg-brand-900/40 border-brand-500 text-brand-600 dark:text-brand-400' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500'}`}
+                                            className={`flex-1 p-2 rounded-[5px] border flex items-center justify-center transition-all ${toolOptions.editTextAlign === 'right' ? 'bg-brand-100 dark:bg-brand-900/40 border-brand-500 text-brand-600 dark:text-brand-400' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500'}`}
                                             title="Align Right"
                                         >
                                             <AlignRight className="w-4 h-4" />
@@ -342,7 +342,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                                 max="120"
                                                 value={toolOptions.editFontSize}
                                                 onChange={(e) => onOptionChange('editFontSize', Number(e.target.value))}
-                                                className="w-16 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1 text-sm text-center font-mono"
+                                                className="w-16 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] px-2 py-1 text-sm text-center font-mono"
                                             />
                                             <input
                                                 type="range"
@@ -350,7 +350,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                                 max="72"
                                                 value={toolOptions.editFontSize}
                                                 onChange={(e) => onOptionChange('editFontSize', Number(e.target.value))}
-                                                className="flex-1 accent-brand-600 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                                className="flex-1 accent-brand-600 h-2 bg-gray-200 rounded-[5px] appearance-none cursor-pointer dark:bg-gray-700"
                                             />
                                         </div>
                                     </div>
@@ -436,7 +436,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                     <div>
                                         <div className="flex justify-between mb-1">
                                             <InputLabel>Opacity</InputLabel>
-                                            <span className="text-xs text-gray-500 font-mono bg-gray-200 dark:bg-white/10 px-1.5 py-0.5 rounded">
+                                            <span className="text-xs text-gray-500 font-mono bg-gray-200 dark:bg-white/10 px-1.5 py-0.5 rounded-[5px]">
                                                 {Math.round(toolOptions.editOpacity * 100)}%
                                             </span>
                                         </div>
@@ -447,7 +447,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                             step="0.1"
                                             value={toolOptions.editOpacity}
                                             onChange={(e) => onOptionChange('editOpacity', Number(e.target.value))}
-                                            className="w-full accent-brand-600 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                            className="w-full accent-brand-600 h-2 bg-gray-200 rounded-[5px] appearance-none cursor-pointer dark:bg-gray-700"
                                         />
                                     </div>
 
@@ -456,7 +456,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                         <div>
                                             <div className="flex justify-between mb-1">
                                                 <InputLabel>{toolOptions.currentEditTool === 'shape' ? 'Stroke Width' : 'Brush Size'}</InputLabel>
-                                                <span className="text-xs text-gray-500 font-mono bg-gray-200 dark:bg-white/10 px-1.5 py-0.5 rounded">
+                                                <span className="text-xs text-gray-500 font-mono bg-gray-200 dark:bg-white/10 px-1.5 py-0.5 rounded-[5px]">
                                                     {toolOptions.currentEditTool === 'shape' ? toolOptions.editStrokeWidth : toolOptions.editBrushSize}px
                                                 </span>
                                             </div>
@@ -466,7 +466,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                                 max="20"
                                                 value={toolOptions.currentEditTool === 'shape' ? toolOptions.editStrokeWidth : toolOptions.editBrushSize}
                                                 onChange={(e) => onOptionChange(toolOptions.currentEditTool === 'shape' ? 'editStrokeWidth' : 'editBrushSize', Number(e.target.value))}
-                                                className="w-full accent-brand-600 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                                className="w-full accent-brand-600 h-2 bg-gray-200 rounded-[5px] appearance-none cursor-pointer dark:bg-gray-700"
                                             />
                                         </div>
                                     )}
@@ -480,7 +480,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                     <button
                                         onClick={() => onTriggerEditAction?.('delete')}
                                         onMouseDown={preventFocusSteal}
-                                        className="w-full flex items-center justify-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-sm"
+                                        className="w-full flex items-center justify-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-[5px] border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-sm"
                                     >
                                         <Trash2 className="w-4 h-4" /> Delete Selected
                                     </button>
@@ -500,21 +500,21 @@ export const RightDock: React.FC<RightDockProps> = ({
                             <div className="grid grid-cols-3 gap-3">
                                 <button
                                     onClick={() => onBatchRotate && onBatchRotate(-90)}
-                                    className="flex flex-col items-center justify-center p-4 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-all group shadow-sm hover:shadow-md"
+                                    className="flex flex-col items-center justify-center p-4 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-all group shadow-sm hover:shadow-md"
                                 >
                                     <RotateCcw className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-brand-500 mb-2 transition-colors" />
                                     <span className="text-[10px] font-semibold text-gray-500 group-hover:text-brand-600 uppercase">Left</span>
                                 </button>
                                 <button
                                     onClick={() => onBatchRotate && onBatchRotate(90)}
-                                    className="flex flex-col items-center justify-center p-4 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-all group shadow-sm hover:shadow-md"
+                                    className="flex flex-col items-center justify-center p-4 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-all group shadow-sm hover:shadow-md"
                                 >
                                     <RotateCw className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-brand-500 mb-2 transition-colors" />
                                     <span className="text-[10px] font-semibold text-gray-500 group-hover:text-brand-600 uppercase">Right</span>
                                 </button>
                                 <button
                                     onClick={() => onBatchRotate && onBatchRotate(180)}
-                                    className="flex flex-col items-center justify-center p-4 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-all group shadow-sm hover:shadow-md"
+                                    className="flex flex-col items-center justify-center p-4 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-all group shadow-sm hover:shadow-md"
                                 >
                                     <RefreshCcw className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-brand-500 mb-2 transition-colors" />
                                     <span className="text-[10px] font-semibold text-gray-500 group-hover:text-brand-600 uppercase">180°</span>
@@ -522,7 +522,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                             </div>
                         </div>
 
-                        <div className="p-4 bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-500/20 rounded-xl">
+                        <div className="p-4 bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-500/20 rounded-[5px]">
                             <div className="flex gap-3">
                                 <MousePointer2 className="w-5 h-5 text-brand-600 dark:text-brand-400 shrink-0" />
                                 <p className="text-xs text-brand-700 dark:text-brand-300 leading-relaxed">
@@ -546,7 +546,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                 <button
                                     key={level.id}
                                     onClick={() => onOptionChange('compressionLevel', level.id)}
-                                    className={`w-full flex items-center p-4 rounded-xl border transition-all relative overflow-hidden group
+                                    className={`w-full flex items-center p-4 rounded-[5px] border transition-all relative overflow-hidden group
                                     ${toolOptions.compressionLevel === level.id
                                             ? 'bg-brand-50 dark:bg-brand-500/20 border-brand-500 shadow-md ring-1 ring-brand-500'
                                             : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-brand-300'}
@@ -570,10 +570,10 @@ export const RightDock: React.FC<RightDockProps> = ({
                     <div className="space-y-6 animate-in slide-in-from-right-5 fade-in duration-300">
                         <div>
                             <InputLabel>Split Strategy</InputLabel>
-                            <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/5">
+                            <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-[5px] border border-gray-200 dark:border-white/5">
                                 <button
                                     onClick={() => onOptionChange('splitMethod', 'range')}
-                                    className={`py-2 text-sm font-medium rounded-lg transition-all shadow-sm
+                                    className={`py-2 text-sm font-medium rounded-[5px] transition-all shadow-sm
                                     ${toolOptions.splitMethod === 'range'
                                             ? 'bg-white dark:bg-brand-600 text-brand-600 dark:text-white shadow-md'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50'}
@@ -583,7 +583,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                 </button>
                                 <button
                                     onClick={() => onOptionChange('splitMethod', 'extract')}
-                                    className={`py-2 text-sm font-medium rounded-lg transition-all shadow-sm
+                                    className={`py-2 text-sm font-medium rounded-[5px] transition-all shadow-sm
                                     ${toolOptions.splitMethod === 'extract'
                                             ? 'bg-white dark:bg-brand-600 text-brand-600 dark:text-white shadow-md'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50'}
@@ -608,7 +608,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                         )}
 
                         {toolOptions.splitMethod === 'extract' && (
-                            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-500/20 rounded-xl flex gap-3 animate-in fade-in slide-in-from-top-2">
+                            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-500/20 rounded-[5px] flex gap-3 animate-in fade-in slide-in-from-top-2">
                                 <Layers className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
                                 <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
                                     Every single page will be saved as a separate PDF file. Useful for unstacking bulk scans.
@@ -627,7 +627,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                 <button
                                     key={fmt}
                                     onClick={() => onOptionChange('extractFormat', fmt.toLowerCase())}
-                                    className={`py-3 text-sm font-semibold rounded-xl border transition-all
+                                    className={`py-3 text-sm font-semibold rounded-[5px] border transition-all
                                     ${toolOptions.extractFormat === fmt.toLowerCase()
                                             ? 'bg-brand-600 text-white border-brand-600 shadow-md'
                                             : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-white/10 hover:border-brand-400'}
@@ -657,7 +657,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                 ]}
                             />
                         </div>
-                        <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-500/20 rounded-xl flex items-start gap-3">
+                        <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-500/20 rounded-[5px] flex items-start gap-3">
                             <Search className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                             <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
                                 Optical Character Recognition (OCR) converts scanned images into selectable, searchable text.
@@ -669,16 +669,16 @@ export const RightDock: React.FC<RightDockProps> = ({
             case 'sign':
                 return (
                     <div className="space-y-6 animate-in slide-in-from-right-5 fade-in duration-300">
-                        <div className="flex p-1 bg-gray-100 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/5">
+                        <div className="flex p-1 bg-gray-100 dark:bg-white/5 rounded-[5px] border border-gray-200 dark:border-white/5">
                             <button
                                 onClick={() => onOptionChange('signType', 'text')}
-                                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${toolOptions.signType !== 'draw' ? 'bg-white dark:bg-brand-600 shadow-md text-brand-600 dark:text-white' : 'text-gray-500'}`}
+                                className={`flex-1 py-2 text-xs font-bold rounded-[5px] transition-all ${toolOptions.signType !== 'draw' ? 'bg-white dark:bg-brand-600 shadow-md text-brand-600 dark:text-white' : 'text-gray-500'}`}
                             >
                                 Type
                             </button>
                             <button
                                 onClick={() => onOptionChange('signType', 'draw')}
-                                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${toolOptions.signType === 'draw' ? 'bg-white dark:bg-brand-600 shadow-md text-brand-600 dark:text-white' : 'text-gray-500'}`}
+                                className={`flex-1 py-2 text-xs font-bold rounded-[5px] transition-all ${toolOptions.signType === 'draw' ? 'bg-white dark:bg-brand-600 shadow-md text-brand-600 dark:text-white' : 'text-gray-500'}`}
                             >
                                 Draw
                             </button>
@@ -700,7 +700,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                         ) : (
                             <div>
                                 <InputLabel>Draw Signature</InputLabel>
-                                <div className="aspect-video bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl relative flex items-center justify-center overflow-hidden group">
+                                <div className="aspect-video bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] relative flex items-center justify-center overflow-hidden group">
                                     <PenTool className="w-8 h-8 text-gray-300 dark:text-gray-600" />
                                     <div className="absolute inset-0 bg-brand-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <span className="bg-brand-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">Click to Draw</span>
@@ -726,7 +726,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                             </div>
                         </div>
 
-                        <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-500/10 rounded-xl">
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-500/10 rounded-[5px]">
                             <div className="flex gap-3">
                                 <Shield className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                                 <p className="text-[10px] text-blue-700 dark:text-blue-300">Digital signatures created here are cryptographically bound to the document to ensure integrity and authenticity.</p>
@@ -757,7 +757,7 @@ export const RightDock: React.FC<RightDockProps> = ({
             case 'pdf-to-ppt':
                 return (
                     <div className="space-y-6 animate-in slide-in-from-right-5 fade-in duration-300">
-                        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-500/20 rounded-xl flex gap-3">
+                        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-500/20 rounded-[5px] flex gap-3">
                             <Presentation className="w-5 h-5 text-orange-600 dark:text-orange-400 shrink-0" />
                             <p className="text-xs text-orange-700 dark:text-orange-300 leading-relaxed">
                                 Your PDF pages will be converted into high-quality slides. Layouts and fonts are perfectly preserved as images.
@@ -785,7 +785,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                             <div className="grid grid-cols-1 gap-3">
                                 <button
                                     onClick={() => onOptionChange('conversionMode', 'flow')}
-                                    className={`p-4 rounded-xl border text-left transition-all
+                                    className={`p-4 rounded-[5px] border text-left transition-all
                                     ${toolOptions.conversionMode !== 'ocr'
                                             ? 'bg-brand-50 dark:bg-brand-900/20 border-brand-500 shadow-sm ring-1 ring-brand-500'
                                             : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-brand-300'}
@@ -800,7 +800,7 @@ export const RightDock: React.FC<RightDockProps> = ({
 
                                 <button
                                     disabled // Placeholder for future OCR expansion
-                                    className="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 opacity-60 cursor-not-allowed"
+                                    className="p-4 rounded-[5px] border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 opacity-60 cursor-not-allowed"
                                 >
                                     <div className="flex items-center gap-3 mb-1">
                                         <Search className="w-5 h-5 text-gray-400" />
@@ -825,7 +825,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                     onChange={(e) => onOptionChange('pagesToDelete', e.target.value)}
                                     placeholder="e.g. 1, 3-5, 8"
                                 />
-                                <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-xl text-red-500 border border-red-200 dark:border-red-500/20">
+                                <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-[5px] text-red-500 border border-red-200 dark:border-red-500/20">
                                     <Trash2 className="w-5 h-5" />
                                 </div>
                             </div>
@@ -871,7 +871,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                         <div className="border-t border-gray-100 dark:border-white/5 pt-4 space-y-4">
                             <InputLabel>Permissions</InputLabel>
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
+                                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-[5px]">
                                     <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Allow Printing</span>
                                     <button
                                         onClick={() => onOptionChange('protectAllowPrinting', !toolOptions.protectAllowPrinting)}
@@ -880,7 +880,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                         <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${toolOptions.protectAllowPrinting ? 'right-1' : 'left-1'}`} />
                                     </button>
                                 </div>
-                                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
+                                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-[5px]">
                                     <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Allow Copying</span>
                                     <button
                                         onClick={() => onOptionChange('protectAllowCopying', !toolOptions.protectAllowCopying)}
@@ -925,7 +925,7 @@ export const RightDock: React.FC<RightDockProps> = ({
             case 'ai-summary':
                 return (
                     <div className="space-y-6 animate-in slide-in-from-right-5 fade-in duration-300">
-                        <div className="p-4 bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-100 dark:border-fuchsia-500/20 rounded-xl flex gap-3">
+                        <div className="p-4 bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-100 dark:border-fuchsia-500/20 rounded-[5px] flex gap-3">
                             <Wand2 className="w-5 h-5 text-fuchsia-600 dark:text-fuchsia-400 shrink-0" />
                             <p className="text-xs text-fuchsia-700 dark:text-fuchsia-300 leading-relaxed">
                                 Gemini AI will analyze your document to generate a high-quality summary.
@@ -949,7 +949,7 @@ export const RightDock: React.FC<RightDockProps> = ({
             case 'pdf-to-excel':
                 return (
                     <div className="space-y-6 animate-in slide-in-from-right-5 fade-in duration-300">
-                        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-500/20 rounded-xl flex gap-3">
+                        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-500/20 rounded-[5px] flex gap-3">
                             <FileSpreadsheet className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
                             <p className="text-xs text-green-700 dark:text-green-300 leading-relaxed">
                                 Detecting and extracting tabular data from your PDF into structured Excel sheets.
@@ -1017,8 +1017,8 @@ export const RightDock: React.FC<RightDockProps> = ({
             case 'openoffice-to-pdf':
                 return (
                     <div className="space-y-6 animate-in slide-in-from-right-5 fade-in duration-300">
-                        <div className="p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-500/20 rounded-2xl">
-                            <div className="w-12 h-12 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center mb-4 shadow-sm">
+                        <div className="p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-500/20 rounded-[5px]">
+                            <div className="w-12 h-12 rounded-[5px] bg-white dark:bg-white/10 flex items-center justify-center mb-4 shadow-sm">
                                 <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                             </div>
                             <h4 className="text-sm font-bold text-blue-900 dark:text-white mb-2">High-Fidelity Conversion</h4>
@@ -1037,16 +1037,16 @@ export const RightDock: React.FC<RightDockProps> = ({
                     <div className="space-y-6 animate-in slide-in-from-right-5 fade-in duration-300">
                         <div>
                             <InputLabel>Watermark Type</InputLabel>
-                            <div className="flex p-1 bg-gray-100 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/5">
+                            <div className="flex p-1 bg-gray-100 dark:bg-white/5 rounded-[5px] border border-gray-200 dark:border-white/5">
                                 <button
                                     onClick={() => onOptionChange('watermarkType', 'text')}
-                                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${toolOptions.watermarkType !== 'image' ? 'bg-white dark:bg-brand-600 shadow-md text-brand-600 dark:text-white' : 'text-gray-500'}`}
+                                    className={`flex-1 py-2 text-xs font-bold rounded-[5px] transition-all ${toolOptions.watermarkType !== 'image' ? 'bg-white dark:bg-brand-600 shadow-md text-brand-600 dark:text-white' : 'text-gray-500'}`}
                                 >
                                     Text
                                 </button>
                                 <button
                                     onClick={() => onOptionChange('watermarkType', 'image')}
-                                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${toolOptions.watermarkType === 'image' ? 'bg-white dark:bg-brand-600 shadow-md text-brand-600 dark:text-white' : 'text-gray-500'}`}
+                                    className={`flex-1 py-2 text-xs font-bold rounded-[5px] transition-all ${toolOptions.watermarkType === 'image' ? 'bg-white dark:bg-brand-600 shadow-md text-brand-600 dark:text-white' : 'text-gray-500'}`}
                                 >
                                     Image
                                 </button>
@@ -1066,7 +1066,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                         ) : (
                             <div>
                                 <InputLabel>Watermark Image</InputLabel>
-                                <div className="border-2 border-dashed border-gray-200 dark:border-white/10 rounded-xl p-6 text-center hover:border-brand-500 transition-colors cursor-pointer bg-white dark:bg-white/5">
+                                <div className="border-2 border-dashed border-gray-200 dark:border-white/10 rounded-[5px] p-6 text-center hover:border-brand-500 transition-colors cursor-pointer bg-white dark:bg-white/5">
                                     <ImageIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Select Logo</p>
                                 </div>
@@ -1093,7 +1093,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                     <button
                                         key={pos}
                                         onClick={() => onOptionChange('watermarkPosition', pos)}
-                                        className={`p-2 rounded-lg border text-[8px] font-bold uppercase tracking-tighter ${toolOptions.watermarkPosition === pos ? 'bg-brand-600 text-white border-brand-600' : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/10 text-gray-500'}`}
+                                        className={`p-2 rounded-[5px] border text-[8px] font-bold uppercase tracking-tighter ${toolOptions.watermarkPosition === pos ? 'bg-brand-600 text-white border-brand-600' : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/10 text-gray-500'}`}
                                     >
                                         {pos.replace('-', ' ')}
                                     </button>
@@ -1116,7 +1116,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                             <button
                                                 key={pos}
                                                 onClick={() => onOptionChange('pageNumberPosition', pos)}
-                                                className={`p-2 rounded-lg border text-[8px] font-bold uppercase ${toolOptions.pageNumberPosition === pos ? 'bg-brand-600 text-white border-brand-600' : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/10 text-gray-500'}`}
+                                                className={`p-2 rounded-[5px] border text-[8px] font-bold uppercase ${toolOptions.pageNumberPosition === pos ? 'bg-brand-600 text-white border-brand-600' : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/10 text-gray-500'}`}
                                             >
                                                 {v} {h}
                                             </button>
@@ -1136,7 +1136,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                             />
                         </div>
 
-                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10">
+                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white/5 rounded-[5px] border border-gray-100 dark:border-white/10">
                             <span className="text-xs font-bold text-gray-600 dark:text-gray-300">Include Total Pages</span>
                             <button
                                 onClick={() => onOptionChange('pageNumberIncludeTotal', !toolOptions.pageNumberIncludeTotal)}
@@ -1151,7 +1151,7 @@ export const RightDock: React.FC<RightDockProps> = ({
             case 'merge':
                 return (
                     <div className="space-y-5 animate-in slide-in-from-right-5 fade-in duration-300">
-                        <div className="p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-500/20 rounded-2xl">
+                        <div className="p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-500/20 rounded-[5px]">
                             <h4 className="text-sm font-bold text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
                                 <Settings2 className="w-4 h-4" /> Merge Settings
                             </h4>
@@ -1170,7 +1170,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                             />
                         </div>
 
-                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10">
+                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white/5 rounded-[5px] border border-gray-100 dark:border-white/10">
                             <div>
                                 <p className="text-xs font-bold text-gray-700 dark:text-gray-200">Bookmark each file</p>
                                 <p className="text-[10px] text-gray-400">Adds a named outline entry per source PDF</p>
@@ -1188,7 +1188,7 @@ export const RightDock: React.FC<RightDockProps> = ({
             default:
                 return (
                     <div className="animate-in slide-in-from-right-5 fade-in duration-300 space-y-4">
-                        <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 text-center">
+                        <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] p-6 text-center">
                             <div className="w-14 h-14 rounded-full bg-brand-100 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-4 shadow-sm">
                                 <Download className="w-7 h-7" />
                             </div>
@@ -1218,12 +1218,12 @@ export const RightDock: React.FC<RightDockProps> = ({
                     >
                         <div className={`bg-gradient-to-br ${activeTool.color.replace('bg-', 'from-').replace('500', '600')} to-gray-900 p-8 text-white relative z-10`}>
                             <div className="flex items-start justify-between mb-4">
-                                <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-md shadow-lg">
+                                <div className="p-2.5 bg-white/10 rounded-[5px] backdrop-blur-md shadow-lg">
                                     <activeTool.icon className="w-8 h-8" />
                                 </div>
                                 <button
                                     onClick={() => onToolSelect(null)}
-                                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                                    className="p-2 hover:bg-white/20 rounded-[5px] transition-colors"
                                     title="Close Tool"
                                 >
                                     <X className="w-5 h-5 text-white/90" />
@@ -1277,7 +1277,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                                 <button
                                     key={tool.id}
                                     onClick={() => onToolSelect(tool)}
-                                    className="flex flex-col items-center justify-center p-4 rounded-2xl border border-gray-200 dark:border-white/5 bg-[#f3f1ea] dark:bg-white/5 hover:border-brand-500 hover:shadow-lg transition-all group"
+                                    className="flex flex-col items-center justify-center p-4 rounded-[5px] border border-gray-200 dark:border-white/5 bg-[#f3f1ea] dark:bg-white/5 hover:border-brand-500 hover:shadow-lg transition-all group"
                                 >
                                     <tool.icon className="w-6 h-6 mb-3 text-gray-400 group-hover:text-brand-500 dark:text-gray-500 dark:group-hover:text-brand-400 transition-colors" />
                                     <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 group-hover:text-brand-600 dark:group-hover:text-brand-400 text-center">{t(tool.name)}</span>
@@ -1292,7 +1292,7 @@ export const RightDock: React.FC<RightDockProps> = ({
                 <button
                     onClick={onExport}
                     disabled={!activeTool}
-                    className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-sm transition-all shadow-lg
+                    className={`w-full flex items-center justify-center gap-3 py-4 rounded-[5px] font-bold text-sm transition-all shadow-lg
             ${activeTool
                             ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-500/30 hover:-translate-y-0.5'
                             : 'bg-gray-200 dark:bg-white/5 text-gray-400 cursor-not-allowed shadow-none'}`}

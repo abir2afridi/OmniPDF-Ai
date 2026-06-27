@@ -170,14 +170,14 @@ body {
    ============================================= */
 .gradient-border {
   position: relative;
-  border-radius: 1rem;
+  border-radius: 5px;
   background: linear-gradient(to right, var(--brand-primary), var(--brand-accent));
   padding: 1px;
 }
 
 .gradient-border>* {
   background: white;
-  border-radius: calc(1rem - 1px);
+  border-radius: 5px;
 }
 
 .dark .gradient-border>* {

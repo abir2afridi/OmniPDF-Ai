@@ -33,6 +33,7 @@ import {
     type OOConversionResult,
 } from '../services/openOfficeService';
 import { downloadBytes } from '../services/pdfService';
+import { PDFTool } from '../types';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -59,6 +60,7 @@ interface ManagedFile {
 
 interface OpenOfficeToPDFProps {
     onBack?: () => void;
+    activeTool?: PDFTool;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -100,7 +102,7 @@ const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
         initial={{ opacity: 0, x: 60, scale: 0.9 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
                 : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
                     : 'bg-blue-50 dark:bg-blue-900/60 border-blue-200 dark:border-blue-500/30 text-blue-800 dark:text-blue-200'}`}
@@ -158,7 +160,7 @@ const FileRow: React.FC<FileRowProps> = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, x: -20, scale: 0.97 }}
-            className="bg-white dark:bg-[#262636] rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden"
+            className="bg-white dark:bg-[#262636] rounded-[5px] border border-gray-100 dark:border-white/5 overflow-hidden"
         >
             {/* Main row */}
             <div className="flex items-center gap-3 p-4">
@@ -167,7 +169,7 @@ const FileRow: React.FC<FileRowProps> = ({
                     {entry.status === 'converting' ? (
                         <CircularProgress value={entry.progress} />
                     ) : (
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${badge.bg}`}>
+                        <div className={`w-10 h-10 rounded-[5px] flex items-center justify-center ${badge.bg}`}>
                             {entry.status === 'done'
                                 ? <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                                 : entry.status === 'error'
@@ -181,7 +183,7 @@ const FileRow: React.FC<FileRowProps> = ({
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                         <p className="text-sm font-bold dark:text-white truncate">{entry.file.name}</p>
-                        <span className={`px-1.5 py-0.5 text-[9px] font-black uppercase rounded-md ${badge.bg} ${badge.text}`}>
+                        <span className={`px-1.5 py-0.5 text-[9px] font-black uppercase rounded-[5px] ${badge.bg} ${badge.text}`}>
                             {badge.label}
                         </span>
                     </div>
@@ -210,13 +212,13 @@ const FileRow: React.FC<FileRowProps> = ({
                     )}
                     {entry.status === 'done' && (
                         <button onClick={onDownload}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors">
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-[5px] transition-colors">
                             <Download className="w-3.5 h-3.5" /> PDF
                         </button>
                     )}
                     {(entry.status === 'idle' || entry.status === 'error') && (
                         <button onClick={onConvert} disabled={isAnyConverting}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-colors
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[5px] transition-colors
                             ${isAnyConverting
                                     ? 'bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed'
                                     : 'bg-teal-600 hover:bg-teal-500 text-white'}`}>
@@ -272,7 +274,7 @@ const FileRow: React.FC<FileRowProps> = ({
             {/* Rename field when done */}
             {entry.status === 'done' && (
                 <div className="px-4 pb-4">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-150 dark:border-white/10 rounded-xl focus-within:ring-2 focus-within:ring-teal-400 transition-all">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-150 dark:border-white/10 rounded-[5px] focus-within:ring-2 focus-within:ring-teal-400 transition-all">
                         <FileDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                         <input
                             type="text"
@@ -291,7 +293,7 @@ const FileRow: React.FC<FileRowProps> = ({
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
+export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack, activeTool }) => {
     const [files, setFiles] = useState<ManagedFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const [toasts, setToasts] = useState<Toast[]>([]);
@@ -450,12 +452,24 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500 dark:text-gray-400">
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500 dark:text-gray-400">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className="p-2 bg-gradient-to-br from-teal-100 to-emerald-100 dark:from-teal-900/30 dark:to-emerald-900/30 rounded-xl">
-                        <Monitor className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-teal-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <Monitor className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                        )}
                     </div>
                     <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">OpenOffice to PDF</h1>
@@ -470,12 +484,12 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                         <>
                             {doneCount > 1 && (
                                 <button onClick={downloadAll}
-                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors">
+                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-[5px] transition-colors">
                                     <Package className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Download All ZIP</span>
                                 </button>
                             )}
                             <button onClick={clearAll}
-                                className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center gap-1.5">
+                                className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] transition-colors flex items-center gap-1.5">
                                 <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                             </button>
                         </>
@@ -497,7 +511,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                         onDragLeave={onDragLeave}
                         onDrop={onDrop}
                         onClick={() => inputRef.current?.click()}
-                        className={`shrink-0 border-2 border-dashed rounded-2xl transition-all duration-200 cursor-pointer
+                        className={`shrink-0 border-2 border-dashed rounded-[5px] transition-all duration-200 cursor-pointer
                           ${isDragOver
                                 ? 'border-teal-500 bg-teal-500/5 scale-[0.99]'
                                 : files.length > 0
@@ -518,7 +532,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                                 <motion.div
                                     animate={{ y: [0, -6, 0] }}
                                     transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
-                                    className="p-4 bg-gradient-to-br from-teal-100 to-emerald-100 dark:from-teal-900/30 dark:to-emerald-900/30 rounded-2xl shadow-lg shadow-teal-200 dark:shadow-teal-900/30 mx-auto"
+                                    className="p-4 bg-gradient-to-br from-teal-100 to-emerald-100 dark:from-teal-900/30 dark:to-emerald-900/30 rounded-[5px] shadow-lg shadow-teal-200 dark:shadow-teal-900/30 mx-auto"
                                 >
                                     <Upload className="w-8 h-8 text-teal-600 dark:text-teal-400" />
                                 </motion.div>
@@ -529,11 +543,11 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-gray-300 dark:text-gray-600">
-                                    <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-md">.odt</span>
+                                    <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-[5px]">.odt</span>
                                     <span>·</span>
-                                    <span className="px-2 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-md">.ods</span>
+                                    <span className="px-2 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-[5px]">.ods</span>
                                     <span>·</span>
-                                    <span className="px-2 py-0.5 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-md">.odp</span>
+                                    <span className="px-2 py-0.5 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-[5px]">.odp</span>
                                     <span>·</span>
                                     <span>Max {OO_MAX_FILE_MB} MB each</span>
                                 </div>
@@ -570,7 +584,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
 
                     {/* Info panel */}
                     {files.length > 0 && (
-                        <div className="shrink-0 flex items-start gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/15 border border-amber-100 dark:border-amber-500/20 rounded-xl">
+                        <div className="shrink-0 flex items-start gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/15 border border-amber-100 dark:border-amber-500/20 rounded-[5px]">
                             <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                             <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
                                 <strong>How it works:</strong> Your OpenDocument file is unzipped and the XML content is parsed
@@ -595,7 +609,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                                     { label: 'Done', value: doneCount, color: 'text-emerald-600 dark:text-emerald-400' },
                                     { label: 'Errors', value: errorCount, color: 'text-red-500' },
                                 ].map(s => (
-                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-center">
+                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-[5px] p-3 text-center">
                                         <p className={`text-base font-black ${s.color}`}>{s.value}</p>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">{s.label}</p>
                                     </div>
@@ -606,17 +620,17 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                             {(odtCount > 0 || odsCount > 0 || odpCount > 0) && (
                                 <div className="flex items-center gap-2 mt-3">
                                     {odtCount > 0 && (
-                                        <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-lg">
+                                        <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-[5px]">
                                             <FileText className="w-3 h-3" /> {odtCount} ODT
                                         </span>
                                     )}
                                     {odsCount > 0 && (
-                                        <span className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-lg">
+                                        <span className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-[5px]">
                                             <FileSpreadsheet className="w-3 h-3" /> {odsCount} ODS
                                         </span>
                                     )}
                                     {odpCount > 0 && (
-                                        <span className="flex items-center gap-1 px-2 py-1 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-[10px] font-bold rounded-lg">
+                                        <span className="flex items-center gap-1 px-2 py-1 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-[10px] font-bold rounded-[5px]">
                                             <Presentation className="w-3 h-3" /> {odpCount} ODP
                                         </span>
                                     )}
@@ -647,7 +661,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                                             <div className="grid grid-cols-3 gap-1.5">
                                                 {(['a4', 'letter', 'legal'] as const).map(f => (
                                                     <button key={f} onClick={() => setPageFormat(f)}
-                                                        className={`py-2 text-xs font-bold rounded-xl border-2 transition-all capitalize
+                                                        className={`py-2 text-xs font-bold rounded-[5px] border-2 transition-all capitalize
                                                         ${pageFormat === f
                                                                 ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300'
                                                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-teal-200'}`}>
@@ -663,7 +677,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                                             <div className="grid grid-cols-2 gap-1.5">
                                                 {(['portrait', 'landscape'] as const).map(o => (
                                                     <button key={o} onClick={() => setOrientation(o)}
-                                                        className={`py-2 text-xs font-bold rounded-xl border-2 transition-all capitalize
+                                                        className={`py-2 text-xs font-bold rounded-[5px] border-2 transition-all capitalize
                                                         ${orientation === o
                                                                 ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300'
                                                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-teal-200'}`}>
@@ -682,7 +696,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                                                     { v: 2, label: 'High (192dpi)' },
                                                 ] as const).map(q => (
                                                     <button key={q.v} onClick={() => setQuality(q.v)}
-                                                        className={`py-2 text-xs font-bold rounded-xl border-2 transition-all
+                                                        className={`py-2 text-xs font-bold rounded-[5px] border-2 transition-all
                                                         ${quality === q.v
                                                                 ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300'
                                                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-teal-200'}`}>
@@ -693,7 +707,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                                         </div>
 
                                         {/* Privacy note */}
-                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
+                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-[5px]">
                                             <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                                             <p className="text-[10px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
                                                 All conversion happens <strong>entirely in your browser</strong>. Files are never uploaded to any server.
@@ -714,7 +728,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                                 { ext: '.ods', desc: 'OpenDocument Spreadsheet (Calc)', icon: FileSpreadsheet, color: 'text-green-500' },
                                 { ext: '.odp', desc: 'OpenDocument Presentation (Impress)', icon: Presentation, color: 'text-orange-500' },
                             ].map(fmt => (
-                                <div key={fmt.ext} className="flex items-center gap-2.5 p-2.5 bg-gray-50 dark:bg-white/5 rounded-xl">
+                                <div key={fmt.ext} className="flex items-center gap-2.5 p-2.5 bg-gray-50 dark:bg-white/5 rounded-[5px]">
                                     <fmt.icon className={`w-4 h-4 ${fmt.color} shrink-0`} />
                                     <div>
                                         <p className="text-xs font-bold dark:text-gray-200">{fmt.ext}</p>
@@ -752,7 +766,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                         <button
                             onClick={convertAll}
                             disabled={files.length === 0 || isAnyConverting || (idleCount === 0 && errorCount === 0)}
-                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-sm transition-all shadow-lg
+                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-[5px] font-black text-sm transition-all shadow-lg
                             ${files.length === 0 || (idleCount === 0 && errorCount === 0)
                                     ? 'bg-gray-200 dark:bg-white/5 text-gray-400 cursor-not-allowed shadow-none'
                                     : 'bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white shadow-teal-500/30 hover:-translate-y-0.5 active:translate-y-0'}`}
@@ -773,7 +787,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack }) => {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 8 }}
                                     onClick={downloadAll}
-                                    className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-black text-sm bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                                    className="w-full flex items-center justify-center gap-3 py-3.5 rounded-[5px] font-black text-sm bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all"
                                 >
                                     <Package className="w-5 h-5" /> <span className="hidden sm:inline">Download All ({doneCount}) as ZIP</span>
                                 </motion.button>

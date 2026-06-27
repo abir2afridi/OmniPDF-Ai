@@ -22,6 +22,7 @@ import {
     mergePDFsAdvanced,
     type AdvancedMergeFileInput,
 } from '../services/pdfService';
+import { PDFTool } from '../types';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ interface Toast {
 
 interface MergePDFProps {
     onBack?: () => void;
+    activeTool?: PDFTool;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -97,7 +99,7 @@ const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
         initial={{ opacity: 0, x: 60, scale: 0.9 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-xs text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-xs text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
                 : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
                     : 'bg-blue-50 dark:bg-blue-900/60 border-blue-200 dark:border-blue-500/30 text-blue-800 dark:text-blue-200'}`}
@@ -152,7 +154,7 @@ const FileCard = ({
             value={item}
             dragListener={false}
             dragControls={controls}
-            className="group bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-2xl hover:border-blue-200 dark:hover:border-blue-500/30 hover:shadow-md select-none overflow-hidden"
+            className="group bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-[5px] hover:border-blue-200 dark:hover:border-blue-500/30 hover:shadow-md select-none overflow-hidden"
             layout
             transition={{ type: 'spring', stiffness: 500, damping: 35, mass: 1 }}
         >
@@ -161,7 +163,7 @@ const FileCard = ({
                 {/* Drag handle */}
                 <button
                     onPointerDown={(e) => controls.start(e)}
-                    className="mt-2 p-1 rounded-lg cursor-grab active:cursor-grabbing text-gray-300 dark:text-white/20 hover:text-blue-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shrink-0"
+                    className="mt-2 p-1 rounded-[5px] cursor-grab active:cursor-grabbing text-gray-300 dark:text-white/20 hover:text-blue-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shrink-0"
                     title="Drag to reorder"
                 >
                     <GripVertical className="w-4 h-4" />
@@ -173,7 +175,7 @@ const FileCard = ({
                 </div>
 
                 {/* Thumbnail */}
-                <div className={`shrink-0 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center transition-all duration-300 ${showThumbs ? 'sm:w-14 w-10 h-[72px]' : 'w-9 h-10'}`}>
+                <div className={`shrink-0 rounded-[5px] overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center transition-all duration-300 ${showThumbs ? 'sm:w-14 w-10 h-[72px]' : 'w-9 h-10'}`}>
                     {item.loading ? (
                         <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
                     ) : item.thumbnail ? (
@@ -230,7 +232,7 @@ const FileCard = ({
                             value={item.pageRange}
                             onChange={(e) => onRangeChange(e.target.value)}
                             placeholder={item.pageCount ? `all (1–${item.pageCount})` : 'all'}
-                            className="flex-1 text-[10px] px-2 py-1 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 outline-none dark:text-gray-200 placeholder-gray-300 dark:placeholder-gray-600"
+                            className="flex-1 text-[10px] px-2 py-1 rounded-[5px] bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 outline-none dark:text-gray-200 placeholder-gray-300 dark:placeholder-gray-600"
                         />
                     </div>
                 </div>
@@ -241,7 +243,7 @@ const FileCard = ({
                     {totalPages > 0 && !item.loading && (
                         <button
                             onClick={onToggleExpand}
-                            className={`p-1.5 rounded-lg transition-colors ${expanded ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-300 dark:text-white/20 hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
+                            className={`p-1.5 rounded-[5px] transition-colors ${expanded ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-300 dark:text-white/20 hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
                             title={expanded ? 'Collapse pages' : 'View & select pages'}
                         >
                             <Layers className="w-4 h-4" />
@@ -250,7 +252,7 @@ const FileCard = ({
                     {/* Duplicate */}
                     <button
                         onClick={onDuplicate}
-                        className="hidden sm:flex p-1.5 rounded-lg text-gray-300 dark:text-white/20 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                        className="hidden sm:flex p-1.5 rounded-[5px] text-gray-300 dark:text-white/20 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                         title="Duplicate"
                     >
                         <Copy className="w-3.5 h-3.5" />
@@ -258,7 +260,7 @@ const FileCard = ({
                     {/* Remove */}
                     <button
                         onClick={onRemove}
-                        className="p-1.5 rounded-lg text-gray-300 dark:text-white/20 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        className="p-1.5 rounded-[5px] text-gray-300 dark:text-white/20 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         title="Remove"
                     >
                         <X className="w-4 h-4" />
@@ -285,11 +287,11 @@ const FileCard = ({
                                 <div className="flex items-center gap-1">
                                     <button
                                         onClick={onSelectAll}
-                                        className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                                        className="px-2 py-0.5 text-[9px] font-bold rounded-[5px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                                     >All</button>
                                     <button
                                         onClick={onSelectNone}
-                                        className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                                        className="px-2 py-0.5 text-[9px] font-bold rounded-[5px] bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                                     >None</button>
                                 </div>
                             </div>
@@ -303,7 +305,7 @@ const FileCard = ({
                                         <button
                                             key={pageNum}
                                             onClick={() => onTogglePage(pageNum)}
-                                            className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all duration-150 ${
+                                            className={`relative aspect-[3/4] rounded-[5px] overflow-hidden border-2 transition-all duration-150 ${
                                                 selected
                                                     ? 'border-blue-500 shadow-sm shadow-blue-500/30'
                                                     : 'border-gray-200 dark:border-white/10 opacity-45 hover:opacity-100'
@@ -341,7 +343,7 @@ const FileCard = ({
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
+export const MergePDF: React.FC<MergePDFProps> = ({ onBack, activeTool }) => {
     const [files, setFiles] = useState<MergeFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -617,7 +619,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                             animate={{ scale: 1, y: 0, opacity: 1 }}
                             exit={{ scale: 0.85, y: 20, opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                            className="bg-white dark:bg-[#1e1e2e] rounded-3xl shadow-2xl p-10 max-w-sm w-full text-center border border-gray-100 dark:border-white/10"
+                            className="bg-white dark:bg-[#1e1e2e] rounded-[5px] shadow-2xl p-10 max-w-sm w-full text-center border border-gray-100 dark:border-white/10"
                         >
                             {/* Circular progress */}
                             <div className="relative w-28 h-28 mx-auto mb-6">
@@ -670,12 +672,24 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500 dark:text-gray-400">
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500 dark:text-gray-400">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-                        <Layers className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-blue-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <Layers className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        )}
                     </div>
                     <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Merge PDF</h1>
@@ -692,20 +706,20 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                     <button
                         onClick={() => setShowThumbs(v => !v)}
                         title={showThumbs ? 'Hide thumbnails' : 'Show thumbnails'}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-400"
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-400"
                     >
                         {showThumbs ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
 
                     {files.length > 1 && (
                         <button onClick={sortAlphabetically}
-                            className="px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors flex items-center gap-1.5">
+                            className="px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors flex items-center gap-1.5">
                             <ArrowDownUp className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Sort</span>
                         </button>
                     )}
                     {files.length > 0 && (
                         <button onClick={clearAll}
-                            className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center gap-1.5">
+                            className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] transition-colors flex items-center gap-1.5">
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear All</span>
                         </button>
                     )}
@@ -726,7 +740,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                         onDragLeave={onDragLeave}
                         onDrop={onDrop}
                         onClick={() => uploadInputRef.current?.click()}
-                        className={`shrink-0 border-2 border-dashed rounded-2xl transition-all duration-200 cursor-pointer
+                        className={`shrink-0 border-2 border-dashed rounded-[5px] transition-all duration-200 cursor-pointer
                           ${isDragOver
                                 ? 'border-blue-500 bg-blue-500/5 scale-[0.99]'
                                 : files.length > 0
@@ -749,7 +763,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                 <motion.div
                                     animate={{ y: [0, -6, 0] }}
                                     transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
-                                    className="p-5 bg-blue-100 dark:bg-blue-900/30 rounded-2xl mb-4 shadow-lg shadow-blue-200 dark:shadow-blue-900/30"
+                                    className="p-5 bg-blue-100 dark:bg-blue-900/30 rounded-[5px] mb-4 shadow-lg shadow-blue-200 dark:shadow-blue-900/30"
                                 >
                                     <Upload className="w-10 h-10 text-blue-600 dark:text-blue-400" />
                                 </motion.div>
@@ -847,7 +861,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                     { label: 'Pages', value: allLoaded ? totalPages : '…' },
                                     { label: 'Size', value: formatBytes(totalSize) },
                                 ].map(stat => (
-                                    <div key={stat.label} className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-center">
+                                    <div key={stat.label} className="bg-gray-50 dark:bg-white/5 rounded-[5px] p-3 text-center">
                                         <p className="text-base font-black text-blue-600 dark:text-blue-400">{stat.value}</p>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">{stat.label}</p>
                                     </div>
@@ -862,7 +876,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">
                                 Output Filename
                             </label>
-                            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-blue-400 transition-all">
+                            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-blue-400 transition-all">
                                 <FileInput className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                                 <input
                                     type="text"
@@ -909,7 +923,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                                     <button
                                                         key={mode}
                                                         onClick={() => setMergeMode(mode)}
-                                                        className={`flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
+                                                        className={`flex-1 px-3 py-2 rounded-[5px] text-xs font-bold transition-all border ${
                                                             mergeMode === mode
                                                                 ? 'bg-blue-600 text-white border-blue-600 shadow-md'
                                                                 : 'bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/10 hover:border-blue-300'
@@ -927,7 +941,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                         </div>
 
                                         {/* Blank page toggles */}
-                                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10">
+                                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-[5px] border border-gray-100 dark:border-white/10">
                                             <div>
                                                 <p className="text-xs font-bold dark:text-gray-200 flex items-center gap-1.5">
                                                     <FilePlus2 className="w-3.5 h-3.5 text-blue-500" /> Blank page between files
@@ -947,7 +961,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                             </button>
                                         </div>
 
-                                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10">
+                                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-[5px] border border-gray-100 dark:border-white/10">
                                             <div>
                                                 <p className="text-xs font-bold dark:text-gray-200 flex items-center gap-1.5">
                                                     <FilePlus2 className="w-3.5 h-3.5 text-blue-500" /> Blank page at end
@@ -968,7 +982,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                         </div>
 
                                         {/* Page range help */}
-                                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-500/20 rounded-xl">
+                                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-500/20 rounded-[5px]">
                                             <p className="text-[10px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1.5 mb-1.5">
                                                 <Info className="w-3 h-3" /> Page Range Syntax
                                             </p>
@@ -981,7 +995,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                         </div>
 
                                         {/* Limits info */}
-                                        <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10 space-y-1">
+                                        <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-[5px] border border-gray-100 dark:border-white/10 space-y-1">
                                             <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                                                 <Zap className="w-3 h-3" /> Limits
                                             </p>
@@ -999,7 +1013,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                         </div>
 
                                         {/* Privacy note */}
-                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
+                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-[5px]">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                                             <p className="text-[10px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
                                                 All processing happens <strong>in your browser</strong>. Your files are never uploaded to any server.
@@ -1038,7 +1052,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                         <button
                             onClick={handleMerge}
                             disabled={isProcessing || files.length < 2 || hasError || !allLoaded}
-                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-sm transition-all duration-200 shadow-lg
+                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-[5px] font-black text-sm transition-all duration-200 shadow-lg
                               ${files.length < 2 || hasError || !allLoaded
                                     ? 'bg-gray-200 dark:bg-white/5 text-gray-400 cursor-not-allowed shadow-none'
                                     : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0'}`}
@@ -1084,7 +1098,7 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => window.open(mergedResult.blobUrl, '_blank')}
-                                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-[5px] font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors"
                                     >
                                         <Eye className="w-4 h-4" /> View PDF
                                     </button>
@@ -1095,13 +1109,13 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack }) => {
                                             a.download = mergedResult.filename;
                                             a.click();
                                         }}
-                                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 transition-colors"
+                                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-[5px] font-bold text-xs bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 transition-colors"
                                     >
                                         <Download className="w-4 h-4" /> Download
                                     </button>
                                     <button
                                         onClick={dismissResult}
-                                        className="px-3 py-3 rounded-xl font-bold text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                                        className="px-3 py-3 rounded-[5px] font-bold text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>

@@ -34,7 +34,7 @@ export const ESign: React.FC = () => {
             <div className="max-w-7xl mx-auto w-full relative z-10 space-y-8 flex-1 flex flex-col">
                 <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                     <div className="flex items-center gap-5">
-                        <div className="p-4 bg-brand-600 rounded-2xl shadow-xl shadow-brand-600/20 text-white">
+                        <div className="p-4 bg-brand-600 rounded-[5px] shadow-xl shadow-brand-600/20 text-white">
                             <UserCheck className="w-8 h-8" />
                         </div>
                         <div>
@@ -42,7 +42,7 @@ export const ESign: React.FC = () => {
                             <p className="text-gray-500 dark:text-gray-400 font-medium">Next-generation digital agreement orchestration</p>
                         </div>
                     </div>
-                    <button className="flex items-center gap-3 px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-2xl shadow-brand-500/30 transition-all active:scale-95 group">
+                    <button className="flex items-center gap-3 px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-[5px] text-sm font-black uppercase tracking-widest shadow-2xl shadow-brand-500/30 transition-all active:scale-95 group">
                         <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
                         New Signature Request
                     </button>
@@ -60,7 +60,7 @@ export const ESign: React.FC = () => {
                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                 <stat.icon className="w-16 h-16" />
                             </div>
-                            <div className={`w-12 h-12 ${stat.bg} rounded-2xl flex items-center justify-center mb-6 shadow-sm`}>
+                            <div className={`w-12 h-12 ${stat.bg} rounded-[5px] flex items-center justify-center mb-6 shadow-sm`}>
                                 <stat.icon className={`w-6 h-6 ${stat.color}`} />
                             </div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
@@ -76,14 +76,14 @@ export const ESign: React.FC = () => {
                             <input
                                 type="text"
                                 placeholder="Search by document name, email or status..."
-                                className="w-full pl-11 pr-4 py-3 bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                                className="w-full pl-11 pr-4 py-3 bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
                             />
                         </div>
                         <div className="flex items-center gap-3">
-                            <button className="flex items-center gap-2 px-4 py-2.5 bg-[#f3f1ea] dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 transition-all border border-gray-200 dark:border-white/10">
+                            <button className="flex items-center gap-2 px-4 py-2.5 bg-[#f3f1ea] dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-[5px] text-sm font-bold text-gray-600 dark:text-gray-300 transition-all border border-gray-200 dark:border-white/10">
                                 <Filter className="w-4 h-4" /> Filters
                             </button>
-                            <button className="flex items-center gap-2 px-4 py-2.5 bg-[#f3f1ea] dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 transition-all border border-gray-200 dark:border-white/10">
+                            <button className="flex items-center gap-2 px-4 py-2.5 bg-[#f3f1ea] dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-[5px] text-sm font-bold text-gray-600 dark:text-gray-300 transition-all border border-gray-200 dark:border-white/10">
                                 <History className="w-4 h-4" /> Export Audit Log
                             </button>
                         </div>
@@ -112,7 +112,7 @@ export const ESign: React.FC = () => {
                                     >
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center">
+                                                <div className="w-10 h-10 rounded-[5px] bg-brand-500/10 flex items-center justify-center">
                                                     <Mail className="w-5 h-5 text-brand-600" />
                                                 </div>
                                                 <span className="text-sm font-bold dark:text-white group-hover:text-brand-600 transition-colors">{doc.title}</span>
@@ -143,10 +143,10 @@ export const ESign: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-lg text-gray-400 hover:text-brand-500 transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-white/10" title="View Detail"><Eye className="w-4 h-4" /></button>
-                                                <button className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-lg text-gray-400 hover:text-brand-500 transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-white/10" title="Download Audit Trail"><Download className="w-4 h-4" /></button>
-                                                <button className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-lg text-gray-400 hover:text-brand-500 transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-white/10" title="Re-send Notification"><Share2 className="w-4 h-4" /></button>
-                                                <button className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-lg text-gray-400 hover:text-red-500 transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-white/10" title="Void Request"><AlertCircle className="w-4 h-4" /></button>
+                                                <button className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-[5px] text-gray-400 hover:text-brand-500 transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-white/10" title="View Detail"><Eye className="w-4 h-4" /></button>
+                                                <button className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-[5px] text-gray-400 hover:text-brand-500 transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-white/10" title="Download Audit Trail"><Download className="w-4 h-4" /></button>
+                                                <button className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-[5px] text-gray-400 hover:text-brand-500 transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-white/10" title="Re-send Notification"><Share2 className="w-4 h-4" /></button>
+                                                <button className="p-2 hover:bg-white dark:hover:bg-white/10 rounded-[5px] text-gray-400 hover:text-red-500 transition-all shadow-sm border border-transparent hover:border-gray-100 dark:hover:border-white/10" title="Void Request"><AlertCircle className="w-4 h-4" /></button>
                                             </div>
                                         </td>
                                     </motion.tr>
@@ -158,8 +158,8 @@ export const ESign: React.FC = () => {
                     <div className="p-4 bg-gray-50 dark:bg-white/5 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-gray-400">
                         <span>Showing 4 of 28 requests</span>
                         <div className="flex gap-2">
-                            <button className="px-3 py-1 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg hover:text-brand-500 transition-colors">Prev</button>
-                            <button className="px-3 py-1 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg hover:text-brand-500 transition-colors">Next</button>
+                            <button className="px-3 py-1 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] hover:text-brand-500 transition-colors">Prev</button>
+                            <button className="px-3 py-1 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] hover:text-brand-500 transition-colors">Next</button>
                         </div>
                     </div>
                 </main>

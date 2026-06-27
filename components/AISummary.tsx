@@ -15,13 +15,15 @@ import {
     Briefcase, ZapOff, Wand2, Loader2, Copy, Check, Download,
     X, ChevronDown, ChevronUp, Tag, Target, ArrowRight,
     RotateCcw, Clock, BookOpen, Info, AlertCircle, ArrowLeft,
+    PenLine, Cpu, Layers, Hash, Zap, Search, FolderOpen, CheckCircle2, Edit3,
+    BriefcaseBusiness, MessageSquare, GraduationCap, Wrench,
 } from 'lucide-react';
 import {
     summariseDocument, validateSummaryFile, downloadSummaryAsTxt, downloadSummaryAsPdf,
     cleanText,
     type SummaryOptions, type SummaryResult, type SummaryType, type SummaryTone, type SummaryLength,
 } from '../services/summaryService';
-import { AppView } from '../types';
+import { AppView, PDFTool } from '../types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,11 +48,11 @@ const SUMMARY_TYPES: { id: SummaryType; label: string; icon: any; desc: string }
     { id: 'custom', label: 'Custom Prompt', icon: Wand2, desc: 'Your own instructions' },
 ];
 
-const TONES: { id: SummaryTone; label: string; emoji: string }[] = [
-    { id: 'professional', label: 'Professional', emoji: '💼' },
-    { id: 'simple', label: 'Simple', emoji: '💬' },
-    { id: 'academic', label: 'Academic', emoji: '🎓' },
-    { id: 'technical', label: 'Technical', emoji: '⚙️' },
+const TONES: { id: SummaryTone; label: string; icon: any }[] = [
+    { id: 'professional', label: 'Professional', icon: BriefcaseBusiness },
+    { id: 'simple', label: 'Simple', icon: MessageSquare },
+    { id: 'academic', label: 'Academic', icon: GraduationCap },
+    { id: 'technical', label: 'Technical', icon: Wrench },
 ];
 
 const LENGTHS: { id: SummaryLength; label: string }[] = [
@@ -63,7 +65,7 @@ const LENGTHS: { id: SummaryLength; label: string }[] = [
 
 const ToastItem = ({ t, onDismiss }: { t: Toast; onDismiss: () => void }) => (
     <motion.div layout initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 60 }}
-        className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl max-w-sm text-sm font-medium border pointer-events-auto
+        className={`flex items-center gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border pointer-events-auto
       ${t.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 text-emerald-800 dark:text-emerald-200'
                 : t.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 text-red-800 dark:text-red-200'
                     : t.type === 'warn' ? 'bg-amber-50 dark:bg-amber-900/60 border-amber-200 text-amber-800 dark:text-amber-200'
@@ -75,7 +77,7 @@ const ToastItem = ({ t, onDismiss }: { t: Toast; onDismiss: () => void }) => (
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
+export const AISummary: React.FC<{ onBack?: () => void; activeTool?: PDFTool }> = ({ onBack, activeTool }) => {
     // Input
     const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -210,12 +212,24 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 lg:gap-4 min-w-0">
                         {onBack && (
-                            <button onClick={onBack} className="p-2 -ml-1 lg:-ml-2 hover:bg-amber-100 dark:hover:bg-white/5 rounded-xl transition-colors shrink-0">
+                            <button onClick={onBack} className="p-2 -ml-1 lg:-ml-2 hover:bg-amber-100 dark:hover:bg-white/5 rounded-[5px] transition-colors shrink-0">
                                 <ArrowLeft className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                             </button>
                         )}
-                        <div className="p-2 lg:p-3 bg-amber-100 dark:bg-amber-900/30 rounded-2xl shadow-sm shrink-0">
-                            <Sparkles className="w-5 h-5 lg:w-6 lg:h-6 text-amber-600 dark:text-amber-400" />
+                        <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-fuchsia-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1 shrink-0`}>
+                            {activeTool?.imageUrl ? (
+                                <>
+                                    <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                    {activeTool.toImageUrl && (
+                                        <>
+                                            <span className="text-[10px] font-bold text-gray-400">→</span>
+                                            <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                        </>
+                                    )}
+                                </>
+                            ) : (
+                                <Sparkles className="w-5 h-5 lg:w-6 lg:h-6 text-amber-600 dark:text-amber-400" />
+                            )}
                         </div>
                         <div className="min-w-0">
                             <h1 className="text-lg lg:text-2xl font-black dark:text-white tracking-tight">AI Summary</h1>
@@ -223,7 +237,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                         </div>
                     </div>
                     <button onClick={() => setShowHistory(v => !v)}
-                        className={`shrink-0 flex items-center gap-1.5 lg:gap-2 px-2.5 lg:px-3 py-1.5 rounded-xl text-[10px] lg:text-xs font-bold transition-colors border
+                        className={`shrink-0 flex items-center gap-1.5 lg:gap-2 px-2.5 lg:px-3 py-1.5 rounded-[5px] text-[10px] lg:text-xs font-bold transition-colors border
               ${showHistory ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300'
                                 : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500 hover:text-gray-700'}`}>
                         <Clock className="w-3 h-3 lg:w-3.5 lg:h-3.5" />
@@ -239,12 +253,12 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
                     {/* Input mode */}
                     <div className="p-5 border-b border-gray-100 dark:border-white/5">
-                        <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
+                        <div className="flex rounded-[5px] overflow-hidden border border-gray-200 dark:border-white/10">
                             {(['file', 'text'] as const).map(m => (
                                 <button key={m} onClick={() => { setInputMode(m); setResult(null); }}
                                     className={`flex-1 py-2 text-xs font-black uppercase tracking-widest transition-colors
                     ${inputMode === m ? 'bg-amber-500 text-white' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'}`}>
-                                    {m === 'file' ? '📄 File Upload' : '✏️  Paste Text'}
+                                    {m === 'file' ? <><Upload className="w-3 h-3" /> File Upload</> : <><Edit3 className="w-3 h-3" /> Paste Text</>}
                                 </button>
                             ))}
                         </div>
@@ -258,7 +272,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                                 onDragLeave={() => setIsDragOver(false)}
                                 onDrop={onFileDrop}
                                 onClick={() => fileInputRef.current?.click()}
-                                className={`flex flex-col items-center gap-3 p-6 border-2 border-dashed rounded-2xl cursor-pointer transition-all
+                                className={`flex flex-col items-center gap-3 p-6 border-2 border-dashed rounded-[5px] cursor-pointer transition-all
                   ${isDragOver ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20 scale-[0.98]'
                                         : uploadedFile ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/10'
                                             : 'border-gray-200 dark:border-white/10 hover:border-amber-300'}`}>
@@ -291,17 +305,20 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">AI Model</p>
                         <div className="flex gap-2">
                             {[
-                                { id: 'auto', label: '🤖 Auto Select', desc: currentModelInUse === 'auto' ? 'Auto (Free)' : 'Auto (Choosing best model)' },
-                                { id: 'openrouter/free', label: 'Best Free', desc: currentModelInUse === 'openrouter/free' ? 'AI (In Use)' : 'Primary - Fast & free' }
+                                { id: 'auto', label: 'Auto Select', icon: Cpu, desc: currentModelInUse === 'auto' ? 'Auto (Free)' : 'Auto (Choosing best model)' },
+                                { id: 'openrouter/free', label: 'Best Free', icon: Zap, desc: currentModelInUse === 'openrouter/free' ? 'AI (In Use)' : 'Primary - Fast & free' }
                             ].map(model => (
                                 <button key={model.id} onClick={() => setSelectedModel(model.id)}
-                                    className={`flex-1 py-2 px-3 text-[10px] font-black border transition-colors rounded-xl
+                                    className={`flex-1 py-2 px-3 text-[10px] font-black border transition-colors rounded-[5px]
                       ${selectedModel === model.id 
                           ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
                           : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'}`}>
-                                    <div className="text-left">
-                                        <div className="font-bold">{model.label}</div>
-                                        <div className="text-[9px] text-gray-400 mt-0.5">{model.desc}</div>
+                                    <div className="text-left flex items-center gap-2">
+                                        <model.icon className="w-3 h-3 shrink-0" />
+                                        <div>
+                                            <div className="font-bold">{model.label}</div>
+                                            <div className="text-[9px] text-gray-400 mt-0.5">{model.desc}</div>
+                                        </div>
                                     </div>
                                 </button>
                             ))}
@@ -313,7 +330,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                         <div className="p-5 border-b border-gray-100 dark:border-white/5">
                             <textarea value={pastedText} onChange={e => setPastedText(e.target.value)}
                                 placeholder="Paste document text here…"
-                                className="w-full h-36 resize-none text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-amber-400 dark:text-white font-medium"
+                                className="w-full h-36 resize-none text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] p-3 outline-none focus:ring-2 focus:ring-amber-400 dark:text-white font-medium"
                             />
                             <p className="text-[10px] text-gray-400 mt-1">{pastedText.length.toLocaleString()} chars</p>
                         </div>
@@ -326,7 +343,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                             {SUMMARY_TYPES.map(({ id, label, icon: Icon, desc }) => (
                                 <button key={id} onClick={() => setSummaryType(id)}
                                     title={desc}
-                                    className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[10px] font-black border transition-all
+                                    className={`flex items-center gap-1.5 px-2.5 py-2 rounded-[5px] text-[10px] font-black border transition-all
                     ${summaryType === id
                                             ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
                                             : 'text-gray-500 dark:text-gray-400 border-gray-100 dark:border-white/5 hover:border-amber-300 hover:text-amber-600'}`}>
@@ -340,7 +357,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                             <motion.textarea initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 72 }}
                                 value={customPrompt} onChange={e => setCustomPrompt(e.target.value)}
                                 placeholder="Describe exactly what you want…"
-                                className="mt-3 w-full resize-none text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-3 outline-none focus:ring-2 focus:ring-amber-400 dark:text-white" />
+                                className="mt-3 w-full resize-none text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] p-3 outline-none focus:ring-2 focus:ring-amber-400 dark:text-white" />
                         )}
                     </div>
 
@@ -348,13 +365,13 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     <div className="p-5 border-b border-gray-100 dark:border-white/5">
                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Tone</p>
                         <div className="flex gap-1.5 flex-wrap">
-                            {TONES.map(({ id, label, emoji }) => (
+                            {TONES.map(({ id, label, icon: Icon }) => (
                                 <button key={id} onClick={() => setTone(id)}
-                                    className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-black border transition-all
+                                    className={`flex items-center gap-1 px-3 py-1.5 rounded-[5px] text-[10px] font-black border transition-all
                     ${tone === id
                                             ? 'bg-amber-500 text-white border-amber-500'
                                             : 'text-gray-500 dark:text-gray-400 border-gray-100 dark:border-white/5 hover:border-amber-300'}`}>
-                                    {emoji} {label}
+                                    <Icon className="w-3 h-3" /> {label}
                                 </button>
                             ))}
                         </div>
@@ -363,7 +380,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     {/* Length */}
                     <div className="p-5 border-b border-gray-100 dark:border-white/5">
                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Length</p>
-                        <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
+                        <div className="flex rounded-[5px] overflow-hidden border border-gray-200 dark:border-white/10">
                             {LENGTHS.map(({ id, label }) => (
                                 <button key={id} onClick={() => setLength(id)}
                                     className={`flex-1 py-1.5 text-[10px] font-black transition-colors
@@ -378,13 +395,14 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     <div className="p-5 border-b border-gray-100 dark:border-white/5 space-y-2">
                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Extras</p>
                         {[
-                            [inclKeywords, setInclKeywords, '🏷️', 'Extract keywords'],
-                            [inclTopics, setInclTopics, '🗂️', 'Identify topics'],
-                            [inclActions, setInclActions, '✅', 'Action items'],
-                        ].map(([val, setter, icon, label]) => (
+                            [inclKeywords, setInclKeywords, Tag, 'Extract keywords'],
+                            [inclTopics, setInclTopics, FolderOpen, 'Identify topics'],
+                            [inclActions, setInclActions, CheckCircle2, 'Action items'],
+                        ].map(([val, setter, Icon, label]) => (
                             <label key={label as string} className="flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" checked={val as boolean} onChange={e => (setter as any)(e.target.checked)} className="accent-amber-500 w-3.5 h-3.5" />
-                                <span className="text-xs font-bold dark:text-white">{icon as string} {label as string}</span>
+                                <Icon className="w-3.5 h-3.5 text-amber-500" />
+                                <span className="text-xs font-bold dark:text-white">{label as string}</span>
                             </label>
                         ))}
                     </div>
@@ -393,7 +411,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     <div className="p-5">
                         <button onClick={handleGenerate}
                             disabled={isProcessing || (!uploadedFile && !pastedText.trim())}
-                            className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-white font-black rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition-all text-sm">
+                            className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-white font-black rounded-[5px] flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition-all text-sm">
                             {isProcessing
                                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</>
                                 : <><Sparkles className="w-4 h-4" /> Generate Summary</>}
@@ -429,7 +447,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                                         <p className="text-xs text-gray-400 text-center py-8">No history yet.</p>
                                     ) : history.map(entry => (
                                         <button key={entry.id} onClick={() => { setResult(entry.result); setShowHistory(false); }}
-                                            className="w-full text-left p-3 bg-gray-50 dark:bg-white/5 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl border border-gray-100 dark:border-white/5 transition-colors">
+                                            className="w-full text-left p-3 bg-gray-50 dark:bg-white/5 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-[5px] border border-gray-100 dark:border-white/5 transition-colors">
                                             <div className="flex items-center justify-between mb-1">
                                                 <p className="text-[11px] font-black dark:text-white truncate max-w-[200px]">{entry.filename}</p>
                                                 <span className="text-[9px] text-gray-400">{new Date(entry.timestamp).toLocaleTimeString()}</span>
@@ -455,7 +473,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                             <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                                 className="flex-1 flex flex-col items-center justify-center gap-4 lg:gap-6 px-4 lg:px-8 py-4 lg:py-0">
                                 <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 4 }}
-                                    className="p-4 lg:p-6 bg-amber-100 dark:bg-amber-900/30 rounded-3xl shadow-xl">
+                                    className="p-4 lg:p-6 bg-amber-100 dark:bg-amber-900/30 rounded-[5px] shadow-xl">
                                     <Sparkles className="w-8 h-8 lg:w-12 lg:h-12 text-amber-500" />
                                 </motion.div>
                                 <div className="text-center max-w-md">
@@ -466,12 +484,15 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
                                     {[
-                                        ['📄 PDF + OCR', 'Text extraction with OCR fallback for scanned PDFs'],
-                                        ['🧩 Smart Chunking', 'Large docs split into context-aware windows'],
-                                        ['🤖 7 Summary Types', 'TL;DR, Bullets, Executive, Insights and more'],
-                                    ].map(([t, d]) => (
-                                        <div key={t} className="p-4 bg-white dark:bg-[#21212f] rounded-2xl border border-gray-100 dark:border-white/5 text-center shadow-sm">
-                                            <p className="text-xs font-black dark:text-white mb-1">{t}</p>
+                                        [Search, 'PDF + OCR', 'Text extraction with OCR fallback for scanned PDFs'],
+                                        [Layers, 'Smart Chunking', 'Large docs split into context-aware windows'],
+                                        [List, '7 Summary Types', 'TL;DR, Bullets, Executive, Insights and more'],
+                                    ].map(([Icon, t, d]) => (
+                                        <div key={t as string} className="p-4 bg-white dark:bg-[#21212f] rounded-[5px] border border-gray-100 dark:border-white/5 text-center shadow-sm">
+                                            <div className="flex items-center justify-center gap-1.5 mb-1">
+                                                <Icon className="w-3.5 h-3.5 text-amber-500" />
+                                                <p className="text-xs font-black dark:text-white">{t as string}</p>
+                                            </div>
                                             <p className="text-[10px] text-gray-400 leading-tight">{d}</p>
                                         </div>
                                     ))}
@@ -508,43 +529,46 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                                 className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 lg:space-y-5">
 
                                 {/* Stats bar */}
-                                <div className="flex flex-wrap items-center gap-3 p-4 bg-white dark:bg-[#21212f] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
-                                    {[
-                                        [`📄 ${result.pageCount} page${result.pageCount !== 1 ? 's' : ''}`, 'Source'],
-                                        [`🧩 ${result.chunkCount} chunk${result.chunkCount !== 1 ? 's' : ''}`, 'Processed'],
-                                        [`📝 ${result.wordCount} words`, 'Summary'],
-                                        [`⚡ ${(result.processingMs / 1000).toFixed(1)}s`, 'Time'],
-                                        [`🔍 ${result.extractMethod.toUpperCase()}`, 'Method'],
-                                    ].map(([val, lbl]) => (
-                                        <div key={lbl} className="flex flex-col">
-                                            <span className="text-[10px] font-black dark:text-white">{val}</span>
-                                            <span className="text-[9px] text-gray-400 uppercase tracking-widest">{lbl}</span>
+                                <div className="flex flex-wrap items-center gap-3 p-4 bg-white dark:bg-[#21212f] rounded-[5px] border border-gray-100 dark:border-white/5 shadow-sm">
+                                    {[ 
+                                        { icon: FileText, val: `${result.pageCount} page${result.pageCount !== 1 ? 's' : ''}`, lbl: 'Source' },
+                                        { icon: Layers, val: `${result.chunkCount} chunk${result.chunkCount !== 1 ? 's' : ''}`, lbl: 'Processed' },
+                                        { icon: Hash, val: `${result.wordCount} words`, lbl: 'Summary' },
+                                        { icon: Zap, val: `${(result.processingMs / 1000).toFixed(1)}s`, lbl: 'Time' },
+                                        { icon: Search, val: result.extractMethod.toUpperCase(), lbl: 'Method' },
+                                    ].map(({ icon: Icon, val, lbl }) => (
+                                        <div key={lbl} className="flex items-center gap-2">
+                                            <Icon className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black dark:text-white">{val}</span>
+                                                <span className="text-[9px] text-gray-400 uppercase tracking-widest">{lbl}</span>
+                                            </div>
                                         </div>
                                     ))}
 
                                     <div className="ml-auto flex items-center gap-2">
                                         <button onClick={() => copyToClipboard(result.summary)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 transition-colors">
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-[5px] text-xs font-bold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 transition-colors">
                                             {copiedMain ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                                             {copiedMain ? 'Copied!' : 'Copy'}
                                         </button>
                                         <button onClick={() => downloadSummaryAsTxt(result)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-xs font-bold transition-colors">
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-white rounded-[5px] text-xs font-bold transition-colors">
                                             <Download className="w-3.5 h-3.5" /> TXT
                                         </button>
                                         <button onClick={() => downloadSummaryAsPdf(result)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white rounded-xl text-xs font-bold transition-colors">
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white rounded-[5px] text-xs font-bold transition-colors">
                                             <Download className="w-3.5 h-3.5" /> PDF
                                         </button>
                                         <button onClick={() => setResult(null)}
-                                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-colors" title="Clear">
+                                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-white/10 rounded-[5px] transition-colors" title="Clear">
                                             <RotateCcw className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 </div>
 
                                 {/* Main summary */}
-                                <div className="bg-white dark:bg-[#21212f] rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden shadow-sm">
+                                <div className="bg-white dark:bg-[#21212f] rounded-[5px] border border-gray-100 dark:border-white/5 overflow-hidden shadow-sm">
                                     <div className="flex items-center gap-2 px-5 py-3.5 border-b border-gray-100 dark:border-white/5 bg-amber-50/50 dark:bg-amber-900/10">
                                         <Sparkles className="w-4 h-4 text-amber-500" />
                                         <p className="text-xs font-black text-amber-700 dark:text-amber-300 uppercase tracking-widest">
@@ -568,7 +592,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
                                 {/* Topics */}
                                 {result.topics && result.topics.length > 0 && (
-                                    <div className="bg-white dark:bg-[#21212f] rounded-2xl border border-gray-100 dark:border-white/5 p-5 shadow-sm">
+                                    <div className="bg-white dark:bg-[#21212f] rounded-[5px] border border-gray-100 dark:border-white/5 p-5 shadow-sm">
                                         <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                             <Target className="w-3.5 h-3.5 text-amber-500" /> Key Topics
                                         </p>
@@ -584,7 +608,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
                                 {/* Keywords */}
                                 {result.keywords && result.keywords.length > 0 && (
-                                    <div className="bg-white dark:bg-[#21212f] rounded-2xl border border-gray-100 dark:border-white/5 p-5 shadow-sm">
+                                    <div className="bg-white dark:bg-[#21212f] rounded-[5px] border border-gray-100 dark:border-white/5 p-5 shadow-sm">
                                         <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                             <Tag className="w-3.5 h-3.5 text-blue-500" /> Keywords
                                         </p>
@@ -600,7 +624,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
                                 {/* Action items */}
                                 {result.actionItems && result.actionItems.length > 0 && result.actionItems[0] !== 'No explicit action items found.' && (
-                                    <div className="bg-white dark:bg-[#21212f] rounded-2xl border border-gray-100 dark:border-white/5 p-5 shadow-sm">
+                                    <div className="bg-white dark:bg-[#21212f] rounded-[5px] border border-gray-100 dark:border-white/5 p-5 shadow-sm">
                                         <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                             <ArrowRight className="w-3.5 h-3.5 text-emerald-500" /> Action Items
                                         </p>
@@ -616,7 +640,7 @@ export const AISummary: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                                 )}
 
                                 {/* Info box */}
-                                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-500/20 rounded-2xl">
+                                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-500/20 rounded-[5px]">
                                     <p className="text-[10px] text-amber-700 dark:text-amber-300 leading-relaxed">
                                         <strong>AI Note:</strong> This summary is generated by AI and may not capture every nuance. Always review against the original document for critical decisions. The AI is instructed to only use information present in your document and not hallucinate facts.
                                     </p>

@@ -145,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setView(AppView.DASHBOARD)}
-              className="w-14 h-14 rounded-xl cursor-pointer relative overflow-hidden flex items-center justify-center p-0"
+              className="w-14 h-14 rounded-[5px] cursor-pointer relative overflow-hidden flex items-center justify-center p-0"
             >
               <DotLottieReact
                 src="https://lottie.host/daa1f232-6d5d-4fe3-8f24-cfce746869a9/aQCuSzLOPd.lottie"
@@ -203,7 +203,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                     }
                     if (window.innerWidth < 1024 && onClose && !isUserFeatures && !isSupport) onClose();
                   }}
-                  className={`group relative flex items-center w-full h-11 rounded-xl transition-all duration-300
+                  className={`group relative flex items-center w-full h-11 rounded-[5px] transition-all duration-300
                     ${isMainActive
                       ? 'text-white bg-white/15 shadow-inner'
                       : 'text-white/50 hover:text-white hover:bg-white/5'
@@ -261,7 +261,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                               handleSafeNavigation(sub.id);
                               if (window.innerWidth < 1024 && onClose) onClose();
                             }}
-                            className={`flex items-center w-full h-10 lg:h-9 pl-4 pr-4 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200 gap-3
+                            className={`flex items-center w-full h-10 lg:h-9 pl-4 pr-4 rounded-[5px] text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200 gap-3
                               ${isSubActive
                                 ? 'text-brand-400 bg-white/5'
                                 : 'text-white/40 hover:text-white hover:bg-white/5'}`}
@@ -295,7 +295,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                               handleSafeNavigation(sub.id);
                               if (window.innerWidth < 1024 && onClose) onClose();
                             }}
-                            className={`flex items-center w-full h-10 lg:h-9 pl-4 pr-4 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200 gap-3
+                            className={`flex items-center w-full h-10 lg:h-9 pl-4 pr-4 rounded-[5px] text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-200 gap-3
                               ${isSubActive
                                 ? 'text-brand-400 bg-white/5'
                                 : 'text-white/40 hover:text-white hover:bg-white/5'}`}
@@ -322,8 +322,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
           {user ? (
             <div className={`relative group flex items-center h-14`}>
               <div className="shrink-0 w-10 flex justify-center">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-500 to-indigo-500 p-[1.5px] shadow-xl">
-                  <div className="w-full h-full rounded-xl bg-[#210c6e] overflow-hidden flex items-center justify-center font-bold text-white uppercase text-xs">
+                <div className="w-9 h-9 rounded-[5px] bg-gradient-to-tr from-brand-500 to-indigo-500 p-[1.5px] shadow-xl">
+                  <div className="w-full h-full rounded-[5px] bg-[#210c6e] overflow-hidden flex items-center justify-center font-bold text-white uppercase text-xs">
                     {(user.user_metadata?.avatar_url || user.user_metadata?.picture) ? (
                       <img
                         src={user.user_metadata.avatar_url || user.user_metadata.picture}
@@ -360,7 +360,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
                     exit={{ opacity: 0 }}
                     onClick={onLogout}
                     title="Log Out"
-                    className="p-1.5 ml-1 hover:bg-red-500/10 text-white/40 hover:text-red-400 rounded-lg transition-colors shrink-0"
+                    className="p-1.5 ml-1 hover:bg-red-500/10 text-white/40 hover:text-red-400 rounded-[5px] transition-colors shrink-0"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                   </motion.button>

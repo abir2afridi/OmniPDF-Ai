@@ -110,7 +110,7 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
 
     const renderToast = (t: Toast) => (
         <motion.div key={t.id} initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 50, opacity: 0 }}
-            className={`px-4 py-2.5 rounded-lg shadow-lg text-white text-sm flex items-center gap-2 
+            className={`px-4 py-2.5 rounded-[5px] shadow-lg text-white text-sm flex items-center gap-2 
                 ${t.type === 'error' ? 'bg-red-500' : t.type === 'success' ? 'bg-emerald-500' : 'bg-blue-500'}`}>
             {t.type === 'error' ? <AlertCircle size={16} /> : t.type === 'success' ? <Check size={16} /> : <Info size={16} />}
             {t.msg}
@@ -129,12 +129,12 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
             {/* Header */}
             <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 backdrop-blur-md shrink-0">
                 {onBack && (
-                    <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <button onClick={onBack} className="p-1.5 rounded-[5px] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                         <ArrowLeft size={18} className="text-gray-500" />
                     </button>
                 )}
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-[5px] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                         <Languages size={18} className="text-white" />
                     </div>
                     <div>
@@ -157,7 +157,7 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
                                 <label className="text-xs text-gray-500 mb-1.5 block">Source Language</label>
                                 <div className="relative group">
                                     <select value={sourceLang} onChange={e => setSourceLang(e.target.value)}
-                                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm appearance-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
+                                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[5px] px-4 py-2.5 text-sm appearance-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
                                         {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
                                     </select>
                                     <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -174,7 +174,7 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
                                 <label className="text-xs text-gray-500 mb-1.5 block">Target Language</label>
                                 <div className="relative group">
                                     <select value={targetLang} onChange={e => setTargetLang(e.target.value)}
-                                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm appearance-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
+                                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[5px] px-4 py-2.5 text-sm appearance-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
                                         {LANGUAGES.filter(l => l.code !== 'auto').map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
                                     </select>
                                     <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -187,7 +187,7 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
                                     <span className="text-[10px] text-gray-400 font-normal">Optional</span>
                                 </label>
                                 <input type="text" placeholder="e.g. 1-5, 8" value={pageRange} onChange={e => setPageRange(e.target.value)}
-                                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
+                                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[5px] px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
                                 <p className="text-[10px] text-gray-400 mt-1 px-1">Leave empty for all pages.</p>
                             </div>
                         </div>
@@ -196,13 +196,13 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
                     <div className="mt-auto">
                         {phase === 'config' ? (
                             <button onClick={startTranslation}
-                                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl py-3 text-sm font-bold shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all">
+                                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-[5px] py-3 text-sm font-bold shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all">
                                 <Sparkles size={16} />
                                 Start Translation
                             </button>
                         ) : (
                             <button onClick={reset}
-                                className="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl py-3 text-sm font-bold flex items-center justify-center gap-2 transition-all">
+                                className="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-[5px] py-3 text-sm font-bold flex items-center justify-center gap-2 transition-all">
                                 <RefreshCw size={16} />
                                 New Document
                             </button>
@@ -219,7 +219,7 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
                             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
                                 className="w-full max-w-xl text-center">
                                 <div className="mb-8">
-                                    <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl text-white mb-6">
+                                    <div className="w-20 h-20 mx-auto rounded-[5px] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl text-white mb-6">
                                         <Languages size={36} />
                                     </div>
                                     <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-3">AI PDF Translator</h2>
@@ -227,7 +227,7 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
                                 </div>
 
                                 <label onDragOver={e => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={onDrop}
-                                    className={`relative block border-2 border-dashed rounded-3xl p-12 cursor-pointer transition-all duration-300 group
+                                    className={`relative block border-2 border-dashed rounded-[5px] p-12 cursor-pointer transition-all duration-300 group
                                         ${isDragOver
                                             ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20 scale-[1.02]'
                                             : 'border-gray-200 dark:border-gray-800 hover:border-indigo-400'}`}>
@@ -277,12 +277,12 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <button onClick={copyText}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-sm font-semibold hover:bg-gray-50 transition-all">
+                                            className="flex items-center gap-2 px-4 py-2 rounded-[5px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-sm font-semibold hover:bg-gray-50 transition-all">
                                             {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
                                             {copied ? 'Copied!' : 'Copy Text'}
                                         </button>
                                         <button onClick={downloadPdf}
-                                            className="flex items-center gap-2 px-6 py-2 rounded-xl bg-indigo-600 text-white text-sm font-bold shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 transition-all">
+                                            className="flex items-center gap-2 px-6 py-2 rounded-[5px] bg-indigo-600 text-white text-sm font-bold shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 transition-all">
                                             <FileDown size={16} />
                                             Download PDF
                                         </button>
@@ -291,7 +291,7 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
 
                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden min-h-0">
                                     {/* Original Preview */}
-                                    <div className="flex flex-col bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+                                    <div className="flex flex-col bg-white dark:bg-gray-900 rounded-[5px] border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
                                         <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                                             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Original Text</span>
                                             <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] text-gray-500 font-bold uppercase">Source</span>
@@ -308,7 +308,7 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
                                     </div>
 
                                     {/* Translated Preview */}
-                                    <div className="flex flex-col bg-white dark:bg-gray-900 rounded-3xl border border-indigo-100 dark:border-indigo-900/30 overflow-hidden shadow-lg shadow-indigo-500/5">
+                                    <div className="flex flex-col bg-white dark:bg-gray-900 rounded-[5px] border border-indigo-100 dark:border-indigo-900/30 overflow-hidden shadow-lg shadow-indigo-500/5">
                                         <div className="px-5 py-3 border-b border-indigo-50 dark:border-indigo-900/30 bg-indigo-50/30 dark:bg-indigo-950/20 flex items-center justify-between">
                                             <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Translated Text</span>
                                             <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-[10px] text-white font-bold uppercase">{targetLang}</span>
@@ -331,38 +331,38 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
                         {phase === 'config' && file && (
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
                                 className="w-full max-w-lg">
-                                <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-8 shadow-xl">
+                                <div className="bg-white dark:bg-gray-900 rounded-[5px] border border-gray-200 dark:border-gray-800 p-8 shadow-xl">
                                     <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-500">
+                                        <div className="w-12 h-12 rounded-[5px] bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-500">
                                             <FileText size={24} />
                                         </div>
                                         <div>
                                             <h3 className="font-bold dark:text-white truncate max-w-[200px]">{file.name}</h3>
                                             <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB • Ready to translate</p>
                                         </div>
-                                        <button onClick={reset} className="ml-auto p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors">
+                                        <button onClick={reset} className="ml-auto p-2 rounded-[5px] hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors">
                                             <X size={20} />
                                         </button>
                                     </div>
 
-                                    <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 flex gap-3 text-amber-700 dark:text-amber-400 text-xs">
+                                    <div className="p-4 rounded-[5px] bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 flex gap-3 text-amber-700 dark:text-amber-400 text-xs">
                                         <Settings size={18} className="shrink-0 mt-0.5" />
                                         <p>Adjust translation settings in the sidebar to your preference, then click "Start Translation".</p>
                                     </div>
 
                                     <div className="mt-8 grid grid-cols-2 gap-4">
-                                        <div className="p-4 rounded-2xl border border-gray-100 dark:border-gray-800 text-center">
+                                        <div className="p-4 rounded-[5px] border border-gray-100 dark:border-gray-800 text-center">
                                             <div className="text-xs text-gray-400 mb-1">Source</div>
                                             <div className="font-bold dark:text-gray-200">{LANGUAGES.find(l => l.code === sourceLang)?.name}</div>
                                         </div>
-                                        <div className="p-4 rounded-2xl border border-gray-100 dark:border-gray-800 text-center">
+                                        <div className="p-4 rounded-[5px] border border-gray-100 dark:border-gray-800 text-center">
                                             <div className="text-xs text-gray-400 mb-1">Target</div>
                                             <div className="font-bold text-indigo-500">{LANGUAGES.find(l => l.code === targetLang)?.name}</div>
                                         </div>
                                     </div>
 
                                     <button onClick={startTranslation}
-                                        className="w-full mt-8 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl py-4 font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2">
+                                        className="w-full mt-8 bg-indigo-600 hover:bg-indigo-500 text-white rounded-[5px] py-4 font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2">
                                         <Sparkles size={18} />
                                         Translate Document
                                     </button>

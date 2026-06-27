@@ -1973,7 +1973,7 @@ const App: React.FC = () => {
           {/* Mobile Header */}
           <header className={`lg:hidden h-16 ${theme === 'dark' ? 'bg-slate-900/60' : 'bg-[#f3f1ea]/80'} glass-morphism flex items-center justify-between px-6 z-[80] border-b border-white/10 shrink-0`}>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
+              <div className="w-8 h-8 rounded-[5px] overflow-hidden flex items-center justify-center">
                 <DotLottieReact
                   src="https://lottie.host/daa1f232-6d5d-4fe3-8f24-cfce746869a9/aQCuSzLOPd.lottie"
                   loop
@@ -1986,7 +1986,7 @@ const App: React.FC = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="group relative flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-brand-500/50 transition-all duration-300 overflow-hidden"
+                className="group relative flex items-center justify-center w-8 h-8 rounded-[5px] bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-brand-500/50 transition-all duration-300 overflow-hidden"
                 title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               >
                 <AnimatePresence mode="wait">
@@ -2015,7 +2015,7 @@ const App: React.FC = () => {
               </button>
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                className="p-2 hover:bg-white/10 rounded-[5px] transition-colors"
               >
                 <Menu className="w-6 h-6" />
               </button>
@@ -2028,71 +2028,71 @@ const App: React.FC = () => {
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'merge' && (
-              <MergePDF onBack={() => handleToolSelect(null)} />
+              <MergePDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'split' && (
-              <SplitPDF onBack={() => handleToolSelect(null)} />
+              <SplitPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'delete-pages' && (
-              <DeletePages onBack={() => handleToolSelect(null)} />
+              <DeletePages onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'rotate' && (
-              <RotatePDF onBack={() => handleToolSelect(null)} />
+              <RotatePDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'word-to-pdf' && (
-              <WordToPDF onBack={() => handleToolSelect(null)} />
+              <WordToPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'excel-to-pdf' && (
-              <ExcelToPDF onBack={() => handleToolSelect(null)} />
+              <ExcelToPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'ppt-to-pdf' && (
-              <PowerPointToPDF onBack={() => handleToolSelect(null)} />
+              <PowerPointToPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'pdf-to-jpg' && (
-              <PDFToJPG onBack={() => handleToolSelect(null)} />
+              <PDFToJPG onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'jpg-to-pdf' && (
-              <JPGToPDF onBack={() => handleToolSelect(null)} />
+              <JPGToPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'pdf-to-word' && (
-              <PDFToWord onBack={() => handleToolSelect(null)} />
+              <PDFToWord onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'pdf-to-excel' && (
-              <PDFToExcel onBack={() => handleToolSelect(null)} />
+              <PDFToExcel onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'pdf-to-ppt' && (
-              <PDFToPPT onBack={() => handleToolSelect(null)} />
+              <PDFToPPT onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'extract-images' && (
-              <ExtractImages onBack={() => handleToolSelect(null)} />
+              <ExtractImages onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'compress' && (
-              <CompressPDF onBack={() => handleToolSelect(null)} />
+              <CompressPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'ocr' && (
-              <OCRPDF onBack={() => handleToolSelect(null)} />
+              <OCRPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id === 'protect' && (
-              <ProtectPDF onBack={() => handleToolSelect(null)} />
+              <ProtectPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && (activeTool?.id === 'sign' || activeTool?.id === 'esign') && (
-              <SignPDF onBack={() => handleToolSelect(null)} />
+              <SignPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.WORKSPACE && activeTool?.id !== 'merge' && activeTool?.id !== 'split' && activeTool?.id !== 'delete-pages' && activeTool?.id !== 'rotate' && activeTool?.id !== 'word-to-pdf' && activeTool?.id !== 'excel-to-pdf' && activeTool?.id !== 'ppt-to-pdf' && activeTool?.id !== 'pdf-to-jpg' && activeTool?.id !== 'jpg-to-pdf' && activeTool?.id !== 'pdf-to-word' && activeTool?.id !== 'pdf-to-excel' && activeTool?.id !== 'pdf-to-ppt' && activeTool?.id !== 'extract-images' && activeTool?.id !== 'compress' && activeTool?.id !== 'ocr' && activeTool?.id !== 'protect' && activeTool?.id !== 'sign' && activeTool?.id !== 'esign' && (
@@ -2139,7 +2139,7 @@ const App: React.FC = () => {
                       <motion.div
                         initial={{ scale: 0.9, y: 20 }}
                         animate={{ scale: 1, y: 0 }}
-                        className="bg-white dark:bg-[#1e1e2e] p-10 rounded-3xl shadow-2xl max-w-md w-full text-center border border-white/10"
+                        className="bg-white dark:bg-[#1e1e2e] p-10 rounded-[5px] shadow-2xl max-w-md w-full text-center border border-white/10"
                       >
                         <div className="relative w-24 h-24 mx-auto mb-8">
                           <svg className="w-full h-full" viewBox="0 0 100 100">
@@ -2176,7 +2176,7 @@ const App: React.FC = () => {
             )}
 
             {currentView === AppView.AI_SUMMARY && (
-              <AISummary onBack={() => handleToolSelect(null)} />
+              <AISummary onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
             {currentView === AppView.ANALYTICS && (
@@ -2207,7 +2207,7 @@ const App: React.FC = () => {
       </div>
 
       {loginToast && (
-        <div className="fixed bottom-6 right-6 z-[9999] bg-green-600 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-semibold animate-slide-up flex items-center gap-2">
+        <div className="fixed bottom-6 right-6 z-[9999] bg-green-600 text-white px-5 py-3 rounded-[5px] shadow-2xl text-sm font-semibold animate-slide-up flex items-center gap-2">
           <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
           {loginToast}
         </div>

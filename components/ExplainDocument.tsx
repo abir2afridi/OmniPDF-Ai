@@ -175,7 +175,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                     animate={{ opacity: 1, y: 0 }}
                     className="w-full max-w-2xl text-center"
                 >
-                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-indigo-500/20">
+                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[5px] flex items-center justify-center mb-6 shadow-xl shadow-indigo-500/20">
                         <BookOpen size={40} className="text-white" />
                     </div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Explain Document</h1>
@@ -185,7 +185,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
 
                     <label className="group relative block cursor-pointer">
                         <input type="file" className="hidden" accept=".pdf,.docx,.txt" onChange={handleUpload} />
-                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-800 rounded-2xl p-12 transition-all group-hover:border-indigo-500 group-hover:bg-indigo-50/30 dark:group-hover:bg-indigo-900/10">
+                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-800 rounded-[5px] p-12 transition-all group-hover:border-indigo-500 group-hover:bg-indigo-50/30 dark:group-hover:bg-indigo-900/10">
                             <Sparkles className="w-12 h-12 mx-auto mb-4 text-gray-400 group-hover:text-indigo-500 transition-colors" />
                             <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">Drop document or click to browse</p>
                             <p className="text-sm text-gray-400 mt-2">Supports PDF, DOCX, TXT (up to 50MB)</p>
@@ -198,7 +198,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                             { icon: <GraduationCap className="text-blue-500" />, title: 'Student', desc: 'Detailed study' },
                             { icon: <Briefcase className="text-purple-500" />, title: 'Pro', desc: 'Elite analysis' },
                         ].map((m, i) => (
-                            <div key={i} className="p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-left">
+                            <div key={i} className="p-4 rounded-[5px] bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-left">
                                 <div className="mb-2">{m.icon}</div>
                                 <div className="font-bold text-sm text-gray-900 dark:text-white">{m.title}</div>
                                 <div className="text-[10px] text-gray-500">{m.desc}</div>
@@ -243,11 +243,11 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
         <div className="flex-1 flex flex-col h-full bg-white dark:bg-[#0a0a0f]">
             {/* Toolbar */}
             <header className="h-16 border-b border-gray-100 dark:border-gray-800/50 flex items-center px-4 gap-4 sticky top-0 bg-white/80 dark:bg-[#0a0a0f]/80 backdrop-blur-md z-10">
-                <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-[5px] transition-colors">
                     <ArrowLeft size={20} className="text-gray-500" />
                 </button>
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center text-white">
+                    <div className="w-8 h-8 rounded-[5px] bg-indigo-500 flex items-center justify-center text-white">
                         <FileText size={16} />
                     </div>
                     <div>
@@ -258,12 +258,12 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
 
                 <div className="flex-1" />
 
-                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 p-1 rounded-xl">
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 p-1 rounded-[5px]">
                     {(['simple', 'student', 'professional'] as ExplanationMode[]).map((m) => (
                         <button
                             key={m}
                             onClick={() => handleModeChange(m)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mode === m
+                            className={`px-3 py-1.5 rounded-[5px] text-xs font-semibold transition-all ${mode === m
                                 ? 'bg-white dark:bg-gray-800 text-indigo-500 shadow-sm'
                                 : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
                                 }`}
@@ -275,7 +275,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
 
                 <button
                     onClick={exportToPDF}
-                    className="p-2 text-gray-500 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
+                    className="p-2 text-gray-500 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-[5px] transition-all"
                     title="Export explanation as PDF"
                 >
                     <Download size={18} />
@@ -292,7 +292,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                                     <span className="text-[10px] font-mono text-gray-300 dark:text-gray-700">PAGE {page.number}</span>
                                     <button
                                         onClick={() => { setSelectedText(page.text); runQuickExplain('page'); }}
-                                        className="p-1.5 rounded-md bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-400 hover:text-indigo-500 hover:border-indigo-500 transition-all opacity-0 group-hover:opacity-100"
+                                        className="p-1.5 rounded-[5px] bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-400 hover:text-indigo-500 hover:border-indigo-500 transition-all opacity-0 group-hover:opacity-100"
                                         title="Summarize this page"
                                     >
                                         <Zap size={10} />
@@ -312,18 +312,18 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                                 initial={{ opacity: 0, scale: 0.9, y: 10 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.8 }}
-                                className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl p-2 flex gap-1 z-50 ring-1 ring-black/5"
+                                className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-[5px] shadow-2xl p-2 flex gap-1 z-50 ring-1 ring-black/5"
                             >
                                 <button
                                     onClick={() => runQuickExplain('paragraph')}
-                                    className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl transition-all"
+                                    className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-[5px] transition-all"
                                 >
                                     <Sparkles size={16} />
                                     <span className="text-xs font-bold">Explain This</span>
                                 </button>
                                 <button
                                     onClick={() => runQuickExplain('takeaways')}
-                                    className="flex items-center gap-2 px-4 py-2 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl transition-all"
+                                    className="flex items-center gap-2 px-4 py-2 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-[5px] transition-all"
                                 >
                                     <ListChecks size={16} />
                                     <span className="text-xs font-bold">Takeaways</span>
@@ -351,7 +351,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                             <button
                                 key={t.id}
                                 onClick={() => setActiveTab(t.id as any)}
-                                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === t.id
+                                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[5px] text-xs font-bold transition-all ${activeTab === t.id
                                     ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
                                     : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'
                                     }`}
@@ -374,7 +374,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                                 >
                                     {/* Quick Result Shadow */}
                                     {quickResult && (
-                                        <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 relative overflow-hidden group">
+                                        <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-[5px] border border-indigo-100 dark:border-indigo-800/50 relative overflow-hidden group">
                                             <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button onClick={() => setQuickResult(null)} className="text-indigo-400 hover:text-indigo-600"><Check size={14} /></button>
                                             </div>
@@ -398,7 +398,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                                                 {isSpeaking ? <Pause size={12} /> : <Play size={12} />}
                                             </button>
                                         </div>
-                                        <div className="p-5 bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 text-sm leading-relaxed text-gray-700 dark:text-gray-400">
+                                        <div className="p-5 bg-white dark:bg-gray-900 rounded-[5px] shadow-sm border border-gray-100 dark:border-gray-800 text-sm leading-relaxed text-gray-700 dark:text-gray-400">
                                             {analysis?.summary}
                                         </div>
                                     </div>
@@ -414,7 +414,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                                                     animate={{ opacity: 1, x: 0 }}
                                                     transition={{ delay: i * 0.1 }}
                                                     key={i}
-                                                    className="flex gap-3 p-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800"
+                                                    className="flex gap-3 p-3 bg-white dark:bg-gray-900 rounded-[5px] border border-gray-100 dark:border-gray-800"
                                                 >
                                                     <span className="w-5 h-5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 flex items-center justify-center text-[10px] font-bold shrink-0">
                                                         {i + 1}
@@ -438,7 +438,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                                         <h3 className="text-xs font-bold text-indigo-500 uppercase tracking-wider mb-4">Deep Dive Concepts</h3>
                                         <div className="space-y-3">
                                             {analysis?.concepts.map((c, i) => (
-                                                <div key={i} className="p-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-50 dark:border-gray-800/50">
+                                                <div key={i} className="p-4 bg-white dark:bg-gray-900 rounded-[5px] border border-gray-50 dark:border-gray-800/50">
                                                     <div className="font-bold text-sm text-gray-900 dark:text-white mb-1">{c.term}</div>
                                                     <p className="text-xs text-gray-500 leading-relaxed">{c.explanation}</p>
                                                 </div>
@@ -450,7 +450,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                                         <h3 className="text-xs font-bold text-purple-500 uppercase tracking-wider mb-4">Terminology Glossary</h3>
                                         <div className="grid grid-cols-1 gap-2">
                                             {analysis?.definitions.map((d, i) => (
-                                                <div key={i} className="p-3 bg-purple-50/30 dark:bg-purple-900/10 rounded-xl border border-purple-100/50 dark:border-purple-800/20">
+                                                <div key={i} className="p-3 bg-purple-50/30 dark:bg-purple-900/10 rounded-[5px] border border-purple-100/50 dark:border-purple-800/20">
                                                     <span className="font-bold text-xs text-purple-600 dark:text-purple-400">{d.term}: </span>
                                                     <span className="text-xs text-gray-600 dark:text-gray-400">{d.definition}</span>
                                                 </div>
@@ -469,7 +469,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                                 >
                                     <div className="flex-1 overflow-y-auto space-y-4 mb-4 scrollbar-hide p-2 min-h-[300px]">
                                         {chatMessages.length === 0 && (
-                                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800 mb-4">
+                                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-[5px] border border-indigo-100 dark:border-indigo-800 mb-4">
                                                 <div className="flex items-center gap-2 mb-2 text-indigo-600 dark:text-indigo-400">
                                                     <MessageSquare size={14} />
                                                     <span className="text-xs font-bold uppercase tracking-widest">Doc-Link AI</span>
@@ -482,7 +482,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
 
                                         {chatMessages.map((msg, i) => (
                                             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                <div className={`max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed ${msg.role === 'user'
+                                                <div className={`max-w-[85%] p-3 rounded-[5px] text-xs leading-relaxed ${msg.role === 'user'
                                                     ? 'bg-indigo-600 text-white rounded-tr-none'
                                                     : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-gray-800 rounded-tl-none shadow-sm'
                                                     }`}>
@@ -493,7 +493,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
 
                                         {isChatProcessing && (
                                             <div className="flex justify-start">
-                                                <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1">
+                                                <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-3 rounded-[5px] rounded-tl-none shadow-sm flex gap-1">
                                                     <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" />
                                                     <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]" />
                                                     <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]" />
@@ -511,7 +511,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                                             <button
                                                 key={i}
                                                 onClick={() => { setChatInput(q); }}
-                                                className="w-full text-left p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-indigo-500 transition-all text-xs text-gray-500"
+                                                className="w-full text-left p-3 rounded-[5px] border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-indigo-500 transition-all text-xs text-gray-500"
                                             >
                                                 {q}
                                             </button>
@@ -525,7 +525,7 @@ export const ExplainDocument: React.FC<Props> = ({ onBack }) => {
                                             onChange={(e) => setChatInput(e.target.value)}
                                             placeholder="Type your question..."
                                             disabled={isChatProcessing}
-                                            className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-indigo-500 outline-none pr-10 disabled:opacity-50"
+                                            className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[5px] px-4 py-3 text-xs focus:ring-2 focus:ring-indigo-500 outline-none pr-10 disabled:opacity-50"
                                         />
                                         <button
                                             type="submit"

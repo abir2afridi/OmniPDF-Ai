@@ -23,6 +23,7 @@ import {
     type SlideInfo, type PptConversionResult,
 } from '../services/pptService';
 import { downloadBytes } from '../services/pdfService';
+import { PDFTool } from '../types';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ interface ManagedFile {
 
 interface PowerPointToPDFProps {
     onBack?: () => void;
+    activeTool?: PDFTool;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -75,7 +77,7 @@ const SLIDE_COLORS = [
 const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) => (
     <motion.div layout initial={{ opacity: 0, x: 60, scale: 0.9 }} animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
                 : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
                     : 'bg-blue-50 dark:bg-blue-900/60 border-blue-200 dark:border-blue-500/30 text-blue-800 dark:text-blue-200'}`}>
@@ -114,7 +116,7 @@ const SlideChip: React.FC<SlideChipProps> = ({ slide, selected, onClick, colorCl
     <button
         onClick={onClick}
         title={slide.title}
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[10px] font-bold transition-all
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-[5px] border text-[10px] font-bold transition-all
       ${selected
                 ? colorClass
                 : 'border-gray-200 dark:border-white/10 text-gray-400 dark:text-gray-500 hover:border-gray-300 bg-transparent'}`}
@@ -150,7 +152,7 @@ const FileCard: React.FC<FileCardProps> = ({
     return (
         <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, x: -20, scale: 0.97 }}
-            className="bg-white dark:bg-[#262636] rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden">
+            className="bg-white dark:bg-[#262636] rounded-[5px] border border-gray-100 dark:border-white/5 overflow-hidden">
 
             {/* Header row */}
             <div className="flex items-center gap-3 p-4">
@@ -158,7 +160,7 @@ const FileCard: React.FC<FileCardProps> = ({
                 <div className="shrink-0 w-10 h-10 flex items-center justify-center">
                     {status === 'converting' ? <CircularProgress value={progress} />
                         : status === 'loading-slides' ? <Loader2 className="w-7 h-7 text-orange-500 animate-spin" />
-                            : <div className={`w-10 h-10 rounded-xl flex items-center justify-center
+                            : <div className={`w-10 h-10 rounded-[5px] flex items-center justify-center
               ${status === 'done' ? 'bg-emerald-100 dark:bg-emerald-900/30'
                                     : status === 'error' ? 'bg-red-100 dark:bg-red-900/30'
                                         : 'bg-orange-100 dark:bg-orange-900/30'}`}>
@@ -193,13 +195,13 @@ const FileCard: React.FC<FileCardProps> = ({
                 <div className="flex items-center gap-1 shrink-0">
                     {status === 'done' && (
                         <button onClick={onDownload}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors">
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-[5px] transition-colors">
                             <Download className="w-3.5 h-3.5" /> PDF
                         </button>
                     )}
                     {(status === 'ready' || status === 'error') && (
                         <button onClick={onConvert} disabled={isAnyConverting || selectedSlides.size === 0}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-colors
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[5px] transition-colors
                 ${(isAnyConverting || selectedSlides.size === 0)
                                     ? 'bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed'
                                     : 'bg-orange-600 hover:bg-orange-500 text-white'}`}>
@@ -260,7 +262,7 @@ const FileCard: React.FC<FileCardProps> = ({
             {/* Rename field when done */}
             {status === 'done' && (
                 <div className="px-4 pb-4 border-t border-gray-50 dark:border-white/5 pt-3">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus-within:ring-2 focus-within:ring-orange-400 transition-all">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] focus-within:ring-2 focus-within:ring-orange-400 transition-all">
                         <FileDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                         <input type="text" value={customName} onChange={e => onRename(e.target.value)}
                             className="flex-1 bg-transparent text-xs font-mono dark:text-gray-200 outline-none" placeholder="output-filename" />
@@ -274,7 +276,7 @@ const FileCard: React.FC<FileCardProps> = ({
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
+export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack, activeTool }) => {
     const [files, setFiles] = useState<ManagedFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const [toasts, setToasts] = useState<Toast[]>([]);
@@ -444,12 +446,24 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
             <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
-                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500 dark:text-gray-400">
+                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500 dark:text-gray-400">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
-                        <Presentation className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-orange-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <Presentation className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                        )}
                     </div>
                     <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">PowerPoint to PDF</h1>
@@ -461,12 +475,12 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
                 <div className="flex items-center gap-1 lg:gap-2">
                     {doneCount > 1 && (
                         <button onClick={downloadAll}
-                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors">
+                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-[5px] transition-colors">
                             <Package className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Download All ZIP</span>
                         </button>
                     )}
                     {files.length > 0 && (
-                        <button onClick={clearAll} className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center gap-1.5">
+                        <button onClick={clearAll} className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] transition-colors flex items-center gap-1.5">
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear All</span>
                         </button>
                     )}
@@ -483,7 +497,7 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
                     {/* Drop zone */}
                     <div ref={dropRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
                         onClick={() => inputRef.current?.click()}
-                        className={`shrink-0 border-2 border-dashed rounded-2xl transition-all duration-200 cursor-pointer
+                        className={`shrink-0 border-2 border-dashed rounded-[5px] transition-all duration-200 cursor-pointer
               ${isDragOver ? 'border-orange-500 bg-orange-500/5 scale-[0.99]'
                             : files.length > 0
                                 ? 'border-gray-200 dark:border-white/10 bg-[#f3f1ea] dark:bg-[#262636] py-4'
@@ -495,7 +509,7 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
                         {files.length === 0 ? (
                             <div className="flex flex-col items-center justify-center gap-3">
                                 <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                                    className="p-4 bg-orange-100 dark:bg-orange-900/30 rounded-2xl shadow-lg shadow-orange-200 dark:shadow-orange-900/30 mx-auto">
+                                    className="p-4 bg-orange-100 dark:bg-orange-900/30 rounded-[5px] shadow-lg shadow-orange-200 dark:shadow-orange-900/30 mx-auto">
                                     <Upload className="w-8 h-8 text-orange-600 dark:text-orange-400" />
                                 </motion.div>
                                 <div className="text-center">
@@ -542,7 +556,7 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
 
                     {/* Info note */}
                     {files.length > 0 && (
-                        <div className="shrink-0 flex items-start gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/15 border border-amber-100 dark:border-amber-500/20 rounded-xl">
+                        <div className="shrink-0 flex items-start gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/15 border border-amber-100 dark:border-amber-500/20 rounded-[5px]">
                             <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                             <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
                                 <strong>Best results:</strong> Use .pptx format. Text, shapes, and background colors are preserved.
@@ -566,7 +580,7 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
                                     { label: 'Done', value: doneCount, color: 'text-emerald-600 dark:text-emerald-400' },
                                     { label: 'Errors', value: files.filter(f => f.status === 'error').length, color: 'text-red-500' },
                                 ].map(s => (
-                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-center">
+                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-[5px] p-3 text-center">
                                         <p className={`text-base font-black ${s.color}`}>{s.value}</p>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">{s.label}</p>
                                     </div>
@@ -616,7 +630,7 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
                                             <div className="grid grid-cols-3 gap-1.5">
                                                 {(['a4', 'letter', 'legal'] as const).map(f => (
                                                     <button key={f} onClick={() => setPageFormat(f)}
-                                                        className={`py-2 text-xs font-bold rounded-xl border-2 transition-all
+                                                        className={`py-2 text-xs font-bold rounded-[5px] border-2 transition-all
                               ${pageFormat === f ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                                                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-orange-200'}`}>
                                                         {f.toUpperCase()}
@@ -631,7 +645,7 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
                                             <div className="grid grid-cols-2 gap-1.5">
                                                 {(['portrait', 'landscape'] as const).map(o => (
                                                     <button key={o} onClick={() => setOrientation(o)}
-                                                        className={`py-2 text-xs font-bold rounded-xl border-2 transition-all capitalize
+                                                        className={`py-2 text-xs font-bold rounded-[5px] border-2 transition-all capitalize
                               ${orientation === o ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                                                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-orange-200'}`}>
                                                         {o}
@@ -650,7 +664,7 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
                                                     { v: 2, label: 'High' },
                                                 ] as const).map(q => (
                                                     <button key={q.v} onClick={() => setQuality(q.v)}
-                                                        className={`py-2 text-xs font-bold rounded-xl border-2 transition-all
+                                                        className={`py-2 text-xs font-bold rounded-[5px] border-2 transition-all
                               ${quality === q.v ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                                                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-orange-200'}`}>
                                                         {q.label}
@@ -660,7 +674,7 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
                                         </div>
 
                                         {/* Privacy badge */}
-                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
+                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-[5px]">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                                             <p className="text-[10px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
                                                 Files converted <strong>entirely in your browser</strong>. Never uploaded.
@@ -701,7 +715,7 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
                         <button
                             onClick={convertAll}
                             disabled={readyCount === 0 || isAnyConverting}
-                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-sm transition-all shadow-lg
+                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-[5px] font-black text-sm transition-all shadow-lg
                 ${readyCount === 0 || isAnyConverting
                                     ? 'bg-gray-200 dark:bg-white/5 text-gray-400 cursor-not-allowed shadow-none'
                                     : 'bg-gradient-to-r from-orange-600 to-red-500 hover:from-orange-500 hover:to-red-400 text-white shadow-orange-500/30 hover:-translate-y-0.5 active:translate-y-0'}`}>
@@ -718,7 +732,7 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack }) => {
                             {doneCount > 1 && (
                                 <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
                                     onClick={downloadAll}
-                                    className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-black text-sm bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all">
+                                    className="w-full flex items-center justify-center gap-3 py-3.5 rounded-[5px] font-black text-sm bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all">
                                     <Package className="w-5 h-5" /> <span className="hidden sm:inline">Download All ({doneCount}) as ZIP</span>
                                 </motion.button>
                             )}

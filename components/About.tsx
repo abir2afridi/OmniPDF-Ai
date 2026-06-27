@@ -129,7 +129,7 @@ export const About: React.FC = () => {
                             className="grid grid-cols-1 lg:grid-cols-12 gap-12"
                         >
                             <div className="lg:col-span-4 space-y-6">
-                                <div className="w-16 h-16 rounded-3xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 flex items-center justify-center shadow-xl">
+                                <div className="w-16 h-16 rounded-[5px] bg-gray-900 dark:bg-white text-white dark:text-gray-900 flex items-center justify-center shadow-xl">
                                     <section.icon className="w-8 h-8" />
                                 </div>
                                 <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{section.category}</h2>
@@ -190,7 +190,7 @@ export const About: React.FC = () => {
                                 { label: "Daily Tasks", val: "250K+" },
                                 { label: "AI Precision", val: "Level 4" }
                             ].map((stat, i) => (
-                                <div key={i} className="p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                                <div key={i} className="p-6 rounded-[5px] bg-white/5 border border-white/10 backdrop-blur-sm">
                                     <p className="text-[9px] font-black text-brand-400 uppercase tracking-widest mb-1">{stat.label}</p>
                                     <p className="text-2xl font-black">{stat.val}</p>
                                 </div>

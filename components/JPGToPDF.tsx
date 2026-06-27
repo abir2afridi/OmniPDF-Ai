@@ -29,6 +29,7 @@ import {
     type ImageMeta, type PageSize, type PageOrientation, type FitMode,
 } from '../services/jpgToPdfService';
 import { downloadBytes } from '../services/pdfService';
+import { PDFTool } from '../types';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,7 @@ interface ManagedImage {
 
 interface JPGToPDFProps {
     onBack?: () => void;
+    activeTool?: PDFTool;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -61,7 +63,7 @@ const ACCEPT = '.jpg,.jpeg,.png,.webp,.gif,.bmp,.tiff,.tif,image/*';
 const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) => (
     <motion.div layout initial={{ opacity: 0, x: 60, scale: 0.9 }}
         animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
                 : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
                     : 'bg-sky-50 dark:bg-sky-900/60 border-sky-200 dark:border-sky-500/30 text-sky-800 dark:text-sky-200'}`}>
@@ -95,7 +97,7 @@ const ThumbCard: React.FC<ThumbCardProps> = ({
         initial={{ opacity: 0, scale: 0.85 }}
         animate={{ opacity: isDragging ? 0.4 : 1, scale: isDragging ? 0.97 : 1 }}
         exit={{ opacity: 0, scale: 0.8 }}
-        className={`relative group bg-white dark:bg-[#1e1e2e] rounded-2xl border-2 overflow-hidden transition-all duration-150 shadow-sm hover:shadow-md
+        className={`relative group bg-white dark:bg-[#1e1e2e] rounded-[5px] border-2 overflow-hidden transition-all duration-150 shadow-sm hover:shadow-md
       ${isDragging ? 'border-violet-400 shadow-lg shadow-violet-400/20' : 'border-gray-100 dark:border-white/10 hover:border-violet-300 dark:hover:border-violet-500/40'}`}
     >
         {/* Thumbnail */}
@@ -111,7 +113,7 @@ const ThumbCard: React.FC<ThumbCardProps> = ({
             {/* Drag handle */}
             {status === 'idle' && (
                 <div {...dragHandleProps}
-                    className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 text-white p-1.5 rounded-lg cursor-grab active:cursor-grabbing">
+                    className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 text-white p-1.5 rounded-[5px] cursor-grab active:cursor-grabbing">
                     <GripVertical className="w-3.5 h-3.5" />
                 </div>
             )}
@@ -119,7 +121,7 @@ const ThumbCard: React.FC<ThumbCardProps> = ({
             {/* Remove */}
             {status === 'idle' && (
                 <button onClick={onRemove}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-lg shadow-lg">
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-[5px] shadow-lg">
                     <X className="w-3.5 h-3.5" />
                 </button>
             )}
@@ -150,11 +152,11 @@ const ThumbCard: React.FC<ThumbCardProps> = ({
 // ── Loading placeholder cards ─────────────────────────────────────────────────
 
 const SkeletonCard = () => (
-    <div className="rounded-2xl border-2 border-gray-100 dark:border-white/10 overflow-hidden animate-pulse">
+    <div className="rounded-[5px] border-2 border-gray-100 dark:border-white/10 overflow-hidden animate-pulse">
         <div className="aspect-[3/4] bg-gray-100 dark:bg-white/5" />
         <div className="px-3 py-2 border-t border-gray-50 dark:border-white/5">
-            <div className="h-3 bg-gray-200 dark:bg-white/10 rounded w-3/4 mb-1" />
-            <div className="h-2 bg-gray-100 dark:bg-white/5 rounded w-1/2" />
+            <div className="h-3 bg-gray-200 dark:bg-white/10 rounded-[5px] w-3/4 mb-1" />
+            <div className="h-2 bg-gray-100 dark:bg-white/5 rounded-[5px] w-1/2" />
         </div>
     </div>
 );
@@ -177,7 +179,7 @@ const CircProg = ({ value }: { value: number }) => {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
+export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack, activeTool }) => {
     const [images, setImages] = useState<ManagedImage[]>([]);
     const [loadingCount, setLoadingCount] = useState(0);
     const [status, setStatus] = useState<ConvStatus>('idle');
@@ -350,12 +352,24 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500 dark:text-gray-400">
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500 dark:text-gray-400">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
-                        <ImagePlus className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-violet-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <ImagePlus className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                        )}
                     </div>
                     <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">JPG to PDF</h1>
@@ -367,7 +381,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                 <div className="flex items-center gap-1 lg:gap-2">
                     {images.length > 0 && (
                         <button onClick={clearAll}
-                            className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center gap-1.5">
+                            className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] transition-colors flex items-center gap-1.5">
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear All</span>
                         </button>
                     )}
@@ -384,7 +398,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                     {/* Drop zone */}
                     <div ref={dropRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
                         onClick={() => fileRef.current?.click()}
-                        className={`shrink-0 border-2 border-dashed rounded-2xl transition-all duration-200 cursor-pointer
+                        className={`shrink-0 border-2 border-dashed rounded-[5px] transition-all duration-200 cursor-pointer
               ${isDragOver ? 'border-violet-500 bg-violet-500/5 scale-[0.99]'
                             : images.length > 0
                                 ? 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636] py-4'
@@ -396,7 +410,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                         {images.length === 0 && loadingCount === 0 ? (
                             <div className="flex flex-col items-center justify-center gap-3">
                                 <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                                    className="p-4 bg-violet-100 dark:bg-violet-900/30 rounded-2xl shadow-lg shadow-violet-200 dark:shadow-violet-900/30 mx-auto">
+                                    className="p-4 bg-violet-100 dark:bg-violet-900/30 rounded-[5px] shadow-lg shadow-violet-200 dark:shadow-violet-900/30 mx-auto">
                                     <Upload className="w-7 h-7 text-violet-600 dark:text-violet-400" />
                                 </motion.div>
 
@@ -424,7 +438,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                     {/* Reorder hint */}
                     {images.length > 1 && status === 'idle' && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-500/20 rounded-xl">
+                            className="flex items-center gap-2 px-4 py-2.5 bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-500/20 rounded-[5px]">
                             <ArrowUpDown className="w-3.5 h-3.5 text-violet-500 shrink-0" />
                             <p className="text-[11px] text-violet-700 dark:text-violet-300 font-medium">
                                 Drag the <GripVertical className="w-3 h-3 inline mb-0.5" /> handle on any image to reorder pages.
@@ -487,7 +501,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                                     { label: 'Size In', value: fmtSize(images.reduce((s, im) => s + im.meta.file.size, 0)), color: 'text-gray-500 dark:text-gray-400' },
                                     { label: 'Pixels', value: `${(totalPx / 1e6).toFixed(1)}M`, color: 'text-gray-500 dark:text-gray-400' },
                                 ].map(s => (
-                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-center">
+                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-[5px] p-3 text-center">
                                         <p className={`text-base font-black ${s.color}`}>{s.value}</p>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">{s.label}</p>
                                     </div>
@@ -496,7 +510,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
 
                             {/* Result size */}
                             {status === 'done' && resultSize > 0 && (
-                                <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
+                                <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-[5px]">
                                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                                     <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-bold">
                                         PDF ready · {fmtSize(resultSize)}
@@ -504,7 +518,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                                 </div>
                             )}
                             {status === 'error' && errorMsg && (
-                                <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-500/20 rounded-xl">
+                                <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-500/20 rounded-[5px]">
                                     <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
                                     <p className="text-[11px] text-red-600 dark:text-red-400 leading-snug">{errorMsg}</p>
                                 </div>
@@ -515,7 +529,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                     {/* Output name */}
                     <div className="p-5 border-b border-gray-100 dark:border-white/5">
                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Output filename</p>
-                        <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus-within:ring-2 focus-within:ring-violet-400 transition-all">
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] focus-within:ring-2 focus-within:ring-violet-400 transition-all">
                             <FileDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                             <input
                                 type="text"
@@ -556,7 +570,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                                                     { v: 'fit', label: 'Fit', note: 'Image size' },
                                                 ] as const).map(s => (
                                                     <button key={s.v} onClick={() => setPageSize(s.v)}
-                                                        className={`py-2 px-1 flex flex-col items-center text-[9px] font-bold rounded-xl border-2 transition-all
+                                                        className={`py-2 px-1 flex flex-col items-center text-[9px] font-bold rounded-[5px] border-2 transition-all
                               ${pageSize === s.v ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
                                                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-violet-200'}`}>
                                                         <span className="text-[11px] font-black">{s.label}</span>
@@ -576,7 +590,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                                                         { v: 'landscape', label: '⬍ Landscape' },
                                                     ] as const).map(o => (
                                                         <button key={o.v} onClick={() => setOrientation(o.v)}
-                                                            className={`py-2.5 text-[10px] font-bold rounded-xl border-2 transition-all
+                                                            className={`py-2.5 text-[10px] font-bold rounded-[5px] border-2 transition-all
                                 ${orientation === o.v ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
                                                                     : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-violet-200'}`}>
                                                             {o.label}
@@ -596,7 +610,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                                                     { v: 'original', label: 'Original', note: 'Pixel size' },
                                                 ] as const).map(f => (
                                                     <button key={f.v} onClick={() => setFitMode(f.v)}
-                                                        className={`py-2 px-1 flex flex-col items-center text-[9px] font-bold rounded-xl border-2 transition-all
+                                                        className={`py-2 px-1 flex flex-col items-center text-[9px] font-bold rounded-[5px] border-2 transition-all
                               ${fitMode === f.v ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
                                                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-violet-200'}`}>
                                                         <span className="text-[11px] font-black">{f.label}</span>
@@ -630,18 +644,18 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                                                     {['#ffffff', '#f8f8f8', '#000000', '#1e1e2e', '#fef9ec'].map(c => (
                                                         <button key={c} onClick={() => setBackground(c)}
                                                             title={c}
-                                                            className={`w-6 h-6 rounded-lg border-2 transition-all ${background === c ? 'border-violet-500 scale-110 shadow' : 'border-gray-200 dark:border-white/10 hover:scale-105'}`}
+                                                            className={`w-6 h-6 rounded-[5px] border-2 transition-all ${background === c ? 'border-violet-500 scale-110 shadow' : 'border-gray-200 dark:border-white/10 hover:scale-105'}`}
                                                             style={{ backgroundColor: c }} />
                                                     ))}
                                                 </div>
                                                 <input type="color" value={background} onChange={e => setBackground(e.target.value)}
-                                                    className="w-7 h-7 rounded-lg border-2 border-gray-200 dark:border-white/10 cursor-pointer bg-transparent" />
+                                                    className="w-7 h-7 rounded-[5px] border-2 border-gray-200 dark:border-white/10 cursor-pointer bg-transparent" />
                                                 <span className="text-[10px] font-mono text-gray-400">{background}</span>
                                             </div>
                                         </div>
 
                                         {/* Privacy badge */}
-                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
+                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-[5px]">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                                             <p className="text-[10px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
                                                 Converted <strong>entirely in your browser</strong>. No file ever leaves your device.
@@ -662,7 +676,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                         <button
                             onClick={status === 'done' ? convert : convert}
                             disabled={images.length === 0 || isConverting}
-                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-sm transition-all shadow-lg
+                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-[5px] font-black text-sm transition-all shadow-lg
                 ${images.length === 0 || isConverting
                                     ? 'bg-gray-200 dark:bg-white/5 text-gray-400 cursor-not-allowed shadow-none'
                                     : 'bg-gradient-to-r from-violet-600 to-purple-500 hover:from-violet-500 hover:to-purple-400 text-white shadow-violet-500/30 hover:-translate-y-0.5 active:translate-y-0'}`}>
@@ -681,7 +695,7 @@ export const JPGToPDF: React.FC<JPGToPDFProps> = ({ onBack }) => {
                             {status === 'done' && resultBytes && (
                                 <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
                                     onClick={doDownload}
-                                    className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-black text-sm bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all">
+                                    className="w-full flex items-center justify-center gap-3 py-3.5 rounded-[5px] font-black text-sm bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all">
                                     <Download className="w-5 h-5" />
                                     Download PDF · {fmtSize(resultSize)}
                                 </motion.button>

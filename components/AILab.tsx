@@ -317,7 +317,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                         { label: "SYSTEM", val: "Nodal Grid Active", type: "info" }
                                     ].map((msg, idx) => (
                                         <div key={idx} className="flex items-center gap-3">
-                                            <span className="text-[9px] font-black bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 dark:border-white/10">{msg.label}</span>
+                                            <span className="text-[9px] font-black bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500 px-1.5 py-0.5 rounded-[5px] border border-gray-200 dark:border-white/10">{msg.label}</span>
                                             <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 tracking-tight">{msg.val}</span>
                                         </div>
                                     ))}
@@ -342,12 +342,12 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                     </p>
 
                     {/* Integrated Tab Bar */}
-                    <nav className="flex items-center gap-1 bg-gray-100/50 dark:bg-white/5 p-1 rounded-2xl">
+                    <nav className="flex items-center gap-1 bg-gray-100/50 dark:bg-white/5 p-1 rounded-[5px]">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
+                                className={`flex items-center gap-2 px-5 py-2.5 rounded-[5px] text-[10px] font-black uppercase tracking-widest transition-all
                                 ${activeTab === tab.id
                                         ? 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm'
                                         : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
@@ -373,7 +373,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                 <div className="flex-1 p-6 md:p-8 overflow-y-auto space-y-6 custom-scrollbar">
                                     {chatHistory.map((msg) => (
                                         <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`group max-w-[85%] md:max-w-[70%] p-5 rounded-2xl ${msg.role === 'user'
+                                            <div className={`group max-w-[85%] md:max-w-[70%] p-5 rounded-[5px] ${msg.role === 'user'
                                                 ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-br-none shadow-lg'
                                                 : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-bl-none border border-gray-100 dark:border-white/5 shadow-sm'
                                                 }`}>
@@ -389,7 +389,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                                             onClick={() => {
                                                                 navigator.clipboard.writeText(msg.content);
                                                             }}
-                                                            className="opacity-0 group-hover:opacity-100 hover:!opacity-100 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-white/10 transition-all text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                            className="opacity-0 group-hover:opacity-100 hover:!opacity-100 p-0.5 rounded-[5px] hover:bg-gray-100 dark:hover:bg-white/10 transition-all text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                                                             title="Copy message"
                                                         >
                                                             <Copy className="w-3 h-3" />
@@ -402,7 +402,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                     <div ref={chatEndRef} />
                                 </div>
                                 <div className="p-6 border-t border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
-                                    <form onSubmit={handleChatSubmit} className="max-w-4xl mx-auto flex items-center gap-3 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm focus-within:ring-2 focus-within:ring-brand-500/10 transition-all">
+                                    <form onSubmit={handleChatSubmit} className="max-w-4xl mx-auto flex items-center gap-3 bg-white dark:bg-slate-900 p-2 rounded-[5px] border border-gray-200 dark:border-white/10 shadow-sm focus-within:ring-2 focus-within:ring-brand-500/10 transition-all">
                                         <input
                                             type="text"
                                             value={chatInput}
@@ -413,7 +413,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                         <button
                                             type="submit"
                                             disabled={isLoading || !chatInput.trim()}
-                                            className="w-12 h-12 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl flex items-center justify-center transition-all shrink-0 hover:scale-105 active:scale-95 shadow-lg"
+                                            className="w-12 h-12 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[5px] flex items-center justify-center transition-all shrink-0 hover:scale-105 active:scale-95 shadow-lg"
                                         >
                                             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                                         </button>
@@ -437,7 +437,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                     className="mb-8 p-5 bg-indigo-600/10 border border-indigo-600/20 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-4"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
+                                        <div className="w-12 h-12 bg-indigo-600 rounded-[5px] flex items-center justify-center shadow-lg shadow-indigo-600/20">
                                             <Globe2 className="w-6 h-6 text-white" />
                                         </div>
                                         <div>
@@ -447,14 +447,14 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                     </div>
                                     <button
                                         onClick={() => onToolSelect?.('translate-pdf')}
-                                        className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl shadow-indigo-600/20"
+                                        className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[5px] text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl shadow-indigo-600/20"
                                     >
                                         Start PDF Translation
                                     </button>
                                 </motion.div>
 
                                 <div className="flex items-center justify-center gap-6 mb-8">
-                                    <div className="flex items-center gap-3 px-4 py-2 bg-[#f3f1ea] dark:bg-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                    <div className="flex items-center gap-3 px-4 py-2 bg-[#f3f1ea] dark:bg-white/5 rounded-[5px] text-[10px] font-black uppercase tracking-widest text-gray-500">
                                         Source: Detect
                                     </div>
                                     <div className="w-10 h-px bg-gray-100 dark:bg-white/10" />
@@ -463,7 +463,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                         <select
                                             value={targetLang}
                                             onChange={(e) => setTargetLang(e.target.value)}
-                                            className="pl-10 pr-10 py-2.5 bg-[#f3f1ea] dark:bg-slate-800 border-2 border-brand-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-brand-600 dark:text-brand-400 outline-none hover:border-brand-500/40 transition-all cursor-pointer shadow-sm"
+                                            className="pl-10 pr-10 py-2.5 bg-[#f3f1ea] dark:bg-slate-800 border-2 border-brand-500/20 rounded-[5px] text-[10px] font-black uppercase tracking-widest text-brand-600 dark:text-brand-400 outline-none hover:border-brand-500/40 transition-all cursor-pointer shadow-sm"
                                         >
                                             {LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
                                         </select>
@@ -515,7 +515,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                     <button
                                         onClick={handleTranslate}
                                         disabled={isLoading || !translateInput.trim()}
-                                        className="px-12 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 disabled:opacity-20"
+                                        className="px-12 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[5px] font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 disabled:opacity-20"
                                     >
                                         Execute Translation
                                     </button>
@@ -546,8 +546,8 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="bg-[#f3f1ea]/50 dark:bg-white/5 p-5 rounded-2xl border border-gray-100 dark:border-white/10 flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-[#f3f1ea] dark:bg-slate-800 rounded-xl flex items-center justify-center shadow-sm">
+                                        <div className="bg-[#f3f1ea]/50 dark:bg-white/5 p-5 rounded-[5px] border border-gray-100 dark:border-white/10 flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-[#f3f1ea] dark:bg-slate-800 rounded-[5px] flex items-center justify-center shadow-sm">
                                                 <Mic className="w-6 h-6 text-brand-500" />
                                             </div>
                                             <div className="flex-1">
@@ -565,7 +565,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                         <button
                                             onClick={handleTTS}
                                             disabled={isLoading || !ttsInput.trim()}
-                                            className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-3"
+                                            className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[5px] font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-3"
                                         >
                                             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                                             Initialize Synthesis
@@ -606,7 +606,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                             >
                                 <div className="w-full max-w-2xl bg-[#f3f1ea] dark:bg-slate-900/50 p-12 rounded-[3.5rem] border border-gray-100 dark:border-white/10 shadow-2xl shadow-gray-200/20 dark:shadow-none">
                                     <div className="flex items-center gap-5 mb-10">
-                                        <div className="w-14 h-14 bg-gray-900 dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-gray-900 shadow-xl">
+                                        <div className="w-14 h-14 bg-gray-900 dark:bg-white rounded-[5px] flex items-center justify-center text-white dark:text-gray-900 shadow-xl">
                                             <RefreshCw className="w-7 h-7" />
                                         </div>
                                         <div>
@@ -660,12 +660,12 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                                     <span className="text-[8px] font-bold text-gray-400">MD5: {Math.random().toString(36).substring(7)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-4">
-                                                    <div className="flex-1 font-mono text-sm font-bold text-gray-700 dark:text-gray-200 break-all bg-white dark:bg-slate-900 p-4 rounded-xl shadow-inner-sm">
+                                                    <div className="flex-1 font-mono text-sm font-bold text-gray-700 dark:text-gray-200 break-all bg-white dark:bg-slate-900 p-4 rounded-[5px] shadow-inner-sm">
                                                         {renameOutput}
                                                     </div>
                                                     <button
                                                         onClick={() => copyToClipboard(renameOutput)}
-                                                        className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+                                                        className="w-14 h-14 bg-white dark:bg-slate-800 rounded-[5px] shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
                                                     >
                                                         {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Copy className="w-6 h-6 text-gray-400" />}
                                                     </button>
@@ -754,7 +754,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                             {rewriteOutput && (
                                                 <button
                                                     onClick={() => copyToClipboard(rewriteOutput)}
-                                                    className="absolute bottom-6 right-6 p-5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl shadow-xl hover:scale-110 active:scale-95 transition-all"
+                                                    className="absolute bottom-6 right-6 p-5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[5px] shadow-xl hover:scale-110 active:scale-95 transition-all"
                                                 >
                                                     {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                                                 </button>

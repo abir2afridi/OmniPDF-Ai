@@ -43,7 +43,7 @@ const ToastItem: React.FC<{ t: Toast; onDismiss: () => void }> = ({ t, onDismiss
     const bg = t.type === 'error' ? 'bg-red-500' : t.type === 'success' ? 'bg-emerald-500' : 'bg-cyan-500';
     return (
         <motion.div initial={{ x: 80, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 80, opacity: 0 }}
-            className={`${bg} text-white text-sm px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 max-w-xs`}>
+            className={`${bg} text-white text-sm px-4 py-2.5 rounded-[5px] shadow-lg flex items-center gap-2 max-w-xs`}>
             <span className="flex-1">{t.msg}</span>
             <button onClick={onDismiss} className="opacity-70 hover:opacity-100"><X size={14} /></button>
         </motion.div>
@@ -55,8 +55,8 @@ const ToastItem: React.FC<{ t: Toast; onDismiss: () => void }> = ({ t, onDismiss
 function renderMd(text: string): string {
     return text
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/```([\s\S]*?)```/g, '<pre class="bg-black/20 dark:bg-black/40 rounded-lg p-3 my-2 text-xs overflow-x-auto font-mono"><code>$1</code></pre>')
-        .replace(/`([^`]+)`/g, '<code class="bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded text-xs font-mono">$1</code>')
+        .replace(/```([\s\S]*?)```/g, '<pre class="bg-black/20 dark:bg-black/40 rounded-[5px] p-3 my-2 text-xs overflow-x-auto font-mono"><code>$1</code></pre>')
+        .replace(/`([^`]+)`/g, '<code class="bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-[5px] text-xs font-mono">$1</code>')
         .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
         .replace(/^\s*[•\-]\s+(.+)/gm, '<div class="flex gap-2 ml-2"><span class="text-cyan-500">•</span><span>$1</span></div>')
@@ -236,12 +236,12 @@ export const ChatPDF: React.FC<Props> = ({ onBack }) => {
             {/* Header */}
             <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shrink-0">
                 {onBack && (
-                    <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <button onClick={onBack} className="p-1.5 rounded-[5px] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                         <ArrowLeft size={18} className="text-gray-500" />
                     </button>
                 )}
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-[5px] bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
                         <MessageSquare size={16} className="text-white" />
                     </div>
                     <div>
@@ -253,13 +253,13 @@ export const ChatPDF: React.FC<Props> = ({ onBack }) => {
                 {phase === 'ready' && (
                     <div className="flex items-center gap-1.5">
                         <button onClick={() => exportConversation(messages, doc?.filename || 'document')}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500" title="Export chat">
+                            className="p-1.5 rounded-[5px] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500" title="Export chat">
                             <Download size={16} />
                         </button>
-                        <button onClick={clearChat} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500" title="Clear chat">
+                        <button onClick={clearChat} className="p-1.5 rounded-[5px] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500" title="Clear chat">
                             <Trash2 size={16} />
                         </button>
-                        <button onClick={newDocument} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors">
+                        <button onClick={newDocument} className="px-2.5 py-1 rounded-[5px] text-xs font-medium bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors">
                             New PDF
                         </button>
                     </div>
@@ -272,7 +272,7 @@ export const ChatPDF: React.FC<Props> = ({ onBack }) => {
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                         className="w-full max-w-lg">
                         <div className="text-center mb-8">
-                            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/25">
+                            <div className="w-16 h-16 mx-auto rounded-[5px] bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/25">
                                 <MessageSquare size={28} className="text-white" />
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Chat with your PDF</h2>
@@ -283,7 +283,7 @@ export const ChatPDF: React.FC<Props> = ({ onBack }) => {
                             onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
                             onDragLeave={() => setIsDragOver(false)}
                             onDrop={onDrop}
-                            className={`block border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-200
+                            className={`block border-2 border-dashed rounded-[5px] p-10 text-center cursor-pointer transition-all duration-200
                                 ${isDragOver
                                     ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 scale-[1.02]'
                                     : 'border-gray-300 dark:border-gray-700 hover:border-cyan-400 dark:hover:border-cyan-600 bg-white dark:bg-gray-900 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/30'
@@ -301,7 +301,7 @@ export const ChatPDF: React.FC<Props> = ({ onBack }) => {
                                 { icon: '📄', label: 'Page Refs', desc: 'Source citations' },
                                 { icon: '⚡', label: 'Streaming', desc: 'Real-time answers' },
                             ].map(f => (
-                                <div key={f.label} className="p-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+                                <div key={f.label} className="p-3 rounded-[5px] bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
                                     <div className="text-lg mb-1">{f.icon}</div>
                                     <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">{f.label}</div>
                                     <div className="text-[10px] text-gray-400">{f.desc}</div>
@@ -338,8 +338,8 @@ export const ChatPDF: React.FC<Props> = ({ onBack }) => {
                                 <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                                     className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[85%] md:max-w-[70%] ${m.role === 'user'
-                                        ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-2xl rounded-br-md px-4 py-3'
-                                        : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm'
+                                        ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-[5px] rounded-br-md px-4 py-3'
+                                        : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-[5px] rounded-bl-md px-4 py-3 shadow-sm'
                                         }`}>
                                         {m.role === 'assistant' ? (
                                             <>
@@ -362,7 +362,7 @@ export const ChatPDF: React.FC<Props> = ({ onBack }) => {
                                                                 for (let p = s.pageStart; p <= s.pageEnd; p++) arr.push(p);
                                                                 return arr;
                                                             }))].sort((a, b) => a - b).map(p => (
-                                                                <span key={p} className="px-1.5 py-0.5 rounded bg-cyan-50 dark:bg-cyan-900/30 text-[10px] font-medium text-cyan-600 dark:text-cyan-400">
+                                                                <span key={p} className="px-1.5 py-0.5 rounded-[5px] bg-cyan-50 dark:bg-cyan-900/30 text-[10px] font-medium text-cyan-600 dark:text-cyan-400">
                                                                     Page {p}
                                                                 </span>
                                                             ))}
@@ -393,7 +393,7 @@ export const ChatPDF: React.FC<Props> = ({ onBack }) => {
                                 className="flex flex-wrap gap-2 justify-center pt-2">
                                 {QUICK_ACTIONS.map(a => (
                                     <button key={a.label} onClick={() => sendMessage(a.query)}
-                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-cyan-400 dark:hover:border-cyan-600 hover:text-cyan-600 dark:hover:text-cyan-400 hover:shadow-sm transition-all">
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-[5px] text-xs font-medium bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-cyan-400 dark:hover:border-cyan-600 hover:text-cyan-600 dark:hover:text-cyan-400 hover:shadow-sm transition-all">
                                         <a.icon size={14} />
                                         {a.label}
                                     </button>
@@ -414,19 +414,19 @@ export const ChatPDF: React.FC<Props> = ({ onBack }) => {
                                 onKeyDown={handleKeyDown}
                                 placeholder="Ask a question about your document…"
                                 rows={1}
-                                className="flex-1 resize-none rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all max-h-32"
+                                className="flex-1 resize-none rounded-[5px] border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all max-h-32"
                                 style={{ minHeight: '40px' }}
                                 disabled={isStreaming}
                             />
                             {isStreaming ? (
                                 <button onClick={stopStreaming}
-                                    className="shrink-0 w-10 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors">
+                                    className="shrink-0 w-10 h-10 rounded-[5px] bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors">
                                     <StopCircle size={18} />
                                 </button>
                             ) : (
                                 <button onClick={() => sendMessage()}
                                     disabled={!input.trim()}
-                                    className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-cyan-500/25 transition-all">
+                                    className="shrink-0 w-10 h-10 rounded-[5px] bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-cyan-500/25 transition-all">
                                     <Send size={18} />
                                 </button>
                             )}

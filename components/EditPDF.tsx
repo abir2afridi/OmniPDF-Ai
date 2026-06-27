@@ -53,7 +53,7 @@ const FONTS = ['Helvetica', 'Times-Roman', 'Courier'];
 
 const ToastItem = ({ t, onDismiss }: { t: Toast; onDismiss: () => void }) => (
     <motion.div layout initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 60 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${t.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-300 text-emerald-800 dark:text-emerald-200'
                 : t.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-300 text-red-800 dark:text-red-200'
                     : t.type === 'warn' ? 'bg-amber-50 dark:bg-amber-900/60 border-amber-300 text-amber-800 dark:text-amber-200'
@@ -541,8 +541,8 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
             {/* ── Header ─────────────────────────────────────────────────── */}
             <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-3 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                    {onBack && <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-gray-500"><ArrowLeft className="w-4 h-4" /></button>}
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl"><PenTool className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /></div>
+                    {onBack && <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-500"><ArrowLeft className="w-4 h-4" /></button>}
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-[5px]"><PenTool className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /></div>
                     <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Edit PDF</h1>
                         <p className="text-[10px] text-gray-400 font-medium truncate">Text · Shapes · Images · Annotations · AI Suggestions · Watermarks</p>
@@ -551,14 +551,14 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                 <div className="flex items-center gap-2 shrink-0">
                     {session && (
                         <>
-                            <button onClick={handleUndo} disabled={!session.undoStack.length} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-gray-500 disabled:opacity-30" title="Undo (Ctrl+Z)"><Undo2 className="w-4 h-4" /></button>
-                            <button onClick={handleRedo} disabled={!session.redoStack.length} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-gray-500 disabled:opacity-30" title="Redo (Ctrl+Y)"><Redo2 className="w-4 h-4" /></button>
+                            <button onClick={handleUndo} disabled={!session.undoStack.length} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-500 disabled:opacity-30" title="Undo (Ctrl+Z)"><Undo2 className="w-4 h-4" /></button>
+                            <button onClick={handleRedo} disabled={!session.redoStack.length} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-500 disabled:opacity-30" title="Redo (Ctrl+Y)"><Redo2 className="w-4 h-4" /></button>
                             <div className="w-px h-6 bg-gray-200 dark:bg-white/10 mx-1" />
-                            <button onClick={handleExport} disabled={isExporting} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-xl flex items-center gap-2 shadow-sm disabled:opacity-50">
+                            <button onClick={handleExport} disabled={isExporting} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-[5px] flex items-center gap-2 shadow-sm disabled:opacity-50">
                                 {isExporting ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {exportProgress}%</> : <><Download className="w-3.5 h-3.5" /> Export</>}
                             </button>
                             {editedBlob && (
-                                <button onClick={() => downloadEditedPdf(editedBlob, session.fileName)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl flex items-center gap-2 shadow-sm">
+                                <button onClick={() => downloadEditedPdf(editedBlob, session.fileName)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-[5px] flex items-center gap-2 shadow-sm">
                                     <Download className="w-3.5 h-3.5" /> Download
                                 </button>
                             )}
@@ -574,12 +574,12 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                 <div className="w-14 shrink-0 flex flex-col items-center py-2 gap-1 border-r border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto">
                     {TOOLS.map(t => (
                         <button key={t.id} onClick={() => { setActiveTool(t.id); setSelectedId(null); }} title={t.label}
-                            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${activeTool === t.id ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'}`}>
+                            className={`w-10 h-10 flex items-center justify-center rounded-[5px] transition-all ${activeTool === t.id ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'}`}>
                             <t.icon className="w-4 h-4" />
                         </button>
                     ))}
                     <div className="w-8 h-px bg-gray-200 dark:bg-white/10 my-1" />
-                    <button onClick={() => imageInputRef.current?.click()} title="Add Image" className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5"><Image className="w-4 h-4" /></button>
+                    <button onClick={() => imageInputRef.current?.click()} title="Add Image" className="w-10 h-10 flex items-center justify-center rounded-[5px] text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5"><Image className="w-4 h-4" /></button>
                 </div>
 
                 {/* ── THUMBNAILS ── */}
@@ -587,7 +587,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                     <div className="w-24 shrink-0 flex flex-col border-r border-gray-100 dark:border-white/5 bg-[#f3f1ea] dark:bg-[#262636] overflow-y-auto py-2 gap-2 px-2">
                         {thumbnails.map((thumb, i) => (
                             <button key={i} onClick={() => setCurPage(i)}
-                                className={`relative rounded-lg overflow-hidden border-2 transition-all ${curPage === i ? 'border-indigo-500 shadow-lg' : 'border-transparent hover:border-indigo-300'}`}>
+                                className={`relative rounded-[5px] overflow-hidden border-2 transition-all ${curPage === i ? 'border-indigo-500 shadow-lg' : 'border-transparent hover:border-indigo-300'}`}>
                                 {thumb ? <img src={thumb} alt={`Page ${i + 1}`} className="w-full" /> : <div className="w-full h-24 bg-gray-200 dark:bg-white/5" />}
                                 <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] text-center py-0.5 font-bold">{i + 1}</div>
                                 {annotations.filter(a => a.pageIndex === i).length > 0 && (
@@ -604,14 +604,14 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                     {session && (
                         <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-white dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 text-xs">
                             <div className="flex items-center gap-2">
-                                <button onClick={() => setCurPage(p => Math.max(0, p - 1))} disabled={curPage === 0} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg disabled:opacity-30"><ChevronLeft className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => setCurPage(p => Math.max(0, p - 1))} disabled={curPage === 0} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] disabled:opacity-30"><ChevronLeft className="w-3.5 h-3.5" /></button>
                                 <span className="font-bold dark:text-white">{curPage + 1} / {totalPages}</span>
-                                <button onClick={() => setCurPage(p => Math.min(totalPages - 1, p + 1))} disabled={curPage >= totalPages - 1} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg disabled:opacity-30"><ChevronRight className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => setCurPage(p => Math.min(totalPages - 1, p + 1))} disabled={curPage >= totalPages - 1} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] disabled:opacity-30"><ChevronRight className="w-3.5 h-3.5" /></button>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg"><ZoomOut className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => setScale(s => Math.max(0.5, s - 0.2))} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px]"><ZoomOut className="w-3.5 h-3.5" /></button>
                                 <span className="font-mono font-bold dark:text-white w-12 text-center">{Math.round(scale * 100)}%</span>
-                                <button onClick={() => setScale(s => Math.min(3, s + 0.2))} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg"><ZoomIn className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => setScale(s => Math.min(3, s + 0.2))} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px]"><ZoomIn className="w-3.5 h-3.5" /></button>
                             </div>
                             <div className="flex items-center gap-1 text-gray-400">
                                 <Layers className="w-3 h-3" />
@@ -624,7 +624,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                     <div ref={containerRef} className="flex-1 overflow-auto flex items-start justify-center p-4">
                         {!session ? (
                             /* Upload area */
-                            <div className={`w-full max-w-xl mx-auto mt-16 p-12 border-2 border-dashed rounded-3xl transition-all cursor-pointer text-center
+                            <div className={`w-full max-w-xl mx-auto mt-16 p-12 border-2 border-dashed rounded-[5px] transition-all cursor-pointer text-center
                 ${isDragOver ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-300 dark:border-white/10 hover:border-indigo-400'}`}
                                 onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
                                 onDragLeave={() => setIsDragOver(false)}
@@ -637,7 +637,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-4">
-                                        <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center">
+                                        <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 rounded-[5px] flex items-center justify-center">
                                             <Upload className="w-8 h-8 text-indigo-500" />
                                         </div>
                                         <div>
@@ -648,7 +648,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                                 )}
                             </div>
                         ) : (
-                            <div className="relative inline-block shadow-2xl rounded-lg overflow-hidden">
+                            <div className="relative inline-block shadow-2xl rounded-[5px] overflow-hidden">
                                 <canvas ref={canvasRef} className="block" />
                                 <canvas ref={overlayRef}
                                     className="absolute inset-0 cursor-crosshair"
@@ -677,15 +677,15 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                                 <div className="space-y-3">
                                     <div className="flex gap-2">
                                         <select value={fontFamily} onChange={e => setFontFamily(e.target.value)}
-                                            className="flex-1 px-2 py-1.5 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg dark:text-white">
+                                            className="flex-1 px-2 py-1.5 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] dark:text-white">
                                             {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
                                         </select>
                                         <input type="number" value={fontSize} onChange={e => setFontSize(+e.target.value)} min={8} max={120}
-                                            className="w-16 px-2 py-1.5 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg dark:text-white" />
+                                            className="w-16 px-2 py-1.5 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] dark:text-white" />
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <label className="text-[10px] text-gray-500">Color</label>
-                                        <input type="color" value={fontColor} onChange={e => setFontColor(e.target.value)} className="w-7 h-7 rounded border cursor-pointer" />
+                                        <input type="color" value={fontColor} onChange={e => setFontColor(e.target.value)} className="w-7 h-7 rounded-[5px] border cursor-pointer" />
                                     </div>
                                 </div>
                             )}
@@ -696,20 +696,20 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                                     <div className="flex gap-1">
                                         {SHAPES.map(s => (
                                             <button key={s.id} onClick={() => setShapeType(s.id)}
-                                                className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg ${shapeType === s.id ? 'bg-indigo-600 text-white' : 'bg-gray-50 dark:bg-white/5 text-gray-500'}`}>
+                                                className={`flex-1 py-1.5 text-[10px] font-bold rounded-[5px] ${shapeType === s.id ? 'bg-indigo-600 text-white' : 'bg-gray-50 dark:bg-white/5 text-gray-500'}`}>
                                                 {s.label}
                                             </button>
                                         ))}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <label className="text-[10px] text-gray-500">Stroke</label>
-                                        <input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="w-6 h-6 rounded border cursor-pointer" />
+                                        <input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="w-6 h-6 rounded-[5px] border cursor-pointer" />
                                         <input type="number" value={strokeWidth} onChange={e => setStrokeWidth(+e.target.value)} min={1} max={20}
-                                            className="w-14 px-2 py-1 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg dark:text-white" />
+                                            className="w-14 px-2 py-1 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] dark:text-white" />
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <label className="text-[10px] text-gray-500">Fill</label>
-                                        <input type="color" value={fillColor === 'transparent' ? '#ffffff' : fillColor} onChange={e => setFillColor(e.target.value)} className="w-6 h-6 rounded border cursor-pointer" />
+                                        <input type="color" value={fillColor === 'transparent' ? '#ffffff' : fillColor} onChange={e => setFillColor(e.target.value)} className="w-6 h-6 rounded-[5px] border cursor-pointer" />
                                         <button onClick={() => setFillColor('transparent')} className="text-[10px] text-gray-400 underline">None</button>
                                     </div>
                                 </div>
@@ -720,7 +720,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2">
                                         <label className="text-[10px] text-gray-500">Color</label>
-                                        <input type="color" value={drawColor} onChange={e => setDrawColor(e.target.value)} className="w-7 h-7 rounded border cursor-pointer" />
+                                        <input type="color" value={drawColor} onChange={e => setDrawColor(e.target.value)} className="w-7 h-7 rounded-[5px] border cursor-pointer" />
                                     </div>
                                     <div>
                                         <label className="text-[10px] text-gray-500">Width: {drawWidth}px</label>
@@ -735,7 +735,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                                     <div className="flex flex-wrap gap-1">
                                         {STAMPS.map(s => (
                                             <button key={s} onClick={() => setStampText(s)}
-                                                className={`px-2 py-1 text-[9px] font-bold rounded-md ${stampText === s ? 'bg-indigo-600 text-white' : 'bg-gray-50 dark:bg-white/5 text-gray-500'}`}>{s}</button>
+                                                className={`px-2 py-1 text-[9px] font-bold rounded-[5px] ${stampText === s ? 'bg-indigo-600 text-white' : 'bg-gray-50 dark:bg-white/5 text-gray-500'}`}>{s}</button>
                                         ))}
                                     </div>
                                 </div>
@@ -754,15 +754,15 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                                 <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-2">Selected: {selectedAnn.type}</p>
                                 <div className="flex gap-2">
                                     {(selectedAnn.type === 'text' || selectedAnn.type === 'link') && (
-                                        <button onClick={handleEditText} className="flex-1 py-1.5 text-[10px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 rounded-lg">Edit Text</button>
+                                        <button onClick={handleEditText} className="flex-1 py-1.5 text-[10px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 rounded-[5px]">Edit Text</button>
                                     )}
-                                    <button onClick={handleDeleteSelected} className="flex-1 py-1.5 text-[10px] font-bold bg-red-50 dark:bg-red-900/20 text-red-600 rounded-lg flex items-center justify-center gap-1">
+                                    <button onClick={handleDeleteSelected} className="flex-1 py-1.5 text-[10px] font-bold bg-red-50 dark:bg-red-900/20 text-red-600 rounded-[5px] flex items-center justify-center gap-1">
                                         <Trash2 className="w-3 h-3" /> Delete
                                     </button>
                                 </div>
                                 {selectedAnn.type === 'text' && (
                                     <button onClick={handleAiSuggest} disabled={isAiLoading}
-                                        className="w-full mt-2 py-1.5 text-[10px] font-bold bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-lg flex items-center justify-center gap-1 disabled:opacity-40">
+                                        className="w-full mt-2 py-1.5 text-[10px] font-bold bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-[5px] flex items-center justify-center gap-1 disabled:opacity-40">
                                         {isAiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />} AI Improve
                                     </button>
                                 )}
@@ -779,9 +779,9 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
                             {showWatermark && (
                                 <div className="mt-3 space-y-2">
                                     <input value={wmText} onChange={e => setWmText(e.target.value)} placeholder="Watermark text"
-                                        className="w-full px-2 py-1.5 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg dark:text-white" />
+                                        className="w-full px-2 py-1.5 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] dark:text-white" />
                                     <div className="flex items-center gap-2">
-                                        <input type="color" value={wmColor} onChange={e => setWmColor(e.target.value)} className="w-6 h-6 rounded border cursor-pointer" />
+                                        <input type="color" value={wmColor} onChange={e => setWmColor(e.target.value)} className="w-6 h-6 rounded-[5px] border cursor-pointer" />
                                         <span className="text-[10px] text-gray-400">Opacity: {Math.round(wmOpacity * 100)}%</span>
                                     </div>
                                     <input type="range" min={0.05} max={0.8} step={0.05} value={wmOpacity} onChange={e => setWmOpacity(+e.target.value)} className="w-full accent-indigo-500" />
@@ -791,7 +791,7 @@ export const EditPDF: React.FC<Props> = ({ onBack }) => {
 
                         {/* Stats */}
                         <div className="p-4 mt-auto">
-                            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-500/20 rounded-xl space-y-1">
+                            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-500/20 rounded-[5px] space-y-1">
                                 <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400">Session Info</p>
                                 <p className="text-[10px] text-gray-500">{totalPages} pages • {annotations.length} edits</p>
                                 <p className="text-[10px] text-gray-500">Undo: {session.undoStack.length} • Redo: {session.redoStack.length}</p>

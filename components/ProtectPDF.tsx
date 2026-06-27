@@ -27,6 +27,7 @@ import {
     type PasswordScore, type PasswordStrength,
 } from '../services/protectService';
 import { downloadBlob } from '../services/pdfService';
+import { PDFTool } from '../types';
 import JSZip from 'jszip';
 
 async function loadPdfjs() {
@@ -55,7 +56,7 @@ interface ManagedFile {
 }
 
 interface Toast { id: string; type: 'success' | 'error' | 'info' | 'warn'; message: string; }
-interface Props { onBack?: () => void; initialTab?: Tab; }
+interface Props { onBack?: () => void; initialTab?: Tab; activeTool?: PDFTool; }
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const ACCEPT = '.pdf,application/pdf';
@@ -81,7 +82,7 @@ async function generateThumb(file: File): Promise<string> {
 const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) => (
     <motion.div layout initial={{ opacity: 0, x: 60, scale: 0.9 }} animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
                 : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
                     : toast.type === 'warn' ? 'bg-amber-50 dark:bg-amber-900/60 border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-200'
@@ -130,7 +131,7 @@ interface PermRowProps {
 }
 const PermRow: React.FC<PermRowProps> = ({ icon, label, sub, enabled, onToggle }) => (
     <button onClick={onToggle}
-        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border-2 transition-all text-left
+        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[5px] border-2 transition-all text-left
       ${enabled
                 ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
                 : 'border-gray-100 dark:border-white/10 hover:border-teal-200'}`}>
@@ -157,7 +158,7 @@ const SecuritySummary = ({ result }: { result: ProtectResult }) => {
         s === 'excellent' ? '🟢' : s === 'strong' ? '🟡' : '🔴';
 
     return (
-        <div className="mt-3 p-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-500/30 rounded-xl space-y-2">
+        <div className="mt-3 p-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-500/30 rounded-[5px] space-y-2">
             <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0" />
                 <span className="text-xs font-black text-teal-700 dark:text-teal-300">
@@ -213,13 +214,13 @@ const FileCard: React.FC<FileCardProps> = ({
 
     return (
         <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            className="bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-[5px] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
             <div className="p-4">
                 <div className="flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full shrink-0 ${dot[entry.status]}`} />
 
                     {/* Thumb */}
-                    <div className="w-10 h-12 shrink-0 rounded-lg overflow-hidden bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-500/20 flex items-center justify-center">
+                    <div className="w-10 h-12 shrink-0 rounded-[5px] overflow-hidden bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-500/20 flex items-center justify-center">
                         {entry.thumb
                             ? <img src={entry.thumb} alt="" className="w-full h-full object-cover" />
                             : (tab === 'protect'
@@ -261,7 +262,7 @@ const FileCard: React.FC<FileCardProps> = ({
                     <div className="flex items-center gap-1 shrink-0">
                         {entry.status === 'ready' && (
                             <button onClick={onProcess} disabled={isRunning}
-                                className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-40 shadow-sm flex items-center gap-1.5">
+                                className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold rounded-[5px] transition-colors disabled:opacity-40 shadow-sm flex items-center gap-1.5">
                                 {tab === 'protect' ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                                 {tab === 'protect' ? 'Protect' : 'Unlock'}
                             </button>
@@ -275,23 +276,23 @@ const FileCard: React.FC<FileCardProps> = ({
                         {entry.status === 'done' && (
                             <>
                                 <button onClick={onProcess} title="Re-process"
-                                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg text-gray-400">
+                                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-400">
                                     <RotateCcw className="w-3.5 h-3.5" />
                                 </button>
                                 <button onClick={onDownload}
-                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm">
+                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-[5px] flex items-center gap-1.5 shadow-sm">
                                     <Download className="w-3.5 h-3.5" /> <span className="hidden sm:inline">.pdf</span>
                                 </button>
                             </>
                         )}
                         {entry.status === 'error' && (
                             <button onClick={onProcess}
-                                className="px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white text-xs font-bold rounded-xl flex items-center gap-1.5">
+                                className="px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white text-xs font-bold rounded-[5px] flex items-center gap-1.5">
                                 <RotateCcw className="w-3.5 h-3.5" /> Retry
                             </button>
                         )}
                         <button onClick={onRemove}
-                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-gray-300 hover:text-red-500 transition-colors">
+                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] text-gray-300 hover:text-red-500 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" />
                         </button>
                     </div>
@@ -318,7 +319,7 @@ const FileCard: React.FC<FileCardProps> = ({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) => {
+export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect', activeTool }) => {
     const [tab, setTab] = useState<Tab>(initialTab);
     const [files, setFiles] = useState<ManagedFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
@@ -492,12 +493,24 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) 
             <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
-                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500">
+                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-xl">
-                        <Shield className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-teal-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <Shield className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                        )}
                     </div>
                     <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Protect & Unlock PDF</h1>
@@ -507,20 +520,20 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) 
                 <div className="flex items-center gap-1 lg:gap-2">
                     {doneCount > 1 && (
                         <button onClick={downloadAll}
-                            className="px-3 py-2 text-xs font-bold text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-xl flex items-center gap-1.5 transition-colors">
+                            className="px-3 py-2 text-xs font-bold text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-[5px] flex items-center gap-1.5 transition-colors">
                             <Archive className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Download All ({doneCount})</span>
                         </button>
                     )}
                     {readyCount > 1 && (
                         <button onClick={processAll} disabled={isProcessing}
-                            className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+                            className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
                             {tab === 'protect' ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                             {tab === 'protect' ? `Protect All (${readyCount})` : `Unlock All (${readyCount})`}
                         </button>
                     )}
                     {files.length > 0 && (
                         <button onClick={() => setFiles([])}
-                            className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl flex items-center gap-1.5 transition-colors">
+                            className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] flex items-center gap-1.5 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
@@ -550,13 +563,13 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) 
                     {/* Drop zone */}
                     <div ref={dropRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
                         onClick={() => fileRef.current?.click()}
-                        className={`shrink-0 flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-2xl py-10 cursor-pointer transition-all duration-200
+                        className={`shrink-0 flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-[5px] py-10 cursor-pointer transition-all duration-200
               ${isDragOver ? 'border-teal-500 bg-teal-500/5 scale-[0.99]' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636]'}
               hover:border-teal-400 dark:hover:border-teal-500/50 hover:bg-teal-50/30 dark:hover:bg-teal-900/10`}>
                         <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden"
                             onChange={e => e.target.files && addFiles(e.target.files)} />
                         <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                            className="p-4 bg-teal-100 dark:bg-teal-900/30 rounded-2xl shadow-lg shadow-teal-200 dark:shadow-teal-900/30">
+                            className="p-4 bg-teal-100 dark:bg-teal-900/30 rounded-[5px] shadow-lg shadow-teal-200 dark:shadow-teal-900/30">
                             {tab === 'protect'
                                 ? <Lock className="w-7 h-7 text-teal-600 dark:text-teal-400" />
                                 : <Unlock className="w-7 h-7 text-teal-600 dark:text-teal-400" />}
@@ -613,7 +626,7 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) 
                                             <input type={showUserPw ? 'text' : 'password'} value={userPassword}
                                                 onChange={e => setUserPassword(e.target.value)}
                                                 placeholder="Required to open PDF"
-                                                className="w-full pr-9 pl-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-teal-400 font-mono" />
+                                                className="w-full pr-9 pl-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] text-sm dark:text-white outline-none focus:ring-2 focus:ring-teal-400 font-mono" />
                                             <button onClick={() => setShowUserPw(v => !v)}
                                                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                                 {showUserPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -631,7 +644,7 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) 
                                             <input type={showOwnerPw ? 'text' : 'password'} value={ownerPassword}
                                                 onChange={e => setOwnerPassword(e.target.value)}
                                                 placeholder="Full access override"
-                                                className="w-full pr-9 pl-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-teal-400 font-mono" />
+                                                className="w-full pr-9 pl-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] text-sm dark:text-white outline-none focus:ring-2 focus:ring-teal-400 font-mono" />
                                             <button onClick={() => setShowOwnerPw(v => !v)}
                                                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                                 {showOwnerPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -647,7 +660,7 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) 
                                     <div className="space-y-1.5">
                                         {([['aes256', 'AES-256', 'Recommended · PDF 1.7ext3 · SHA-256 key', '🟢'], ['aes128', 'AES-128', 'Compatible · PDF 1.6 · 128-bit key', '🟡']] as [EncryptionLevel, string, string, string][]).map(([val, label, desc, icon]) => (
                                             <button key={val} onClick={() => setEncLevel(val)}
-                                                className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl border-2 text-left transition-all
+                                                className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-[5px] border-2 text-left transition-all
                           ${encLevel === val
                                                         ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30'
                                                         : 'border-gray-100 dark:border-white/10 hover:border-teal-200'}`}>
@@ -698,7 +711,7 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) 
                                                     <p><strong className="text-teal-600 dark:text-teal-400">AES-256</strong> uses a 256-bit key derived with SHA-256 (PDF 2.0 / 1.7ext3). Supported by Adobe Reader X+, MacOS Preview, Chrome.</p>
                                                     <p><strong className="text-yellow-600 dark:text-yellow-400">AES-128</strong> uses a 128-bit key (PDF 1.6/1.7). Oldest compatible format — works in all modern viewers.</p>
                                                     <p><strong className="text-gray-600 dark:text-gray-300">Permissions</strong> are enforced by compliant PDF viewers. They can be bypassed by non-standard software.</p>
-                                                    <div className="flex items-start gap-2 p-2.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-xl mt-2">
+                                                    <div className="flex items-start gap-2 p-2.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-[5px] mt-2">
                                                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                                                         <p className="text-[10px] text-emerald-700 dark:text-emerald-300">
                                                             <strong>Passwords are never stored.</strong> Processing is 100% in your browser.
@@ -714,8 +727,8 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) 
 
                                 {/* Badge */}
                                 <div className="p-5 border-t border-gray-100 dark:border-white/5 sticky bottom-0 z-10">
-                                    <div className="flex items-center gap-3 p-3 bg-teal-50 dark:bg-teal-900/20 rounded-xl">
-                                        <div className="w-8 h-8 shrink-0 rounded-lg bg-teal-600 flex items-center justify-center">
+                                    <div className="flex items-center gap-3 p-3 bg-teal-50 dark:bg-teal-900/20 rounded-[5px]">
+                                        <div className="w-8 h-8 shrink-0 rounded-[5px] bg-teal-600 flex items-center justify-center">
                                             <ShieldCheck className="w-4 h-4 text-white" />
                                         </div>
                                         <div>
@@ -739,7 +752,7 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) 
                                             <input type={showUnlockPw ? 'text' : 'password'} value={unlockPassword}
                                                 onChange={e => setUnlockPassword(e.target.value)}
                                                 placeholder="Enter PDF password"
-                                                className="w-full pr-9 pl-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-teal-400 font-mono" />
+                                                className="w-full pr-9 pl-3 py-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] text-sm dark:text-white outline-none focus:ring-2 focus:ring-teal-400 font-mono" />
                                             <button onClick={() => setShowUnlockPw(v => !v)}
                                                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                                 {showUnlockPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -764,7 +777,7 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) 
                                             <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">{s.t}</p>
                                         </div>
                                     ))}
-                                    <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-500/20 rounded-xl mt-3">
+                                    <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-500/20 rounded-[5px] mt-3">
                                         <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                                         <p className="text-[10px] text-amber-700 dark:text-amber-300">
                                             Unlock output is an image-based PDF — text may not be selectable. Use OCR module to restore text.
@@ -775,8 +788,8 @@ export const ProtectPDF: React.FC<Props> = ({ onBack, initialTab = 'protect' }) 
                                 <div className="flex-1" />
 
                                 <div className="p-5 border-t border-gray-100 dark:border-white/5 sticky bottom-0 z-10">
-                                    <div className="flex items-center gap-3 p-3 bg-teal-50 dark:bg-teal-900/20 rounded-xl">
-                                        <div className="w-8 h-8 shrink-0 rounded-lg bg-teal-600 flex items-center justify-center">
+                                    <div className="flex items-center gap-3 p-3 bg-teal-50 dark:bg-teal-900/20 rounded-[5px]">
+                                        <div className="w-8 h-8 shrink-0 rounded-[5px] bg-teal-600 flex items-center justify-center">
                                             <Unlock className="w-4 h-4 text-white" />
                                         </div>
                                         <div>

@@ -21,6 +21,7 @@ import {
     downloadBytes,
     type DeletePagesResult,
 } from '../services/pdfService';
+import { PDFTool } from '../types';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,6 +43,7 @@ interface UndoSnapshot {
 
 interface DeletePagesProps {
     onBack?: () => void;
+    activeTool?: PDFTool;
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -67,7 +69,7 @@ const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
         initial={{ opacity: 0, x: 60, scale: 0.9 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-xs text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-xs text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
                 : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
                     : 'bg-blue-50 dark:bg-blue-900/60 border-blue-200 dark:border-blue-500/30 text-blue-800 dark:text-blue-200'}`}
@@ -108,7 +110,7 @@ const PageGrid = ({
                     whileHover={{ scale: 1.06 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => onToggle(i)}
-                    className={`relative aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all duration-150 group
+                    className={`relative aspect-[3/4] rounded-[5px] overflow-hidden border-2 transition-all duration-150 group
                         ${marked
                             ? 'border-red-500 ring-2 ring-red-400/40 shadow-lg shadow-red-500/20'
                             : 'border-gray-200 dark:border-white/10 hover:border-red-300 dark:hover:border-red-500/40'}`}
@@ -154,7 +156,7 @@ const PageGrid = ({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
+export const DeletePages: React.FC<DeletePagesProps> = ({ onBack, activeTool }) => {
     // ── File state
     const [file, setFile] = useState<File | null>(null);
     const [totalPages, setTotalPages] = useState(0);
@@ -450,7 +452,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                             animate={{ scale: 1, y: 0, opacity: 1 }}
                             exit={{ scale: 0.85, y: 20, opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                            className="bg-white dark:bg-[#1e1e2e] rounded-3xl shadow-2xl p-10 max-w-sm w-full text-center border border-gray-100 dark:border-white/10"
+                            className="bg-white dark:bg-[#1e1e2e] rounded-[5px] shadow-2xl p-10 max-w-sm w-full text-center border border-gray-100 dark:border-white/10"
                         >
                             <div className="relative w-28 h-28 mx-auto mb-6">
                                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -497,12 +499,24 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500 dark:text-gray-400">
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500 dark:text-gray-400">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
-                        <Eraser className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-red-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <Eraser className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        )}
                     </div>
                     <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Delete Pages</h1>
@@ -520,17 +534,17 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                             {undoStack.length > 0 && (
                                 <button onClick={undo}
                                     title={`Undo: ${undoStack[undoStack.length - 1]?.label}`}
-                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors">
+                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-[5px] transition-colors">
                                     <RotateCcw className="w-3.5 h-3.5" /> Undo
                                 </button>
                             )}
                             <button onClick={() => setShowGrid(v => !v)} title={showGrid ? 'Hide page grid' : 'Show page grid'}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-400">
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-400">
                                 {showGrid ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                             <button
                                 onClick={() => { setFile(null); setThumbs([]); setTotalPages(0); setMarkedForDeletion(new Set()); setUndoStack([]); setLastResult(null); setResultBytes(null); }}
-                                className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center gap-1.5">
+                                className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] transition-colors flex items-center gap-1.5">
                                 <Trash2 className="w-3.5 h-3.5" /> Remove
                             </button>
                         </>
@@ -549,7 +563,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                     {!file ? (
                         <div ref={dropZoneRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
                             onClick={() => uploadInputRef.current?.click()}
-                            className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-2xl transition-all duration-200 cursor-pointer
+                            className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-[5px] transition-all duration-200 cursor-pointer
                               ${isDragOver ? 'border-red-500 bg-red-500/5 scale-[0.99]'
                                     : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636]'}
                               hover:border-red-400 dark:hover:border-red-500/50 hover:bg-red-50/30 dark:hover:bg-red-900/10`}
@@ -557,7 +571,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                             <input ref={uploadInputRef} type="file" accept=".pdf,application/pdf" className="hidden"
                                 onChange={e => e.target.files?.[0] && loadFile(e.target.files[0])} />
                             <motion.div animate={{ y: [0, -7, 0] }} transition={{ repeat: Infinity, duration: 2.6, ease: 'easeInOut' }}
-                                className="p-5 bg-red-100 dark:bg-red-900/30 rounded-2xl mb-5 shadow-lg shadow-red-200 dark:shadow-red-900/30">
+                                className="p-5 bg-red-100 dark:bg-red-900/30 rounded-[5px] mb-5 shadow-lg shadow-red-200 dark:shadow-red-900/30">
                                 <Upload className="w-10 h-10 text-red-600 dark:text-red-400" />
                             </motion.div>
                             <h2 className="text-lg font-black dark:text-white mb-1">Drop a PDF here</h2>
@@ -571,7 +585,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                     ) : (
                         <>
                             {loadingFile && (
-                                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-500/20">
+                                <div className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 rounded-[5px] border border-red-100 dark:border-red-500/20">
                                     <Loader2 className="w-4 h-4 text-red-500 animate-spin" />
                                     <span className="text-sm text-red-700 dark:text-red-300 font-medium">Reading PDF…</span>
                                 </div>
@@ -582,7 +596,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                                 <motion.div
                                     initial={{ opacity: 0, y: -8 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-500/20 rounded-xl text-sm"
+                                    className="flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-500/20 rounded-[5px] text-sm"
                                 >
                                     <Trash2 className="w-4 h-4 text-red-500 shrink-0" />
                                     <span className="text-red-700 dark:text-red-300 font-bold">
@@ -602,7 +616,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                                 <motion.div
                                     initial={{ opacity: 0, y: -8 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="flex items-center gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/20 rounded-xl"
+                                    className="flex items-center gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/20 rounded-[5px]"
                                 >
                                     <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                     <div className="flex-1">
@@ -614,7 +628,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                                         </p>
                                     </div>
                                     <button onClick={handleDownload}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors">
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-[5px] transition-colors">
                                         <Download className="w-3.5 h-3.5" /> Download
                                     </button>
                                 </motion.div>
@@ -623,7 +637,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                             {/* Page Grid */}
                             {showGrid && totalPages > 0 && (
                                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                                    className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#262636] rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden">
+                                    className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#262636] rounded-[5px] border border-gray-100 dark:border-white/5 overflow-hidden">
                                     {/* Grid toolbar */}
                                     <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/5 flex-wrap gap-2">
                                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
@@ -638,7 +652,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                                                 { label: 'Clear', fn: clearAll, title: 'Clear all selections' },
                                             ].map(({ label, fn, title }) => (
                                                 <button key={label} onClick={fn} title={title}
-                                                    className="px-2 py-1 text-[10px] font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                                                    className="px-2 py-1 text-[10px] font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] transition-colors">
                                                     {label}
                                                 </button>
                                             ))}
@@ -683,7 +697,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                                     { label: 'Removing', value: markedForDeletion.size, color: 'text-red-600 dark:text-red-400' },
                                     { label: 'Remaining', value: totalPages - markedForDeletion.size, color: 'text-emerald-600 dark:text-emerald-400' },
                                 ].map(stat => (
-                                    <div key={stat.label} className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-center">
+                                    <div key={stat.label} className="bg-gray-50 dark:bg-white/5 rounded-[5px] p-3 text-center">
                                         <p className={`text-base font-black ${stat.color}`}>{stat.value}</p>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">{stat.label}</p>
                                     </div>
@@ -712,7 +726,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                                     },
                                 ].map(item => (
                                     <button key={item.label} onClick={item.fn}
-                                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-gray-100 dark:border-white/10 hover:border-red-200 dark:hover:border-red-500/30 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all group">
+                                        className="flex flex-col items-center gap-1.5 p-3 rounded-[5px] border border-gray-100 dark:border-white/10 hover:border-red-200 dark:hover:border-red-500/30 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all group">
                                         <span className="text-gray-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">
                                             {item.icon}
                                         </span>
@@ -737,14 +751,14 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                                     onChange={e => setRangeInput(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && applyRangeInput()}
                                     placeholder="e.g. 2,4,6-10"
-                                    className="w-full font-mono text-xs px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none dark:text-gray-200 placeholder-gray-300 dark:placeholder-gray-600"
+                                    className="w-full font-mono text-xs px-3 py-2.5 rounded-[5px] bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none dark:text-gray-200 placeholder-gray-300 dark:placeholder-gray-600"
                                 />
                                 <button onClick={applyRangeInput}
-                                    className="w-full py-2 text-xs font-bold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                    className="w-full py-2 text-xs font-bold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30 rounded-[5px] hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                                     Apply Range
                                 </button>
                             </div>
-                            <div className="mt-3 p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
+                            <div className="mt-3 p-3 bg-gray-50 dark:bg-white/5 rounded-[5px]">
                                 <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1">
                                     <Info className="w-3 h-3" /> Format
                                 </p>
@@ -769,7 +783,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                             </div>
                             <div className="space-y-1 max-h-28 overflow-y-auto">
                                 {undoStack.slice().reverse().slice(0, 5).map((s, i) => (
-                                    <div key={i} className="flex items-center gap-2 text-[10px] text-gray-400 px-2 py-1 rounded-lg bg-gray-50 dark:bg-white/5">
+                                    <div key={i} className="flex items-center gap-2 text-[10px] text-gray-400 px-2 py-1 rounded-[5px] bg-gray-50 dark:bg-white/5">
                                         <RotateCcw className="w-2.5 h-2.5 shrink-0" />
                                         <span className="truncate">{s.label}</span>
                                         <span className="ml-auto font-mono shrink-0">{s.deletedIndices.length}pg</span>
@@ -798,7 +812,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">
                                                 Output Filename
                                             </label>
-                                            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus-within:ring-2 focus-within:ring-red-400 transition-all">
+                                            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] focus-within:ring-2 focus-within:ring-red-400 transition-all">
                                                 <FileDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                                                 <input type="text" value={outputPrefix}
                                                     onChange={e => setOutputPrefix(e.target.value)}
@@ -811,7 +825,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                                         </div>
 
                                         {/* Privacy note */}
-                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
+                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-[5px]">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                                             <p className="text-[10px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
                                                 All processing happens <strong>in your browser</strong>. Files are never uploaded to any server.
@@ -831,7 +845,7 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                         <button
                             onClick={handleDelete}
                             disabled={!file || isProcessing || markedForDeletion.size === 0 || loadingFile}
-                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-sm transition-all duration-200 shadow-lg
+                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-[5px] font-black text-sm transition-all duration-200 shadow-lg
                               ${!file || markedForDeletion.size === 0 || loadingFile
                                     ? 'bg-gray-200 dark:bg-white/5 text-gray-400 cursor-not-allowed shadow-none'
                                     : 'bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white shadow-red-500/30 hover:-translate-y-0.5 active:translate-y-0'}`}
@@ -860,20 +874,20 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack }) => {
                                             if (!resultBlobUrl) return;
                                             window.open(resultBlobUrl, '_blank');
                                         }}
-                                        className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-black text-sm bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-500 hover:to-indigo-400 text-white shadow-lg shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                                        className="w-full flex items-center justify-center gap-3 py-3.5 rounded-[5px] font-black text-sm bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-500 hover:to-indigo-400 text-white shadow-lg shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all"
                                     >
                                         <Eye className="w-5 h-5" /> View PDF
                                     </button>
                                     <div className="flex gap-2">
                                         <button
                                             onClick={handleDownload}
-                                            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+                                            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-[5px] font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
                                         >
                                             <Download className="w-4 h-4" /> Download
                                         </button>
                                         <button
                                             onClick={dismissResult}
-                                            className="px-3 py-3 rounded-xl font-bold text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                                            className="px-3 py-3 rounded-[5px] font-bold text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>

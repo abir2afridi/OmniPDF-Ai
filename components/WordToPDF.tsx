@@ -31,6 +31,7 @@ import {
     type WordConversionResult,
 } from '../services/wordService';
 import { downloadBytes } from '../services/pdfService';
+import { PDFTool } from '../types';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ interface ManagedFile {
 
 interface WordToPDFProps {
     onBack?: () => void;
+    activeTool?: PDFTool;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -82,7 +84,7 @@ const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
         initial={{ opacity: 0, x: 60, scale: 0.9 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
                 : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
                     : 'bg-blue-50 dark:bg-blue-900/60 border-blue-200 dark:border-blue-500/30 text-blue-800 dark:text-blue-200'}`}
@@ -140,7 +142,7 @@ const FileRow: React.FC<FileRowProps> = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, x: -20, scale: 0.97 }}
-            className="bg-white dark:bg-[#262636] rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden"
+            className="bg-white dark:bg-[#262636] rounded-[5px] border border-gray-100 dark:border-white/5 overflow-hidden"
         >
             {/* Main row */}
             <div className="flex items-center gap-3 p-4">
@@ -149,7 +151,7 @@ const FileRow: React.FC<FileRowProps> = ({
                     {entry.status === 'converting' ? (
                         <CircularProgress value={entry.progress} />
                     ) : (
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-[10px]
+                        <div className={`w-10 h-10 rounded-[5px] flex items-center justify-center font-black text-[10px]
                             ${isDocx
                                 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                                 : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'}`}>
@@ -190,13 +192,13 @@ const FileRow: React.FC<FileRowProps> = ({
                     )}
                     {entry.status === 'done' && (
                         <button onClick={onDownload}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors">
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-[5px] transition-colors">
                             <Download className="w-3.5 h-3.5" /> PDF
                         </button>
                     )}
                     {(entry.status === 'idle' || entry.status === 'error') && (
                         <button onClick={onConvert} disabled={isAnyConverting}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-colors
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[5px] transition-colors
                             ${isAnyConverting
                                     ? 'bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed'
                                     : 'bg-blue-600 hover:bg-blue-500 text-white'}`}>
@@ -252,7 +254,7 @@ const FileRow: React.FC<FileRowProps> = ({
             {/* Rename field when done */}
             {entry.status === 'done' && (
                 <div className="px-4 pb-4">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-150 dark:border-white/10 rounded-xl focus-within:ring-2 focus-within:ring-blue-400 transition-all">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-150 dark:border-white/10 rounded-[5px] focus-within:ring-2 focus-within:ring-blue-400 transition-all">
                         <FileDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                         <input
                             type="text"
@@ -271,7 +273,7 @@ const FileRow: React.FC<FileRowProps> = ({
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
+export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack, activeTool }) => {
     const [files, setFiles] = useState<ManagedFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const [toasts, setToasts] = useState<Toast[]>([]);
@@ -424,12 +426,24 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500 dark:text-gray-400">
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500 dark:text-gray-400">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-                        <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-blue-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        )}
                     </div>
                     <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Word to PDF</h1>
@@ -444,12 +458,12 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
                         <>
                             {doneCount > 1 && (
                                 <button onClick={downloadAll}
-                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors">
+                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-[5px] transition-colors">
                                     <Package className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Download All ZIP</span>
                                 </button>
                             )}
                             <button onClick={clearAll}
-                                className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center gap-1.5">
+                                className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] transition-colors flex items-center gap-1.5">
                                 <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                             </button>
                         </>
@@ -471,7 +485,7 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
                         onDragLeave={onDragLeave}
                         onDrop={onDrop}
                         onClick={() => inputRef.current?.click()}
-                        className={`shrink-0 border-2 border-dashed rounded-2xl transition-all duration-200 cursor-pointer
+                        className={`shrink-0 border-2 border-dashed rounded-[5px] transition-all duration-200 cursor-pointer
                           ${isDragOver
                                 ? 'border-blue-500 bg-blue-500/5 scale-[0.99]'
                                 : files.length > 0
@@ -492,7 +506,7 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
                                 <motion.div
                                     animate={{ y: [0, -6, 0] }}
                                     transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
-                                    className="p-4 bg-blue-100 dark:bg-blue-900/30 rounded-2xl shadow-lg shadow-blue-200 dark:shadow-blue-900/30 mx-auto"
+                                    className="p-4 bg-blue-100 dark:bg-blue-900/30 rounded-[5px] shadow-lg shadow-blue-200 dark:shadow-blue-900/30 mx-auto"
                                 >
                                     <Upload className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                                 </motion.div>
@@ -538,7 +552,7 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
 
                     {/* Note: this technique explanation */}
                     {files.length > 0 && (
-                        <div className="shrink-0 flex items-start gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/15 border border-amber-100 dark:border-amber-500/20 rounded-xl">
+                        <div className="shrink-0 flex items-start gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/15 border border-amber-100 dark:border-amber-500/20 rounded-[5px]">
                             <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                             <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
                                 <strong>How it works:</strong> Your .docx is converted to HTML via <em>mammoth.js</em>, then
@@ -563,7 +577,7 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
                                     { label: 'Done', value: doneCount, color: 'text-emerald-600 dark:text-emerald-400' },
                                     { label: 'Errors', value: errorCount, color: 'text-red-500' },
                                 ].map(s => (
-                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-center">
+                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-[5px] p-3 text-center">
                                         <p className={`text-base font-black ${s.color}`}>{s.value}</p>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">{s.label}</p>
                                     </div>
@@ -594,7 +608,7 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
                                             <div className="grid grid-cols-3 gap-1.5">
                                                 {(['a4', 'letter', 'legal'] as const).map(f => (
                                                     <button key={f} onClick={() => setPageFormat(f)}
-                                                        className={`py-2 text-xs font-bold rounded-xl border-2 transition-all capitalize
+                                                        className={`py-2 text-xs font-bold rounded-[5px] border-2 transition-all capitalize
                                                         ${pageFormat === f
                                                                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                                                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-blue-200'}`}>
@@ -610,7 +624,7 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
                                             <div className="grid grid-cols-2 gap-1.5">
                                                 {(['portrait', 'landscape'] as const).map(o => (
                                                     <button key={o} onClick={() => setOrientation(o)}
-                                                        className={`py-2 text-xs font-bold rounded-xl border-2 transition-all capitalize
+                                                        className={`py-2 text-xs font-bold rounded-[5px] border-2 transition-all capitalize
                                                         ${orientation === o
                                                                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                                                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-blue-200'}`}>
@@ -629,7 +643,7 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
                                                     { v: 2, label: 'High (192dpi)' },
                                                 ] as const).map(q => (
                                                     <button key={q.v} onClick={() => setQuality(q.v)}
-                                                        className={`py-2 text-xs font-bold rounded-xl border-2 transition-all
+                                                        className={`py-2 text-xs font-bold rounded-[5px] border-2 transition-all
                                                         ${quality === q.v
                                                                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                                                                 : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-blue-200'}`}>
@@ -640,7 +654,7 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
                                         </div>
 
                                         {/* Privacy note */}
-                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
+                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-[5px]">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                                             <p className="text-[10px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
                                                 All conversion happens <strong>entirely in your browser</strong>. Files are never uploaded.
@@ -678,7 +692,7 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
                         <button
                             onClick={convertAll}
                             disabled={files.length === 0 || isAnyConverting || (idleCount === 0 && errorCount === 0)}
-                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-sm transition-all shadow-lg
+                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-[5px] font-black text-sm transition-all shadow-lg
                             ${files.length === 0 || (idleCount === 0 && errorCount === 0)
                                     ? 'bg-gray-200 dark:bg-white/5 text-gray-400 cursor-not-allowed shadow-none'
                                     : 'bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0'}`}
@@ -699,7 +713,7 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack }) => {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 8 }}
                                     onClick={downloadAll}
-                                    className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-black text-sm bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                                    className="w-full flex items-center justify-center gap-3 py-3.5 rounded-[5px] font-black text-sm bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all"
                                 >
                                     <Package className="w-5 h-5" /> <span className="hidden sm:inline">Download All ({doneCount}) as ZIP</span>
                                 </motion.button>

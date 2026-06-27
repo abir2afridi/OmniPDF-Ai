@@ -58,13 +58,13 @@ export const History: React.FC = () => {
                         >
                             {[1, 2].map((i) => (
                                 <div key={i} className="flex gap-12 items-center text-[11px] font-bold text-gray-700 dark:text-gray-300">
-                                    <span className="flex items-center gap-2 px-2 py-1 bg-gray-100 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10">
+                                    <span className="flex items-center gap-2 px-2 py-1 bg-gray-100 dark:bg-white/5 rounded-[5px] border border-gray-200 dark:border-white/10">
                                         <ShieldCheck className="w-3 h-3 text-brand-500" /> DATA PERSISTENCE: 56.4 GB CACHED
                                     </span>
-                                    <span className="flex items-center gap-2 px-2 py-1 bg-gray-100 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10">
+                                    <span className="flex items-center gap-2 px-2 py-1 bg-gray-100 dark:bg-white/5 rounded-[5px] border border-gray-200 dark:border-white/10">
                                         <Clock className="w-3 h-3 text-indigo-500" /> RETENTION: 30 DAYS ACTIVE
                                     </span>
-                                    <span className="flex items-center gap-2 px-2 py-1 bg-gray-100 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10">
+                                    <span className="flex items-center gap-2 px-2 py-1 bg-gray-100 dark:bg-white/5 rounded-[5px] border border-gray-200 dark:border-white/10">
                                         <TrendingUp className="w-3 h-3 text-emerald-500" /> QUEUE: 0 ITEMS PENDING
                                     </span>
                                 </div>
@@ -112,10 +112,10 @@ export const History: React.FC = () => {
                                 placeholder="Search processed files..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-2xl text-sm font-bold text-gray-900 dark:text-white outline-none focus:ring-4 focus:ring-brand-500/5 transition-all"
+                                className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-[5px] text-sm font-bold text-gray-900 dark:text-white outline-none focus:ring-4 focus:ring-brand-500/5 transition-all"
                             />
                         </div>
-                        <button className="flex items-center justify-center gap-2 px-6 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-gray-900/10 shrink-0 border-none">
+                        <button className="flex items-center justify-center gap-2 px-6 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[5px] text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-gray-900/10 shrink-0 border-none">
                             <Filter className="w-4 h-4" /> Filter Archive
                         </button>
                     </div>
@@ -151,7 +151,7 @@ export const History: React.FC = () => {
                                         >
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-11 h-11 bg-brand-500/10 dark:bg-brand-500/20 rounded-xl flex items-center justify-center text-brand-600 dark:text-brand-400 shadow-sm group-hover:scale-110 transition-transform">
+                                                    <div className="w-11 h-11 bg-brand-500/10 dark:bg-brand-500/20 rounded-[5px] flex items-center justify-center text-brand-600 dark:text-brand-400 shadow-sm group-hover:scale-110 transition-transform">
                                                         <FileText className="w-5.5 h-5.5" />
                                                     </div>
                                                     <div>
@@ -174,14 +174,14 @@ export const History: React.FC = () => {
                                             </td>
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center justify-end gap-2 text-gray-400">
-                                                    <button className="p-2.5 hover:bg-white dark:hover:bg-slate-700 hover:text-brand-500 dark:hover:text-brand-400 rounded-xl transition-all hover:shadow-lg border border-transparent hover:border-gray-100 dark:hover:border-white/10 group/btn">
+                                                    <button className="p-2.5 hover:bg-white dark:hover:bg-slate-700 hover:text-brand-500 dark:hover:text-brand-400 rounded-[5px] transition-all hover:shadow-lg border border-transparent hover:border-gray-100 dark:hover:border-white/10 group/btn">
                                                         <Download className="w-4.5 h-4.5 group-hover/btn:scale-110 transition-transform" />
                                                     </button>
-                                                    <button className="p-2.5 hover:bg-white dark:hover:bg-slate-700 hover:text-indigo-500 dark:hover:text-indigo-400 rounded-xl transition-all hover:shadow-lg border border-transparent hover:border-gray-100 dark:hover:border-white/10 group/btn">
+                                                    <button className="p-2.5 hover:bg-white dark:hover:bg-slate-700 hover:text-indigo-500 dark:hover:text-indigo-400 rounded-[5px] transition-all hover:shadow-lg border border-transparent hover:border-gray-100 dark:hover:border-white/10 group/btn">
                                                         <ExternalLink className="w-4.5 h-4.5 group-hover/btn:scale-110 transition-transform" />
                                                     </button>
                                                     <div className="w-px h-6 bg-gray-100 dark:bg-white/10 mx-1" />
-                                                    <button className="p-2.5 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400 rounded-xl transition-all group/trash">
+                                                    <button className="p-2.5 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400 rounded-[5px] transition-all group/trash">
                                                         <Trash2 className="w-4.5 h-4.5 group-hover/trash:scale-110 transition-transform" />
                                                     </button>
                                                 </div>
@@ -207,8 +207,8 @@ export const History: React.FC = () => {
                             Showing <span className="text-gray-900 dark:text-white">{filteredDownloads.length}</span> of <span className="text-gray-900 dark:text-white">{downloads.length}</span> items
                         </div>
                         <div className="flex gap-2">
-                            <button className="px-5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all shadow-sm">Previous</button>
-                            <button className="px-5 py-2 rounded-xl bg-gray-900 dark:bg-white border border-gray-900 dark:border-white text-[10px] font-black uppercase text-white dark:text-gray-900 transition-all shadow-lg active:scale-95">Next</button>
+                            <button className="px-5 py-2 rounded-[5px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all shadow-sm">Previous</button>
+                            <button className="px-5 py-2 rounded-[5px] bg-gray-900 dark:bg-white border border-gray-900 dark:border-white text-[10px] font-black uppercase text-white dark:text-gray-900 transition-all shadow-lg active:scale-95">Next</button>
                         </div>
                     </div>
                 </motion.div>

@@ -56,7 +56,7 @@ export const Analytics: React.FC = () => {
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="lg:col-span-2 glass-card rounded-2xl p-6 bg-white dark:bg-[#262636] border border-gray-200 dark:border-white/5 flex flex-col md:flex-row gap-6 items-center"
+                        className="lg:col-span-2 glass-card rounded-[5px] p-6 bg-white dark:bg-[#262636] border border-gray-200 dark:border-white/5 flex flex-col md:flex-row gap-6 items-center"
                     >
                         <div className="relative">
                             <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-brand-500 to-purple-600 p-1">
@@ -72,18 +72,18 @@ export const Analytics: React.FC = () => {
                             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Alex Riverside</h2>
                             <p className="text-brand-600 dark:text-brand-400 font-semibold">Pro Subscriber</p>
                             <div className="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
-                                <div className="px-4 py-2 rounded-xl bg-[#f3f1ea] dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                                <div className="px-4 py-2 rounded-[5px] bg-[#f3f1ea] dark:bg-white/5 border border-gray-100 dark:border-white/5">
                                     <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Member Since</p>
                                     <p className="text-sm font-semibold">Jan 2024</p>
                                 </div>
-                                <div className="px-4 py-2 rounded-xl bg-[#f3f1ea] dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                                <div className="px-4 py-2 rounded-[5px] bg-[#f3f1ea] dark:bg-white/5 border border-gray-100 dark:border-white/5">
                                     <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Total Processed</p>
                                     <p className="text-sm font-semibold">1,248 Files</p>
                                 </div>
                             </div>
                         </div>
                         <div className="w-full md:w-auto">
-                            <button className="w-full md:w-auto px-6 py-3 bg-white dark:bg-[#1e1e2e] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white font-bold hover:shadow-lg transition-all">
+                            <button className="w-full md:w-auto px-6 py-3 bg-white dark:bg-[#1e1e2e] border border-gray-200 dark:border-white/10 rounded-[5px] text-gray-900 dark:text-white font-bold hover:shadow-lg transition-all">
                                 Edit Profile
                             </button>
                         </div>
@@ -92,13 +92,13 @@ export const Analytics: React.FC = () => {
                     <motion.div
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="glass-card rounded-2xl p-6 bg-gradient-to-br from-brand-600 to-indigo-700 text-white relative overflow-hidden shadow-2xl shadow-brand-500/20"
+                        className="glass-card rounded-[5px] p-6 bg-gradient-to-br from-brand-600 to-indigo-700 text-white relative overflow-hidden shadow-2xl shadow-brand-500/20"
                     >
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
                         <div className="relative z-10 h-full flex flex-col">
                             <div className="flex justify-between items-start mb-6">
-                                <div className="p-3 bg-white/20 rounded-xl">
+                                <div className="p-3 bg-white/20 rounded-[5px]">
                                     <CreditCard className="w-6 h-6 " />
                                 </div>
                                 <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-bold uppercase tracking-widest">Active</span>
@@ -107,7 +107,7 @@ export const Analytics: React.FC = () => {
                             <p className="text-white/70 text-sm mb-6">Billed monthly. Next payment of $19.00 on Nov 24, 2024.</p>
 
                             <div className="mt-auto space-y-3">
-                                <button className="w-full py-3 bg-white text-brand-600 rounded-xl font-bold hover:bg-white/90 transition-all flex items-center justify-center gap-2">
+                                <button className="w-full py-3 bg-white text-brand-600 rounded-[5px] font-bold hover:bg-white/90 transition-all flex items-center justify-center gap-2">
                                     Upgrade Plan
                                 </button>
                                 <p className="text-center text-[10px] text-white/50 uppercase font-bold tracking-widest">Manage Subscription</p>
@@ -127,10 +127,10 @@ export const Analytics: React.FC = () => {
                         <motion.div
                             key={i}
                             variants={itemVariants}
-                            className="glass-card rounded-2xl p-6 bg-white dark:bg-[#262636] border border-gray-200 dark:border-white/5 hover:border-brand-500/30 transition-all group"
+                            className="glass-card rounded-[5px] p-6 bg-white dark:bg-[#262636] border border-gray-200 dark:border-white/5 hover:border-brand-500/30 transition-all group"
                         >
                             <div className="flex justify-between items-start mb-4">
-                                <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                                <div className={`p-3 rounded-[5px] ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
                                     <stat.icon className="w-6 h-6" />
                                 </div>
                                 <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${stat.trendUp ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
@@ -147,7 +147,7 @@ export const Analytics: React.FC = () => {
                 {/* Bottom Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Chart Placeholder */}
-                    <div className="lg:col-span-2 glass-card rounded-2xl p-6 bg-white dark:bg-[#262636] border border-gray-200 dark:border-white/5">
+                    <div className="lg:col-span-2 glass-card rounded-[5px] p-6 bg-white dark:bg-[#262636] border border-gray-200 dark:border-white/5">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">Processing Trends</h3>
                             <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ export const Analytics: React.FC = () => {
                                     <div className="w-3 h-3 rounded-full bg-brand-500" />
                                     <span className="text-xs text-gray-500 font-medium">Efficiency</span>
                                 </div>
-                                <select className="bg-gray-100 dark:bg-white/5 border-none rounded-lg px-3 py-1 text-xs font-bold focus:ring-0">
+                                <select className="bg-gray-100 dark:bg-white/5 border-none rounded-[5px] px-3 py-1 text-xs font-bold focus:ring-0">
                                     <option>Weekly</option>
                                     <option>Monthly</option>
                                 </select>
@@ -177,7 +177,7 @@ export const Analytics: React.FC = () => {
                                     transition={{ duration: 0.8, delay: i * 0.05, ease: "easeOut" }}
                                     className="flex-1 bg-gradient-to-t from-brand-600/80 to-brand-400 rounded-t-lg relative group"
                                 >
-                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-1 rounded-[5px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
                                         {h}% Optimized
                                     </div>
                                 </motion.div>
@@ -195,10 +195,10 @@ export const Analytics: React.FC = () => {
                     </div>
 
                     {/* Activity List */}
-                    <div className="glass-card rounded-2xl p-6 bg-white dark:bg-[#262636] border border-gray-200 dark:border-white/5 overflow-hidden flex flex-col">
+                    <div className="glass-card rounded-[5px] p-6 bg-white dark:bg-[#262636] border border-gray-200 dark:border-white/5 overflow-hidden flex flex-col">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">File History</h3>
-                            <button className="p-1 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors">
+                            <button className="p-1 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors">
                                 <Filter className="w-4 h-4 text-gray-500" />
                             </button>
                         </div>
@@ -206,7 +206,7 @@ export const Analytics: React.FC = () => {
                         <div className="flex-1 space-y-4">
                             {recentFiles.map((file, i) => (
                                 <div key={i} className="flex items-center gap-4 group cursor-pointer">
-                                    <div className={`p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 ${file.iconColor} group-hover:scale-105 transition-transform`}>
+                                    <div className={`p-3 rounded-[5px] bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 ${file.iconColor} group-hover:scale-105 transition-transform`}>
                                         <file.icon className="w-5 h-5" />
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -217,14 +217,14 @@ export const Analytics: React.FC = () => {
                                             <span className="text-[10px] text-gray-500 dark:text-gray-400">{file.date}</span>
                                         </div>
                                     </div>
-                                    <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 dark:hover:bg-white/5 rounded transition-all">
+                                    <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-all">
                                         <MoreVertical className="w-4 h-4 text-gray-500" />
                                     </button>
                                 </div>
                             ))}
                         </div>
 
-                        <button className="mt-8 py-3 w-full border border-gray-200 dark:border-white/5 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 transition-all">
+                        <button className="mt-8 py-3 w-full border border-gray-200 dark:border-white/5 rounded-[5px] text-xs font-bold uppercase tracking-widest text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 transition-all">
                             View Full History
                         </button>
                     </div>

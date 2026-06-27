@@ -27,6 +27,7 @@ import {
     type CompressResult, type CompressionLevel,
 } from '../services/compressService';
 import { downloadBlob } from '../services/pdfService';
+import { PDFTool } from '../types';
 import JSZip from 'jszip';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -44,7 +45,7 @@ interface ManagedFile {
 }
 
 interface Toast { id: string; type: 'success' | 'error' | 'info'; message: string; }
-interface Props { onBack?: () => void; }
+interface Props { onBack?: () => void; activeTool?: PDFTool; }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ const ACCEPT = '.pdf,application/pdf';
 const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) => (
     <motion.div layout initial={{ opacity: 0, x: 60, scale: 0.9 }} animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
                 : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
                     : 'bg-violet-50 dark:bg-violet-900/60 border-violet-200 dark:border-violet-500/30 text-violet-800 dark:text-violet-200'}`}>
@@ -129,7 +130,7 @@ const FileCard: React.FC<FileCardProps> = ({
 
     return (
         <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            className="bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-[5px] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
 
             <div className="p-4">
                 {/* Top row */}
@@ -137,7 +138,7 @@ const FileCard: React.FC<FileCardProps> = ({
                     <div className={`w-2 h-2 rounded-full shrink-0 ${dot[entry.status]}`} />
 
                     {/* File icon */}
-                    <div className="sm:w-10 w-8 sm:h-12 h-10 shrink-0 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-500/20 flex flex-col items-center justify-center gap-0.5">
+                    <div className="sm:w-10 w-8 sm:h-12 h-10 shrink-0 rounded-[5px] bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-500/20 flex flex-col items-center justify-center gap-0.5">
                         <Minimize2 className="w-4 h-4 text-violet-500" />
                         <span className="text-[7px] font-black text-violet-400 uppercase tracking-wide">PDF</span>
                     </div>
@@ -163,7 +164,7 @@ const FileCard: React.FC<FileCardProps> = ({
                     <div className="flex items-center gap-1 shrink-0">
                         {entry.status === 'ready' && (
                             <button onClick={onCompress} disabled={isAnyCompressing}
-                                className="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-40 shadow-sm">
+                                className="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-[5px] transition-colors disabled:opacity-40 shadow-sm">
                                 Compress
                             </button>
                         )}
@@ -176,23 +177,23 @@ const FileCard: React.FC<FileCardProps> = ({
                         {entry.status === 'done' && (
                             <>
                                 <button onClick={onCompress} title="Re-compress"
-                                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg text-gray-400">
+                                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-400">
                                     <RotateCcw className="w-3.5 h-3.5" />
                                 </button>
                                 <button onClick={onDownload}
-                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm">
+                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-[5px] flex items-center gap-1.5 shadow-sm">
                                     <Download className="w-3.5 h-3.5" /> <span className="hidden sm:inline">.pdf</span>
                                 </button>
                             </>
                         )}
                         {entry.status === 'error' && (
                             <button onClick={onCompress}
-                                className="px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white text-xs font-bold rounded-xl flex items-center gap-1.5">
+                                className="px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white text-xs font-bold rounded-[5px] flex items-center gap-1.5">
                                 <RotateCcw className="w-3.5 h-3.5" /> Retry
                             </button>
                         )}
                         <button onClick={onRemove}
-                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-gray-300 hover:text-red-500 transition-colors">
+                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] text-gray-300 hover:text-red-500 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" />
                         </button>
                     </div>
@@ -225,7 +226,7 @@ const SavingsBadge = ({ files }: { files: ManagedFile[] }) => {
     const saved = totalOrig - totalComp;
     const pct = totalOrig > 0 ? Math.round((saved / totalOrig) * 100) : 0;
     return (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/30 rounded-xl text-[10px] font-black text-emerald-700 dark:text-emerald-300 max-w-[200px] sm:max-w-none truncate">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/30 rounded-[5px] text-[10px] font-black text-emerald-700 dark:text-emerald-300 max-w-[200px] sm:max-w-none truncate">
             <CheckCircle2 className="w-3.5 h-3.5" />
             Saved {fmtSize(saved)} across {done.length} file{done.length !== 1 ? 's' : ''} ({pct}% avg)
         </div>
@@ -234,7 +235,7 @@ const SavingsBadge = ({ files }: { files: ManagedFile[] }) => {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export const CompressPDF: React.FC<Props> = ({ onBack }) => {
+export const CompressPDF: React.FC<Props> = ({ onBack, activeTool }) => {
     const [files, setFiles] = useState<ManagedFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const [toasts, setToasts] = useState<Toast[]>([]);
@@ -352,12 +353,24 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
             <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
-                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500">
+                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
-                        <Minimize2 className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-violet-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <Minimize2 className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                        )}
                     </div>
                     <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Compress PDF</h1>
@@ -368,19 +381,19 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
                     <SavingsBadge files={files} />
                     {doneCount > 1 && (
                         <button onClick={downloadAll}
-                            className="px-3 py-2 text-xs font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-xl flex items-center gap-1.5 transition-colors">
+                            className="px-3 py-2 text-xs font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-[5px] flex items-center gap-1.5 transition-colors">
                             <Archive className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Download All ({doneCount})</span>
                         </button>
                     )}
                     {readyCount > 1 && (
                         <button onClick={compressAll} disabled={isCompressing}
-                            className="px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+                            className="px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
                             <FileDown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Compress All ({readyCount})</span>
                         </button>
                     )}
                     {files.length > 0 && (
                         <button onClick={() => setFiles([])}
-                            className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl flex items-center gap-1.5 transition-colors">
+                            className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] flex items-center gap-1.5 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
@@ -397,7 +410,7 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
                     {/* Drop zone */}
                     <div ref={dropRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
                         onClick={() => fileRef.current?.click()}
-                        className={`shrink-0 border-2 border-dashed rounded-2xl transition-all duration-200 cursor-pointer
+                        className={`shrink-0 border-2 border-dashed rounded-[5px] transition-all duration-200 cursor-pointer
               ${isDragOver ? 'border-violet-500 bg-violet-500/5 scale-[0.99]'
                             : files.length > 0
                                 ? 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636] py-4'
@@ -408,7 +421,7 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
                         {files.length === 0 ? (
                             <div className="flex flex-col items-center justify-center gap-3">
                                 <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                                    className="p-4 bg-violet-100 dark:bg-violet-900/30 rounded-2xl shadow-lg shadow-violet-200 dark:shadow-violet-900/30 mx-auto">
+                                    className="p-4 bg-violet-100 dark:bg-violet-900/30 rounded-[5px] shadow-lg shadow-violet-200 dark:shadow-violet-900/30 mx-auto">
                                     <Upload className="w-7 h-7 text-violet-600 dark:text-violet-400" />
                                 </motion.div>
                                 <div className="text-center">
@@ -462,7 +475,7 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
                                     { label: 'Ready', value: readyCount, color: 'text-gray-500 dark:text-gray-400' },
                                     { label: 'Done', value: doneCount, color: 'text-gray-700 dark:text-gray-300' },
                                 ].map(s => (
-                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-center">
+                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-[5px] p-3 text-center">
                                         <p className={`text-base font-black font-mono ${s.color}`}>{s.value}</p>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">{s.label}</p>
                                     </div>
@@ -480,7 +493,7 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
                                 const icon = l === 'low' ? '🟢' : l === 'medium' ? '🟡' : '🔴';
                                 return (
                                     <button key={l} onClick={() => setLevel(l)}
-                                        className={`w-full flex items-start gap-3 px-3 py-3 rounded-xl border-2 text-left transition-all
+                                        className={`w-full flex items-start gap-3 px-3 py-3 rounded-[5px] border-2 text-left transition-all
                       ${level === l
                                                 ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30'
                                                 : 'border-gray-100 dark:border-white/10 hover:border-violet-200 dark:hover:border-violet-500/30'}`}>
@@ -504,7 +517,7 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
                     <div className="p-5 border-b border-gray-100 dark:border-white/5">
                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Options</p>
                         <button onClick={() => setStripMetadata(v => !v)}
-                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border-2 transition-all
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[5px] border-2 transition-all
                 ${stripMetadata
                                     ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30'
                                     : 'border-gray-100 dark:border-white/10 hover:border-violet-200'}`}>
@@ -550,7 +563,7 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
                                         <p className="text-amber-600 dark:text-amber-400 font-bold">
                                             ⚠ Medium/High re-render entire pages — text quality may decrease. Use Low for text-heavy PDFs.
                                         </p>
-                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
+                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-[5px]">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                                             <p className="text-[10px] text-emerald-700 dark:text-emerald-300">
                                                 <strong>100% in your browser.</strong> Files never leave your device.
@@ -582,8 +595,8 @@ export const CompressPDF: React.FC<Props> = ({ onBack }) => {
 
                     {/* Badge */}
                     <div className="p-5 border-t border-gray-100 dark:border-white/5 sticky bottom-0 z-10">
-                        <div className="flex items-center gap-3 p-3 bg-violet-50 dark:bg-violet-900/20 rounded-xl">
-                            <div className="w-8 h-8 shrink-0 rounded-lg bg-violet-600 flex items-center justify-center">
+                        <div className="flex items-center gap-3 p-3 bg-violet-50 dark:bg-violet-900/20 rounded-[5px]">
+                            <div className="w-8 h-8 shrink-0 rounded-[5px] bg-violet-600 flex items-center justify-center">
                                 <Minimize2 className="w-4 h-4 text-white" />
                             </div>
                             <div>

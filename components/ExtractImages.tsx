@@ -29,6 +29,7 @@ import {
     type ExtractedImage, type ExtractResult, type ImageFormat,
 } from '../services/extractImagesService';
 import { downloadBlob } from '../services/pdfService';
+import { PDFTool } from '../types';
 import JSZip from 'jszip';
 
 async function loadPdfjs() {
@@ -57,7 +58,7 @@ interface ManagedFile {
 }
 
 interface Toast { id: string; type: 'success' | 'error' | 'info'; message: string; }
-interface Props { onBack?: () => void; }
+interface Props { onBack?: () => void; activeTool?: PDFTool; }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -94,7 +95,7 @@ function parseRange(raw: string, total: number): number[] {
 const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) => (
     <motion.div layout initial={{ opacity: 0, x: 60, scale: 0.9 }} animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
                 : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
                     : 'bg-cyan-50 dark:bg-cyan-900/60 border-cyan-200 dark:border-cyan-500/30 text-cyan-800 dark:text-cyan-200'}`}>
@@ -141,7 +142,7 @@ const Lightbox: React.FC<LightboxProps> = ({ images, index, onClose, onNav }) =>
                 </button>
 
                 {/* Image */}
-                <div className="rounded-2xl overflow-hidden shadow-2xl bg-gray-900 border border-white/10 max-h-[75vh]">
+                <div className="rounded-[5px] overflow-hidden shadow-2xl bg-gray-900 border border-white/10 max-h-[75vh]">
                     <img src={img.blobUrl} alt={img.name}
                         className="max-w-full max-h-[75vh] object-contain" />
                 </div>
@@ -153,7 +154,7 @@ const Lightbox: React.FC<LightboxProps> = ({ images, index, onClose, onNav }) =>
                     <span>{fmtSize(img.sizeBytes)}</span>
                     <span className="uppercase font-bold text-cyan-400">.{img.format === 'jpeg' ? 'jpg' : img.format}</span>
                     <button onClick={() => downloadBlob(img.blob, `${img.name}.${img.format === 'jpeg' ? 'jpg' : img.format}`)}
-                        className="flex items-center gap-1 px-3 py-1 bg-cyan-500 hover:bg-cyan-400 text-white rounded-lg text-xs font-bold transition-colors">
+                        className="flex items-center gap-1 px-3 py-1 bg-cyan-500 hover:bg-cyan-400 text-white rounded-[5px] text-xs font-bold transition-colors">
                         <Download className="w-3 h-3" /> Download
                     </button>
                 </div>
@@ -162,12 +163,12 @@ const Lightbox: React.FC<LightboxProps> = ({ images, index, onClose, onNav }) =>
                 {images.length > 1 && (
                     <div className="flex items-center gap-3 text-white/60 text-xs">
                         <button disabled={index === 0} onClick={() => onNav(index - 1)}
-                            className="p-2 hover:bg-white/10 rounded-lg disabled:opacity-30 transition-colors">
+                            className="p-2 hover:bg-white/10 rounded-[5px] disabled:opacity-30 transition-colors">
                             <ChevronLeft className="w-4 h-4" />
                         </button>
                         <span>{index + 1} / {images.length}</span>
                         <button disabled={index === images.length - 1} onClick={() => onNav(index + 1)}
-                            className="p-2 hover:bg-white/10 rounded-lg disabled:opacity-30 transition-colors">
+                            className="p-2 hover:bg-white/10 rounded-[5px] disabled:opacity-30 transition-colors">
                             <ChevronRight className="w-4 h-4" />
                         </button>
                     </div>
@@ -192,7 +193,7 @@ const ImageGallery: React.FC<GalleryProps> = ({ images, format, onLightbox }) =>
             {images.map((img, i) => (
                 <motion.div key={img.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.02 }}
-                    className="group relative bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-xl overflow-hidden hover:border-cyan-300 dark:hover:border-cyan-500/50 transition-all hover:shadow-md cursor-pointer"
+                    className="group relative bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-[5px] overflow-hidden hover:border-cyan-300 dark:hover:border-cyan-500/50 transition-all hover:shadow-md cursor-pointer"
                     onClick={() => onLightbox(i)}>
 
                     {/* Thumbnail */}
@@ -203,7 +204,7 @@ const ImageGallery: React.FC<GalleryProps> = ({ images, format, onLightbox }) =>
 
                     {/* Hover overlay */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
+                        <div className="p-2 bg-white/20 backdrop-blur-sm rounded-[5px]">
                             <ZoomIn className="w-5 h-5 text-white" />
                         </div>
                     </div>
@@ -219,7 +220,7 @@ const ImageGallery: React.FC<GalleryProps> = ({ images, format, onLightbox }) =>
 
                     {/* Download button */}
                     <button onClick={e => { e.stopPropagation(); downloadBlob(img.blob, `${img.name}.${ext}`); }}
-                        className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 p-1.5 bg-cyan-500 hover:bg-cyan-400 text-white rounded-lg transition-all shadow-md">
+                        className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 p-1.5 bg-cyan-500 hover:bg-cyan-400 text-white rounded-[5px] transition-all shadow-md">
                         <Download className="w-3 h-3" />
                     </button>
                 </motion.div>
@@ -273,14 +274,14 @@ const FileCard: React.FC<FileCardProps> = ({
 
     return (
         <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            className="bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-[5px] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
 
             {/* File row */}
             <div className="flex items-center gap-3 p-4">
                 <div className={`w-2 h-2 rounded-full shrink-0 ${dot[entry.status]}`} />
 
                 {/* Thumb */}
-                <div className="w-10 h-12 shrink-0 rounded-lg overflow-hidden bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center">
+                <div className="w-10 h-12 shrink-0 rounded-[5px] overflow-hidden bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center">
                     {entry.thumb
                         ? <img src={entry.thumb} alt="" className="w-full h-full object-cover" />
                         : <FileImage className="w-5 h-5 text-gray-300 dark:text-gray-600" />}
@@ -315,12 +316,12 @@ const FileCard: React.FC<FileCardProps> = ({
                         <>
                             {entry.totalPages > 1 && (
                                 <button onClick={() => setShowRange(v => !v)}
-                                    className="p-1.5 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 rounded-lg text-cyan-400 hover:text-cyan-600 transition-colors">
+                                    className="p-1.5 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 rounded-[5px] text-cyan-400 hover:text-cyan-600 transition-colors">
                                     <Settings2 className="w-4 h-4" />
                                 </button>
                             )}
                             <button onClick={onExtract} disabled={isAnyExtracting}
-                                className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-40 shadow-sm">
+                                className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-[5px] transition-colors disabled:opacity-40 shadow-sm">
                                 Extract
                             </button>
                         </>
@@ -334,15 +335,15 @@ const FileCard: React.FC<FileCardProps> = ({
                     {entry.status === 'done' && imgCount > 0 && (
                         <>
                             <button onClick={() => setShowGallery(v => !v)}
-                                className="p-1.5 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 rounded-lg text-cyan-500 transition-colors" title="Toggle gallery">
+                                className="p-1.5 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 rounded-[5px] text-cyan-500 transition-colors" title="Toggle gallery">
                                 <Grid3x3 className="w-4 h-4" />
                             </button>
                             <button onClick={onExtract} title="Re-extract"
-                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg text-gray-400">
+                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-400">
                                 <RotateCcw className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={downloadAll}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
                                 <Download className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{imgCount === 1 ? '1 image' : `${imgCount} ↓`}</span>
                             </button>
                         </>
@@ -352,12 +353,12 @@ const FileCard: React.FC<FileCardProps> = ({
                     )}
                     {entry.status === 'error' && (
                         <button onClick={onExtract}
-                            className="px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white text-xs font-bold rounded-xl flex items-center gap-1.5">
+                            className="px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white text-xs font-bold rounded-[5px] flex items-center gap-1.5">
                             <RotateCcw className="w-3.5 h-3.5" /> Retry
                         </button>
                     )}
                     <button onClick={onRemove}
-                        className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-gray-300 hover:text-red-500 transition-colors">
+                        className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] text-gray-300 hover:text-red-500 transition-colors">
                         <Trash2 className="w-3.5 h-3.5" />
                     </button>
                 </div>
@@ -386,11 +387,11 @@ const FileCard: React.FC<FileCardProps> = ({
                                 <input type="text" value={rangeVal} onChange={e => setRangeVal(e.target.value)}
                                     onBlur={() => onPageRange(rangeVal)}
                                     placeholder={`1-${entry.totalPages}`}
-                                    className="flex-1 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-mono dark:text-white outline-none focus:ring-2 focus:ring-cyan-400" />
+                                    className="flex-1 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] text-xs font-mono dark:text-white outline-none focus:ring-2 focus:ring-cyan-400" />
                                 <button onClick={() => { onPageRange(rangeVal); setShowRange(false); }}
-                                    className="px-3 py-2 bg-cyan-600 text-white text-xs font-bold rounded-xl hover:bg-cyan-500">Apply</button>
+                                    className="px-3 py-2 bg-cyan-600 text-white text-xs font-bold rounded-[5px] hover:bg-cyan-500">Apply</button>
                                 <button onClick={() => { setRangeVal(''); onPageRange(''); }}
-                                    className="px-3 py-2 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 text-xs font-bold rounded-xl hover:bg-gray-200">All</button>
+                                    className="px-3 py-2 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 text-xs font-bold rounded-[5px] hover:bg-gray-200">All</button>
                             </div>
                         </div>
                     </motion.div>
@@ -415,7 +416,7 @@ const FileCard: React.FC<FileCardProps> = ({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export const ExtractImages: React.FC<Props> = ({ onBack }) => {
+export const ExtractImages: React.FC<Props> = ({ onBack, activeTool }) => {
     const [files, setFiles] = useState<ManagedFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const [toasts, setToasts] = useState<Toast[]>([]);
@@ -577,12 +578,24 @@ export const ExtractImages: React.FC<Props> = ({ onBack }) => {
             <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
-                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500">
+                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className="p-2 bg-cyan-100 dark:bg-cyan-900/30 rounded-xl">
-                        <ImageIcon className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-cyan-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <ImageIcon className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                        )}
                     </div>
                     <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Extract PDF Images</h1>
@@ -591,25 +604,25 @@ export const ExtractImages: React.FC<Props> = ({ onBack }) => {
                 </div>
                 <div className="flex items-center gap-1 lg:gap-2">
                     {totalExtracted > 0 && (
-                        <span className="text-[10px] font-black uppercase tracking-widest text-cyan-600 dark:text-cyan-400 px-3 py-1.5 bg-cyan-50 dark:bg-cyan-900/20 rounded-xl">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-cyan-600 dark:text-cyan-400 px-3 py-1.5 bg-cyan-50 dark:bg-cyan-900/20 rounded-[5px]">
                             {totalExtracted} image{totalExtracted !== 1 ? 's' : ''} extracted
                         </span>
                     )}
                     {doneWithImages > 1 && (
                         <button onClick={downloadAllZip}
-                            className="px-3 py-2 text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 rounded-xl flex items-center gap-1.5 transition-colors">
+                            className="px-3 py-2 text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 rounded-[5px] flex items-center gap-1.5 transition-colors">
                             <Archive className="w-3.5 h-3.5" /> <span className="hidden sm:inline">All Images (ZIP)</span>
                         </button>
                     )}
                     {readyCount > 1 && (
                         <button onClick={extractAll} disabled={isExtracting}
-                            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+                            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
                             <ImageIcon className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Extract All ({readyCount})</span>
                         </button>
                     )}
                     {files.length > 0 && (
                         <button onClick={() => { files.forEach(f => f.result && revokeImageUrls(f.result.images)); setFiles([]); }}
-                            className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl flex items-center gap-1.5 transition-colors">
+                            className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] flex items-center gap-1.5 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
@@ -626,13 +639,13 @@ export const ExtractImages: React.FC<Props> = ({ onBack }) => {
                     {/* Drop zone */}
                     <div ref={dropRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
                         onClick={() => fileRef.current?.click()}
-                        className={`shrink-0 flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-2xl py-10 cursor-pointer transition-all duration-200
+                        className={`shrink-0 flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-[5px] py-10 cursor-pointer transition-all duration-200
               ${isDragOver ? 'border-cyan-500 bg-cyan-500/5 scale-[0.99]' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636]'}
               hover:border-cyan-400 dark:hover:border-cyan-500/50 hover:bg-cyan-50/30 dark:hover:bg-cyan-900/10`}>
                         <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden"
                             onChange={e => e.target.files && addFiles(e.target.files)} />
                         <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                            className="p-4 bg-cyan-100 dark:bg-cyan-900/30 rounded-2xl shadow-lg shadow-cyan-200 dark:shadow-cyan-900/30">
+                            className="p-4 bg-cyan-100 dark:bg-cyan-900/30 rounded-[5px] shadow-lg shadow-cyan-200 dark:shadow-cyan-900/30">
                             <Upload className="w-7 h-7 text-cyan-600 dark:text-cyan-400" />
                         </motion.div>
                         <div className="text-center">
@@ -680,7 +693,7 @@ export const ExtractImages: React.FC<Props> = ({ onBack }) => {
                                     { label: 'Ready', value: readyCount, color: 'text-gray-500 dark:text-gray-400' },
                                     { label: 'Done', value: files.filter(f => f.status === 'done').length, color: 'text-gray-700 dark:text-gray-300' },
                                 ].map(s => (
-                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-center">
+                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-[5px] p-3 text-center">
                                         <p className={`text-base font-black ${s.color}`}>{s.value}</p>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">{s.label}</p>
                                     </div>
@@ -698,7 +711,7 @@ export const ExtractImages: React.FC<Props> = ({ onBack }) => {
                                 { v: 'jpeg' as ImageFormat, label: 'JPEG', sub: 'Smaller · best for photos' },
                             ]).map(opt => (
                                 <button key={opt.v} onClick={() => setFormat(opt.v)}
-                                    className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all
+                                    className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-[5px] border-2 transition-all
                     ${format === opt.v
                                             ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300'
                                             : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-cyan-200'}`}>
@@ -723,12 +736,12 @@ export const ExtractImages: React.FC<Props> = ({ onBack }) => {
                                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
                                     exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                                     <div className="px-5 pb-5 space-y-3 text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                                        <p>OmniPDF walks each PDF page's operator list to find <code className="text-[10px] bg-gray-100 dark:bg-white/10 px-1 rounded">ImageXObject</code> commands, then decodes the raw pixel data and exports it as PNG or JPEG.</p>
+                                        <p>OmniPDF walks each PDF page's operator list to find <code className="text-[10px] bg-gray-100 dark:bg-white/10 px-1 rounded-[5px]">ImageXObject</code> commands, then decodes the raw pixel data and exports it as PNG or JPEG.</p>
                                         <p>Only <strong className="text-gray-700 dark:text-gray-200">embedded raster images</strong> (photos, screenshots, diagrams stored as bitmaps) are extracted. Vector graphics, text, and drawn paths are not images and will not appear.</p>
                                         <p className="text-amber-600 dark:text-amber-400 font-bold">
                                             ⚠ Very small images (icons, color markers) are automatically filtered out.
                                         </p>
-                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
+                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-[5px]">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                                             <p className="text-[10px] text-emerald-700 dark:text-emerald-300">
                                                 <strong>100% in your browser.</strong> Files never leave your device.
@@ -760,8 +773,8 @@ export const ExtractImages: React.FC<Props> = ({ onBack }) => {
 
                     {/* Badge */}
                     <div className="p-5 border-t border-gray-100 dark:border-white/5 sticky bottom-0 z-10">
-                        <div className="flex items-center gap-3 p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-xl">
-                            <div className="w-8 h-8 shrink-0 rounded-lg bg-cyan-600 flex items-center justify-center">
+                        <div className="flex items-center gap-3 p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-[5px]">
+                            <div className="w-8 h-8 shrink-0 rounded-[5px] bg-cyan-600 flex items-center justify-center">
                                 <ImageIcon className="w-4 h-4 text-white" />
                             </div>
                             <div>

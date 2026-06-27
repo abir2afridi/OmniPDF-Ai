@@ -112,14 +112,14 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ value, onChange }) 
       <label className="block text-sm text-gray-500 dark:text-gray-400 mb-2">Interface Language ({languages.length} languages)</label>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-gray-50 dark:bg-[#1e1e2e] border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 text-left text-gray-900 dark:text-white focus:outline-none focus:border-brand-500 flex items-center justify-between"
+        className="w-full bg-gray-50 dark:bg-[#1e1e2e] border border-gray-200 dark:border-white/10 rounded-[5px] px-4 py-2 text-left text-gray-900 dark:text-white focus:outline-none focus:border-brand-500 flex items-center justify-between"
       >
         <span>{selectedLanguage?.label || 'Select Language'}</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#262636] border border-gray-200 dark:border-white/10 rounded-lg shadow-lg max-h-64 overflow-hidden">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#262636] border border-gray-200 dark:border-white/10 rounded-[5px] shadow-lg max-h-64 overflow-hidden">
           <div className="p-2 border-b border-gray-200 dark:border-white/10">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -128,7 +128,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ value, onChange }) 
                 placeholder="Search languages..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-[#1e1e2e] border border-gray-200 dark:border-white/10 rounded-md text-sm text-gray-900 dark:text-white focus:outline-none focus:border-brand-500"
+                className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-[#1e1e2e] border border-gray-200 dark:border-white/10 rounded-[5px] text-sm text-gray-900 dark:text-white focus:outline-none focus:border-brand-500"
               />
             </div>
           </div>
@@ -276,7 +276,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
               <p className="text-gray-400 text-sm font-medium mt-1">Manage your preferences and account details.</p>
             </div>
             {showSaveMessage && (
-              <div className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 px-5 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/10">
+              <div className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 px-5 py-3 rounded-[5px] text-sm font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/10">
                 <Check className="w-4 h-4" /> Changes Saved!
               </div>
             )}
@@ -285,36 +285,36 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
           {/* GENERAL TAB */}
           {activeTab === 'general' && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-[#262636] rounded-xl border border-gray-200 dark:border-white/5 p-6 shadow-sm">
+              <div className="bg-white dark:bg-[#262636] rounded-[5px] border border-gray-200 dark:border-white/5 p-6 shadow-sm">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Appearance</h3>
                 <div className="grid grid-cols-2 gap-4">
                   {/* Dark Mode */}
                   <div
                     onClick={() => setTheme('dark')}
-                    className={`border-2 rounded-lg p-4 bg-[#1e1e2e] cursor-pointer relative transition-all hover:shadow-lg
+                    className={`border-2 rounded-[5px] p-4 bg-[#1e1e2e] cursor-pointer relative transition-all hover:shadow-lg
                         ${theme === 'dark' ? 'border-brand-500 shadow-brand-500/20' : 'border-gray-200 dark:border-white/10'}
                     `}
                   >
                     {theme === 'dark' && <div className="absolute top-2 right-2 text-brand-500"><Check className="w-4 h-4" /></div>}
-                    <div className="h-20 bg-[#11111b] rounded mb-3 border border-white/10"></div>
+                    <div className="h-20 bg-[#11111b] rounded-[5px] mb-3 border border-white/10"></div>
                     <span className="text-sm font-medium text-white">Dark Mode</span>
                   </div>
 
                   {/* Light Mode */}
                   <div
                     onClick={() => setTheme('light')}
-                    className={`border-2 rounded-lg p-4 bg-gray-100 cursor-pointer relative transition-all hover:shadow-lg
+                    className={`border-2 rounded-[5px] p-4 bg-gray-100 cursor-pointer relative transition-all hover:shadow-lg
                         ${theme === 'light' ? 'border-brand-500 shadow-brand-500/20' : 'border-gray-200 dark:border-white/10'}
                     `}
                   >
                     {theme === 'light' && <div className="absolute top-2 right-2 text-brand-500"><Check className="w-4 h-4" /></div>}
-                    <div className="h-20 bg-white rounded mb-3 border border-gray-300"></div>
+                    <div className="h-20 bg-white rounded-[5px] mb-3 border border-gray-300"></div>
                     <span className="text-sm font-medium text-gray-900">Light Mode</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-[#262636] rounded-xl border border-gray-200 dark:border-white/5 p-6 shadow-sm">
+              <div className="bg-white dark:bg-[#262636] rounded-[5px] border border-gray-200 dark:border-white/5 p-6 shadow-sm">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Language & Region</h3>
                 <div className="space-y-4">
                   <LanguageSelector
@@ -326,7 +326,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
                     <select
                       value={dateFormat}
                       onChange={(e) => handleChangeLocal(setDateFormat, e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-[#1e1e2e] border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:border-brand-500"
+                      className="w-full bg-gray-50 dark:bg-[#1e1e2e] border border-gray-200 dark:border-white/10 rounded-[5px] px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:border-brand-500"
                     >
                       <option>MM/DD/YYYY</option>
                       <option>DD/MM/YYYY</option>
@@ -341,7 +341,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
           {/* ACCOUNT TAB */}
           {activeTab === 'account' && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-[#262636] rounded-xl border border-gray-200 dark:border-white/5 p-6 flex flex-col md:flex-row items-center md:items-start gap-6 shadow-sm">
+              <div className="bg-white dark:bg-[#262636] rounded-[5px] border border-gray-200 dark:border-white/5 p-6 flex flex-col md:flex-row items-center md:items-start gap-6 shadow-sm">
                 <div className="w-20 h-20 rounded-full bg-brand-600 flex items-center justify-center text-3xl font-black text-white border-4 border-gray-50 dark:border-[#1e1e2e] shadow-lg shrink-0 uppercase overflow-hidden">
                   {(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? (
                     <img
@@ -362,7 +362,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
                     <span className="px-2 py-1 bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400 text-xs rounded-full border border-green-200 dark:border-green-500/20 font-medium">Verified</span>
                   </div>
                   <div className="flex flex-col gap-2 w-full md:w-auto mt-4 md:mt-0">
-                    <button className="px-5 py-2.5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-sm font-bold transition-colors text-gray-700 dark:text-gray-300 w-full md:w-auto">
+                    <button className="px-5 py-2.5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-sm font-bold transition-colors text-gray-700 dark:text-gray-300 w-full md:w-auto">
                       Edit Profile
                     </button>
                     <button
@@ -373,19 +373,19 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
                           // Network error — silently ignore
                         }
                       }}
-                      className="px-5 py-2.5 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 border border-transparent rounded-xl text-sm font-bold transition-colors text-gray-600 dark:text-gray-400 w-full md:w-auto"
+                      className="px-5 py-2.5 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 border border-transparent rounded-[5px] text-sm font-bold transition-colors text-gray-600 dark:text-gray-400 w-full md:w-auto"
                     >
                       Reset Password
                     </button>
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-[#262636] rounded-xl border border-gray-200 dark:border-white/5 p-6 shadow-sm">
+                <div className="bg-white dark:bg-[#262636] rounded-[5px] border border-gray-200 dark:border-white/5 p-6 shadow-sm">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Security</h3>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1e1e2e] rounded-lg border border-gray-200 dark:border-white/5">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1e1e2e] rounded-[5px] border border-gray-200 dark:border-white/5">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-brand-100 dark:bg-brand-500/10 rounded-lg text-brand-600 dark:text-brand-400"><Shield className="w-5 h-5" /></div>
+                        <div className="p-2 bg-brand-100 dark:bg-brand-500/10 rounded-[5px] text-brand-600 dark:text-brand-400"><Shield className="w-5 h-5" /></div>
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">Two-Factor Authentication</p>
                           <p className="text-xs text-gray-500 dark:text-gray-500">Add an extra layer of security to your account.</p>
@@ -396,9 +396,9 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1e1e2e] rounded-lg border border-gray-200 dark:border-white/5">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#1e1e2e] rounded-[5px] border border-gray-200 dark:border-white/5">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-red-100 dark:bg-red-500/10 rounded-lg text-red-600 dark:text-red-400"><LogOut className="w-5 h-5" /></div>
+                        <div className="p-2 bg-red-100 dark:bg-red-500/10 rounded-[5px] text-red-600 dark:text-red-400"><LogOut className="w-5 h-5" /></div>
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">Active Sessions</p>
                           <p className="text-xs text-gray-500 dark:text-gray-500">You are logged in on 2 devices.</p>
@@ -415,7 +415,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
           {/* WORKSPACE TAB */}
           {activeTab === 'workspace' && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-[#262636] rounded-xl border border-gray-200 dark:border-white/5 p-6 shadow-sm">
+              <div className="bg-white dark:bg-[#262636] rounded-[5px] border border-gray-200 dark:border-white/5 p-6 shadow-sm">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Processing Defaults</h3>
                 <div className="space-y-5">
                   <div>
@@ -425,7 +425,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
                         <button
                           key={opt}
                           onClick={() => handleChangeLocal(setCompressionDefault, opt.toLowerCase())}
-                          className={`flex-1 py-2 rounded-lg text-sm border transition-all
+                          className={`flex-1 py-2 rounded-[5px] text-sm border transition-all
                                             ${compressionDefault === opt.toLowerCase()
                               ? 'bg-brand-600 border-brand-500 text-white'
                               : 'bg-gray-50 dark:bg-[#1e1e2e] border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-white/20'}`}
@@ -464,16 +464,16 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-[#262636] rounded-xl border border-gray-200 dark:border-white/5 p-6 shadow-sm">
+              <div className="bg-white dark:bg-[#262636] rounded-[5px] border border-gray-200 dark:border-white/5 p-6 shadow-sm">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Cloud Storage Integration</h3>
                 <div className="space-y-3">
                   {['Google Drive', 'Dropbox', 'OneDrive'].map(service => (
-                    <div key={service} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1e1e2e] rounded-lg border border-gray-200 dark:border-white/5">
+                    <div key={service} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1e1e2e] rounded-[5px] border border-gray-200 dark:border-white/5">
                       <div className="flex items-center gap-3">
                         <HardDrive className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                         <span className="text-sm text-gray-900 dark:text-white">{service}</span>
                       </div>
-                      <button className="px-3 py-1 text-xs border border-gray-200 dark:border-white/10 rounded hover:bg-gray-200 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300">Connect</button>
+                      <button className="px-3 py-1 text-xs border border-gray-200 dark:border-white/10 rounded-[5px] hover:bg-gray-200 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300">Connect</button>
                     </div>
                   ))}
                 </div>
@@ -485,7 +485,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
           {activeTab === 'billing' && (
             <div className="space-y-6">
               {/* Current Plan */}
-              <div className="bg-gradient-to-br from-brand-700 to-brand-900 dark:from-brand-900 dark:to-[#262636] rounded-xl border border-brand-500/30 p-6 relative overflow-hidden text-white shadow-lg">
+              <div className="bg-gradient-to-br from-brand-700 to-brand-900 dark:from-brand-900 dark:to-[#262636] rounded-[5px] border border-brand-500/30 p-6 relative overflow-hidden text-white shadow-lg">
                 <div className="absolute top-0 right-0 p-4 opacity-10">
                   <Crown className="w-32 h-32 text-white" />
                 </div>
@@ -498,10 +498,10 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
                   <p className="text-brand-100 text-sm mb-6">$12.00 / month • Renews on Oct 24, 2025</p>
 
                   <div className="flex gap-3">
-                    <button className="px-4 py-2 bg-white text-brand-900 font-bold rounded-lg hover:bg-gray-100 transition-colors shadow">
+                    <button className="px-4 py-2 bg-white text-brand-900 font-bold rounded-[5px] hover:bg-gray-100 transition-colors shadow">
                       Manage Subscription
                     </button>
-                    <button className="px-4 py-2 bg-brand-800/50 text-white border border-brand-500/30 font-medium rounded-lg hover:bg-brand-800 transition-colors">
+                    <button className="px-4 py-2 bg-brand-800/50 text-white border border-brand-500/30 font-medium rounded-[5px] hover:bg-brand-800 transition-colors">
                       View Invoices
                     </button>
                   </div>
@@ -509,7 +509,7 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
               </div>
 
               {/* Usage */}
-              <div className="bg-white dark:bg-[#262636] rounded-xl border border-gray-200 dark:border-white/5 p-6 shadow-sm">
+              <div className="bg-white dark:bg-[#262636] rounded-[5px] border border-gray-200 dark:border-white/5 p-6 shadow-sm">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Usage this month</h3>
                 <div className="space-y-4">
                   <div>
@@ -543,38 +543,38 @@ export const Settings: React.FC<SettingsProps> = ({ currentView }) => {
               </div>
 
               {/* Payment Method */}
-              <div className="bg-white dark:bg-[#262636] rounded-xl border border-gray-200 dark:border-white/5 p-6 shadow-sm">
+              <div className="bg-white dark:bg-[#262636] rounded-[5px] border border-gray-200 dark:border-white/5 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white">Payment Method</h3>
                   <button className="text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium">+ Add Method</button>
                 </div>
-                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-[#1e1e2e] rounded-lg border border-gray-200 dark:border-white/5">
-                  <div className="w-12 h-8 bg-white rounded flex items-center justify-center border border-gray-200 dark:border-transparent">
+                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-[#1e1e2e] rounded-[5px] border border-gray-200 dark:border-white/5">
+                  <div className="w-12 h-8 bg-white rounded-[5px] flex items-center justify-center border border-gray-200 dark:border-transparent">
                     <div className="text-blue-800 font-bold italic text-xs">VISA</div>
                   </div>
                   <div className="flex-1">
                     <p className="text-sm text-gray-900 dark:text-white font-medium">Visa ending in 4242</p>
                     <p className="text-xs text-gray-500">Expires 12/28</p>
                   </div>
-                  <span className="px-2 py-1 text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded uppercase font-bold">Default</span>
+                  <span className="px-2 py-1 text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-[5px] uppercase font-bold">Default</span>
                 </div>
               </div>
             </div>
           )}
 
           {/* Save Actions */}
-          <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-white/20 dark:border-white/10 sticky bottom-0 glass-morphism dark:bg-[#020617]/80 py-4 px-2 rounded-2xl">
+          <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-white/20 dark:border-white/10 sticky bottom-0 glass-morphism dark:bg-[#020617]/80 py-4 px-2 rounded-[5px]">
             <button
               onClick={handleCancel}
               disabled={!isDirty}
-              className={`px-6 py-3 rounded-2xl font-bold transition-all duration-300 ${isDirty ? 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white' : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'}`}
+              className={`px-6 py-3 rounded-[5px] font-bold transition-all duration-300 ${isDirty ? 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white' : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'}`}
             >
               Discard
             </button>
             <button
               onClick={handleSave}
               disabled={!isDirty}
-              className={`px-8 py-3 rounded-2xl font-black text-sm shadow-xl flex items-center gap-2 transition-all duration-300 active:scale-95
+              className={`px-8 py-3 rounded-[5px] font-black text-sm shadow-xl flex items-center gap-2 transition-all duration-300 active:scale-95
                     ${isDirty
                   ? 'bg-brand-600 hover:bg-brand-500 text-white shadow-brand-600/30 cursor-pointer'
                   : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'}

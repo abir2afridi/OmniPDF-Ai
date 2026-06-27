@@ -20,7 +20,7 @@ export const Header: React.FC<HeaderProps> = ({ icon: Icon, title }) => {
   return (
     <header className="hidden lg:flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-white/5 shrink-0">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 bg-gray-900 dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-gray-900 shadow-lg">
+        <div className="w-9 h-9 bg-gray-900 dark:bg-white rounded-[5px] flex items-center justify-center text-white dark:text-gray-900 shadow-lg">
           <Icon className="w-5 h-5" />
         </div>
         <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{title}</h1>
@@ -33,7 +33,7 @@ export const Header: React.FC<HeaderProps> = ({ icon: Icon, title }) => {
         </span>
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="group relative flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-brand-500/50 transition-all duration-300 overflow-hidden"
+          className="group relative flex items-center justify-center w-8 h-8 rounded-[5px] bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-brand-500/50 transition-all duration-300 overflow-hidden"
           title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           <AnimatePresence mode="wait">

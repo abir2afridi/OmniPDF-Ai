@@ -146,7 +146,7 @@ export const Contact: React.FC = () => {
                                         viewport={{ once: true }}
                                         className="space-y-4"
                                     >
-                                        <div className="w-10 h-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center text-brand-500">
+                                        <div className="w-10 h-10 rounded-[5px] bg-white dark:bg-white/5 flex items-center justify-center text-brand-500">
                                             <skill.icon className="w-5 h-5" />
                                         </div>
                                         <h3 className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{skill.category}</h3>
@@ -214,10 +214,10 @@ export const Contact: React.FC = () => {
                                         href={item.link}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center justify-between p-5 rounded-2xl bg-gray-50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-white/5 border border-transparent hover:border-brand-500/20 transition-all group"
+                                        className="flex items-center justify-between p-5 rounded-[5px] bg-gray-50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-white/5 border border-transparent hover:border-brand-500/20 transition-all group"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center text-brand-500 shadow-sm transition-transform group-hover:scale-110">
+                                            <div className="w-10 h-10 rounded-[5px] bg-white dark:bg-slate-800 flex items-center justify-center text-brand-500 shadow-sm transition-transform group-hover:scale-110">
                                                 <item.icon className="w-5 h-5" />
                                             </div>
                                             <div className="space-y-0.5">

@@ -19,6 +19,7 @@ import {
     splitPDFAdvanced,
     type SplitMode,
 } from '../services/pdfService';
+import { PDFTool } from '../types';
 
 // ── Types ───────────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,7 @@ interface PageThumb {
 
 interface SplitPDFProps {
     onBack?: () => void;
+    activeTool?: PDFTool;
 }
 
 // ── Constants ───────────────────────────────────────────────────────────────────
@@ -66,7 +68,7 @@ const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
         initial={{ opacity: 0, x: 60, scale: 0.9 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-xs text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-xs text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
                 : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
                     : 'bg-blue-50 dark:bg-blue-900/60 border-blue-200 dark:border-blue-500/30 text-blue-800 dark:text-blue-200'}`}
@@ -109,7 +111,7 @@ const PageGrid = ({
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => onTogglePage(i)}
-                        className={`relative aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all duration-150 group
+                        className={`relative aspect-[3/4] rounded-[5px] overflow-hidden border-2 transition-all duration-150 group
                             ${selected
                                 ? 'border-violet-500 shadow-lg shadow-violet-500/20 ring-2 ring-violet-400/40'
                                 : 'border-gray-200 dark:border-white/10 hover:border-violet-300 dark:hover:border-violet-500/40'}`}
@@ -155,7 +157,7 @@ const PageGrid = ({
 
 // ── Main Component ──────────────────────────────────────────────────────────────
 
-export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
+export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack, activeTool }) => {
     // ── File state
     const [file, setFile] = useState<File | null>(null);
     const [totalPages, setTotalPages] = useState(0);
@@ -459,7 +461,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                             animate={{ scale: 1, y: 0, opacity: 1 }}
                             exit={{ scale: 0.85, y: 20, opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                            className="bg-white dark:bg-[#1e1e2e] rounded-3xl shadow-2xl p-10 max-w-sm w-full text-center border border-gray-100 dark:border-white/10"
+                            className="bg-white dark:bg-[#1e1e2e] rounded-[5px] shadow-2xl p-10 max-w-sm w-full text-center border border-gray-100 dark:border-white/10"
                         >
                             <div className="relative w-28 h-28 mx-auto mb-6">
                                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -507,12 +509,24 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500 dark:text-gray-400">
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500 dark:text-gray-400">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
-                        <Scissors className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-violet-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <Scissors className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                        )}
                     </div>
                     <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Split PDF</h1>
@@ -530,13 +544,13 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                             <button
                                 onClick={() => setShowGrid(v => !v)}
                                 title={showGrid ? 'Hide page grid' : 'Show page grid'}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-400"
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-400"
                             >
                                 {showGrid ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                             <button
                                 onClick={() => { setFile(null); setThumbs([]); setTotalPages(0); setSelectedPages(new Set()); }}
-                                className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors flex items-center gap-1.5"
+                                className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] transition-colors flex items-center gap-1.5"
                             >
                                 <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Remove</span>
                             </button>
@@ -560,7 +574,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                             onDragLeave={onDragLeave}
                             onDrop={onDrop}
                             onClick={() => uploadInputRef.current?.click()}
-                            className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-2xl transition-all duration-200 cursor-pointer
+                            className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-[5px] transition-all duration-200 cursor-pointer
                               ${isDragOver
                                     ? 'border-violet-500 bg-violet-500/5 scale-[0.99]'
                                     : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636]'}
@@ -576,7 +590,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                             <motion.div
                                 animate={{ y: [0, -7, 0] }}
                                 transition={{ repeat: Infinity, duration: 2.6, ease: 'easeInOut' }}
-                                className="p-5 bg-violet-100 dark:bg-violet-900/30 rounded-2xl mb-5 shadow-lg shadow-violet-200 dark:shadow-violet-900/30"
+                                className="p-5 bg-violet-100 dark:bg-violet-900/30 rounded-[5px] mb-5 shadow-lg shadow-violet-200 dark:shadow-violet-900/30"
                             >
                                 <Upload className="w-10 h-10 text-violet-600 dark:text-violet-400" />
                             </motion.div>
@@ -594,7 +608,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                         <>
                             {/* Loading indicator */}
                             {loadingFile && (
-                                <div className="flex items-center gap-3 px-4 py-3 bg-violet-50 dark:bg-violet-900/20 rounded-xl border border-violet-100 dark:border-violet-500/20">
+                                <div className="flex items-center gap-3 px-4 py-3 bg-violet-50 dark:bg-violet-900/20 rounded-[5px] border border-violet-100 dark:border-violet-500/20">
                                     <Loader2 className="w-4 h-4 text-violet-500 animate-spin" />
                                     <span className="text-sm text-violet-700 dark:text-violet-300 font-medium">Reading PDF…</span>
                                 </div>
@@ -605,7 +619,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#262636] rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden"
+                                    className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#262636] rounded-[5px] border border-gray-100 dark:border-white/5 overflow-hidden"
                                 >
                                     {/* Grid toolbar */}
                                     <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/5">
@@ -628,7 +642,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                                                     { label: 'Even', fn: selectEven },
                                                 ].map(({ label, fn }) => (
                                                     <button key={label} onClick={fn}
-                                                        className="px-2 py-1 text-[10px] font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors">
+                                                        className="px-2 py-1 text-[10px] font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-[5px] transition-colors">
                                                         {label}
                                                     </button>
                                                 ))}
@@ -669,7 +683,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                                     { label: 'Pages', value: totalPages },
                                     { label: 'Size', value: formatBytes(file.size) },
                                 ].map(stat => (
-                                    <div key={stat.label} className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-center">
+                                    <div key={stat.label} className="bg-gray-50 dark:bg-white/5 rounded-[5px] p-3 text-center">
                                         <p className="text-base font-black text-violet-600 dark:text-violet-400">{stat.value}</p>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">{stat.label}</p>
                                     </div>
@@ -689,7 +703,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                                     <button
                                         key={m}
                                         onClick={() => setMode(m)}
-                                        className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all duration-150
+                                        className={`w-full flex items-start gap-3 p-3 rounded-[5px] border text-left transition-all duration-150
                                             ${active
                                                 ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20 dark:border-violet-500/50'
                                                 : 'border-gray-100 dark:border-white/5 hover:border-violet-200 dark:hover:border-violet-500/20 hover:bg-gray-50 dark:hover:bg-white/5'}`}
@@ -726,12 +740,12 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                                     <div className="flex items-center gap-3">
                                         <button
                                             onClick={() => setEveryN(v => Math.max(1, v - 1))}
-                                            className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/5 font-black text-lg text-gray-600 dark:text-gray-300 hover:bg-violet-100 dark:hover:bg-violet-900/20 hover:text-violet-600 transition-colors"
+                                            className="w-9 h-9 rounded-[5px] bg-gray-100 dark:bg-white/5 font-black text-lg text-gray-600 dark:text-gray-300 hover:bg-violet-100 dark:hover:bg-violet-900/20 hover:text-violet-600 transition-colors"
                                         >−</button>
                                         <span className="flex-1 text-center text-2xl font-black dark:text-white">{everyN}</span>
                                         <button
                                             onClick={() => setEveryN(v => Math.min(totalPages || 999, v + 1))}
-                                            className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/5 font-black text-lg text-gray-600 dark:text-gray-300 hover:bg-violet-100 dark:hover:bg-violet-900/20 hover:text-violet-600 transition-colors"
+                                            className="w-9 h-9 rounded-[5px] bg-gray-100 dark:bg-white/5 font-black text-lg text-gray-600 dark:text-gray-300 hover:bg-violet-100 dark:hover:bg-violet-900/20 hover:text-violet-600 transition-colors"
                                         >+</button>
                                     </div>
                                     {totalPages > 0 && (
@@ -761,10 +775,10 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                                             onChange={e => setCustomRanges(e.target.value)}
                                             placeholder={"1-3;4-7;8\n(semicolon-separated)"}
                                             rows={3}
-                                            className="w-full text-xs font-mono px-3 py-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-violet-400 focus:border-violet-400 outline-none dark:text-gray-200 resize-none"
+                                            className="w-full text-xs font-mono px-3 py-2 rounded-[5px] bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-violet-400 focus:border-violet-400 outline-none dark:text-gray-200 resize-none"
                                         />
                                     </div>
-                                    <div className="p-3 bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-500/20 rounded-xl">
+                                    <div className="p-3 bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-500/20 rounded-[5px]">
                                         <p className="text-[10px] font-bold text-violet-700 dark:text-violet-300 flex items-center gap-1.5 mb-1.5">
                                             <Info className="w-3 h-3" /> Syntax Guide
                                         </p>
@@ -788,7 +802,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">
                                 Output Filename Prefix
                             </label>
-                            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus-within:ring-2 focus-within:ring-violet-400 focus-within:border-violet-400 transition-all">
+                            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] focus-within:ring-2 focus-within:ring-violet-400 focus-within:border-violet-400 transition-all">
                                 <FileDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                                 <input
                                     type="text"
@@ -825,7 +839,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                                 >
                                     <div className="px-5 pb-5 space-y-4">
                                         {/* ZIP toggle */}
-                                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10">
+                                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/5 rounded-[5px] border border-gray-100 dark:border-white/10">
                                             <div>
                                                 <p className="text-xs font-bold dark:text-gray-200 flex items-center gap-1.5">
                                                     <ArchiveIcon className="w-3.5 h-3.5 text-violet-500" /> Bundle as ZIP
@@ -848,7 +862,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                                         </div>
 
                                         {/* Privacy note */}
-                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
+                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-[5px]">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                                             <p className="text-[10px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
                                                 All processing happens <strong>in your browser</strong>. Files are never uploaded to any server.
@@ -885,7 +899,7 @@ export const SplitPDF: React.FC<SplitPDFProps> = ({ onBack }) => {
                         <button
                             onClick={handleSplit}
                             disabled={!file || isProcessing || totalPages === 0 || loadingFile}
-                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-sm transition-all duration-200 shadow-lg
+                            className={`w-full flex items-center justify-center gap-3 py-4 rounded-[5px] font-black text-sm transition-all duration-200 shadow-lg
                               ${!file || totalPages === 0 || loadingFile
                                     ? 'bg-gray-200 dark:bg-white/5 text-gray-400 cursor-not-allowed shadow-none'
                                     : 'bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white shadow-violet-500/30 hover:-translate-y-0.5 active:translate-y-0'}`}

@@ -86,13 +86,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
       onClick={() => onSelectTool(tool)}
       whileHover={{ y: -5 }}
       whileTap={{ scale: 0.98 }}
-      className="group glass-card rounded-2xl p-5 text-left transition-all duration-300 hover:shadow-xl relative overflow-hidden border border-white/20 dark:border-white/5 bg-white/70 dark:bg-slate-800/40 backdrop-blur-lg"
+      className="group glass-card rounded-[5px] p-5 text-left transition-all duration-300 hover:shadow-xl relative overflow-hidden border border-white/20 dark:border-white/5 bg-white/70 dark:bg-slate-800/40 backdrop-blur-lg"
     >
       <div className={`absolute -top-10 -right-10 w-24 h-24 rounded-full blur-[40px] opacity-0 group-hover:opacity-20 transition-opacity duration-500 ${tool.color}`} />
 
       <div className="relative z-10 flex flex-col h-full">
         <div className="flex justify-between items-start mb-4">
-          <div className={`${tool.toImageUrl ? 'h-12 w-auto px-2' : 'w-12 h-12'} rounded-xl flex items-center justify-center ${tool.color} bg-opacity-10 dark:bg-opacity-20 shadow-sm group-hover:scale-105 transition-transform duration-500 ring-1 ring-white/10 overflow-hidden gap-1.5`}>
+          <div className={`${tool.toImageUrl ? 'h-12 w-auto px-2' : 'w-12 h-12'} rounded-[5px] flex items-center justify-center ${tool.color} bg-opacity-10 dark:bg-opacity-20 shadow-sm group-hover:scale-105 transition-transform duration-500 ring-1 ring-white/10 overflow-hidden gap-1.5`}>
             {tool.imageUrl ? (
               <>
                 <img src={tool.imageUrl} alt={tool.name} className="w-8 h-8 object-contain" />
@@ -107,7 +107,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
               <tool.icon className={`w-5 h-5 ${tool.color.replace('bg-', 'text-')}`} />
             )}
           </div>
-          <div className="p-1.5 rounded-lg bg-[#f3f1ea] dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-brand-600 dark:text-brand-400">
+          <div className="p-1.5 rounded-[5px] bg-[#f3f1ea] dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-brand-600 dark:text-brand-400">
             <ArrowRight className="w-4 h-4" />
           </div>
         </div>
@@ -152,7 +152,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
                 <div key={i} className="flex gap-12 items-center">
                   {tickerItems.map((msg, idx) => (
                     <div key={idx} className="flex items-center gap-3">
-                      <span className="text-[9px] font-black bg-[#f3f1ea] dark:bg-white/5 text-gray-400 dark:text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 dark:border-white/10">{msg.label}</span>
+                      <span className="text-[9px] font-black bg-[#f3f1ea] dark:bg-white/5 text-gray-400 dark:text-gray-500 px-1.5 py-0.5 rounded-[5px] border border-gray-200 dark:border-white/10">{msg.label}</span>
                       <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 tracking-tight">{msg.val}</span>
                     </div>
                   ))}
@@ -211,8 +211,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
               transition={{ delay: 0.2 }}
               className="relative group"
             >
-              <div className="relative flex items-center bg-[#f3f1ea]/60 dark:bg-slate-900/90 border border-gray-200 dark:border-white/10 rounded-2xl p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-brand-500/20 transition-all">
-                <div className="flex items-center justify-center w-10 h-10 bg-[#f3f1ea] dark:bg-white/5 rounded-xl ml-1 text-gray-400">
+              <div className="relative flex items-center bg-[#f3f1ea]/60 dark:bg-slate-900/90 border border-gray-200 dark:border-white/10 rounded-[5px] p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-brand-500/20 transition-all">
+                <div className="flex items-center justify-center w-10 h-10 bg-[#f3f1ea] dark:bg-white/5 rounded-[5px] ml-1 text-gray-400">
                   <Search className="w-5 h-5" />
                 </div>
                 <input
@@ -225,7 +225,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl mr-1 transition-all"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-[5px] mr-1 transition-all"
                   >
                     <X className="w-4 h-4 text-gray-400" />
                   </button>
@@ -245,7 +245,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
           >
             <button
               onClick={() => setActiveCategory('all')}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${activeCategory === 'all'
+              className={`px-4 py-2 rounded-[5px] text-[10px] font-black uppercase tracking-wider transition-all border ${activeCategory === 'all'
                 ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900'
                 : 'bg-[#f3f1ea]/50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500'
                 }`}
@@ -256,7 +256,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${activeCategory === cat
+                className={`px-4 py-2 rounded-[5px] text-[10px] font-black uppercase tracking-wider transition-all border ${activeCategory === cat
                   ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900'
                   : 'bg-[#f3f1ea]/50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500 hover:border-gray-300'
                   }`}
@@ -280,7 +280,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   {searchQuery ? t('Search Results') : t(activeCategory)}
                 </h2>
-                <span className="bg-gray-100 dark:bg-white/5 text-gray-500 px-2 py-0.5 rounded text-[10px] font-bold">
+                <span className="bg-gray-100 dark:bg-white/5 text-gray-500 px-2 py-0.5 rounded-[5px] text-[10px] font-bold">
                   {filteredTools.length}
                 </span>
               </div>
@@ -290,7 +290,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
                   {filteredTools.map(renderToolCard)}
                 </div>
               ) : (
-                <div className="text-center py-20 bg-gray-50/50 dark:bg-white/5 rounded-3xl border border-dashed border-gray-200">
+                <div className="text-center py-20 bg-gray-50/50 dark:bg-white/5 rounded-[5px] border border-dashed border-gray-200">
                   <Search className="w-8 h-8 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500 font-medium">{t('No tools matched your search')}</p>
                 </div>

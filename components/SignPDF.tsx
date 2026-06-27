@@ -29,6 +29,7 @@ import {
     type P12Parsed,
 } from '../services/signService';
 import { downloadBlob } from '../services/pdfService';
+import { PDFTool } from '../types';
 
 async function loadPdfjs() {
     const pdfjsLib = await import('pdfjs-dist');
@@ -44,7 +45,7 @@ async function loadPdfjs() {
 type Mode = 'visual' | 'digital' | 'verify';
 type SigSource = 'draw' | 'upload' | 'type';
 interface Toast { id: string; type: 'success' | 'error' | 'info' | 'warn'; msg: string; }
-interface Props { onBack?: () => void; }
+interface Props { onBack?: () => void; activeTool?: PDFTool; }
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const RENDER_SCALE_INIT = 1.2;
@@ -54,7 +55,7 @@ const RENDER_SCALE_INIT = 1.2;
 const ToastItem = ({ t, onDismiss }: { t: Toast; onDismiss: () => void }) => (
     <motion.div layout initial={{ opacity: 0, x: 60, scale: 0.9 }}
         animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 60 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${t.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-300 text-emerald-800 dark:text-emerald-200'
                 : t.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-300 text-red-800 dark:text-red-200'
                     : t.type === 'warn' ? 'bg-amber-50 dark:bg-amber-900/60 border-amber-300 text-amber-800 dark:text-amber-200'
@@ -69,7 +70,7 @@ const ToastItem = ({ t, onDismiss }: { t: Toast; onDismiss: () => void }) => (
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export const SignPDF: React.FC<Props> = ({ onBack }) => {
+export const SignPDF: React.FC<Props> = ({ onBack, activeTool }) => {
     // ── Top-level mode ───────────────────────────────────────────────────────
     const [mode, setMode] = useState<Mode>('visual');
 
@@ -407,12 +408,24 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
             <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
                     {onBack && (
-                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-gray-500">
+                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-500">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
-                        <PenLine className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-violet-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <PenLine className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                        )}
                     </div>
                     <div>
                         <h1 className="text-lg font-black dark:text-white tracking-tight">Sign PDF</h1>
@@ -422,7 +435,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                 <div className="flex items-center gap-1 lg:gap-2">
                     {currentActiveBlob && (
                         <button onClick={() => downloadBlob(currentActiveBlob, currentOutputName)}
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl flex items-center gap-2 shadow-sm">
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-[5px] flex items-center gap-2 shadow-sm">
                             <Download className="w-3.5 h-3.5" /> Download
                         </button>
                     )}
@@ -463,7 +476,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                 {/* Signature source tabs */}
                                 <div className="p-4 border-b border-gray-100 dark:border-white/5">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Signature</p>
-                                    <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
+                                    <div className="flex rounded-[5px] overflow-hidden border border-gray-200 dark:border-white/10">
                                         {([['draw', Pen, 'Draw'], ['upload', Image, 'Upload'], ['type', Type, 'Type']] as [SigSource, any, string][]).map(([s, Icon, lbl]) => (
                                             <button key={s} onClick={() => { setSigSource(s); setSigDataUrl(''); }}
                                                 className={`flex-1 flex flex-col items-center gap-1 py-2 text-[10px] font-black transition-colors
@@ -478,7 +491,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                 {/* DRAW */}
                                 {sigSource === 'draw' && (
                                     <div className="p-4 border-b border-gray-100 dark:border-white/5 space-y-2">
-                                        <div className="relative bg-white border-2 border-dashed border-gray-300 dark:border-white/20 rounded-xl overflow-hidden">
+                                        <div className="relative bg-white border-2 border-dashed border-gray-300 dark:border-white/20 rounded-[5px] overflow-hidden">
                                             <canvas ref={drawCanvasRef} width={230} height={100}
                                                 className="w-full cursor-crosshair touch-none"
                                                 onMouseDown={onDrawStart} onMouseMove={onDrawMove} onMouseUp={onDrawEnd} onMouseLeave={onDrawEnd} />
@@ -490,12 +503,12 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                         </div>
                                         <div className="flex gap-2">
                                             <button onClick={clearDrawing}
-                                                className="flex-1 py-1.5 text-[11px] font-bold text-gray-500 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center gap-1">
+                                                className="flex-1 py-1.5 text-[11px] font-bold text-gray-500 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 rounded-[5px] transition-colors flex items-center justify-center gap-1">
                                                 <RotateCcw className="w-3 h-3" /> Clear
                                             </button>
                                             {hasStrokes && (
                                                 <button onClick={captureDrawing}
-                                                    className="flex-1 py-1.5 text-[11px] font-bold text-violet-600 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 rounded-lg transition-colors">
+                                                    className="flex-1 py-1.5 text-[11px] font-bold text-violet-600 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 rounded-[5px] transition-colors">
                                                     ✓ Use this
                                                 </button>
                                             )}
@@ -506,7 +519,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                 {/* UPLOAD */}
                                 {sigSource === 'upload' && (
                                     <div className="p-4 border-b border-gray-100 dark:border-white/5">
-                                        <label className="flex flex-col items-center gap-2 p-5 border-2 border-dashed border-gray-200 dark:border-white/10 rounded-xl cursor-pointer hover:border-violet-400 transition-colors">
+                                        <label className="flex flex-col items-center gap-2 p-5 border-2 border-dashed border-gray-200 dark:border-white/10 rounded-[5px] cursor-pointer hover:border-violet-400 transition-colors">
                                             <Upload className="w-6 h-6 text-gray-300" />
                                             <span className="text-xs text-gray-400">Upload PNG / JPG signature</span>
                                             <input type="file" className="hidden" accept="image/png,image/jpeg,image/gif"
@@ -519,7 +532,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                                 }} />
                                         </label>
                                         {sigDataUrl && (
-                                            <div className="mt-2 p-2 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10">
+                                            <div className="mt-2 p-2 bg-gray-50 dark:bg-white/5 rounded-[5px] border border-gray-200 dark:border-white/10">
                                                 <img src={sigDataUrl} alt="sig" className="max-h-16 mx-auto object-contain" />
                                             </div>
                                         )}
@@ -531,18 +544,18 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                     <div className="p-4 border-b border-gray-100 dark:border-white/5 space-y-3">
                                         <input value={typedText} onChange={e => setTypedText(e.target.value)}
                                             placeholder="Your full name"
-                                            className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:ring-2 focus:ring-violet-400 dark:text-white" />
+                                            className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] outline-none focus:ring-2 focus:ring-violet-400 dark:text-white" />
                                         <div className="flex items-center gap-2">
                                             <label className="text-xs text-gray-500 shrink-0">Color</label>
                                             <input type="color" value={typedColor} onChange={e => setTypedColor(e.target.value)}
-                                                className="w-8 h-8 rounded border border-gray-200 cursor-pointer" />
+                                                className="w-8 h-8 rounded-[5px] border border-gray-200 cursor-pointer" />
                                         </div>
                                         <button onClick={generateTyped}
-                                            className="w-full py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-xl transition-colors">
+                                            className="w-full py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded-[5px] transition-colors">
                                             Generate Signature
                                         </button>
                                         {sigDataUrl && (
-                                            <div className="p-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl">
+                                            <div className="p-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px]">
                                                 <img src={sigDataUrl} alt="typed sig" className="max-h-14 mx-auto object-contain" />
                                             </div>
                                         )}
@@ -565,7 +578,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                         </label>
                                         <input value={customText} onChange={e => setCustomText(e.target.value)}
                                             placeholder="e.g. Approved by · CFO"
-                                            className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg outline-none focus:ring-1 focus:ring-violet-400 dark:text-white" />
+                                            className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] outline-none focus:ring-1 focus:ring-violet-400 dark:text-white" />
                                     </div>
 
                                     <label className="flex items-center gap-2 cursor-pointer">
@@ -579,14 +592,14 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                     <label className="text-xs font-bold dark:text-white">Output filename</label>
                                     <input value={outputName} onChange={e => setOutputName(e.target.value)}
                                         placeholder="my_document_signed"
-                                        className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg outline-none focus:ring-1 focus:ring-violet-400 font-mono dark:text-white" />
+                                        className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] outline-none focus:ring-1 focus:ring-violet-400 font-mono dark:text-white" />
                                 </div>
 
                                 <div className="flex-1" />
 
                                 <div className="p-4">
                                     <button onClick={handleVisualSign} disabled={isSigning || !pdfFile || !sigDataUrl}
-                                        className="w-full py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm font-black rounded-xl flex items-center justify-center gap-2 shadow-md transition-all">
+                                        className="w-full py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm font-black rounded-[5px] flex items-center justify-center gap-2 shadow-md transition-all">
                                         {isSigning
                                             ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing… {progress}%</>
                                             : <><PenLine className="w-4 h-4" /> Sign PDF</>}
@@ -609,7 +622,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
                                         <FileKey className="w-3 h-3" /> Certificate (.p12 / .pfx)
                                     </p>
-                                    <label className={`flex items-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-colors 
+                                    <label className={`flex items-center gap-2 p-3 border-2 rounded-[5px] cursor-pointer transition-colors 
                     ${p12File ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'border-dashed border-gray-200 dark:border-white/10 hover:border-violet-300'}`}>
                                         <FileKey className="w-4 h-4 text-violet-500 shrink-0" />
                                         <span className="text-xs font-bold text-gray-600 dark:text-gray-300 truncate">
@@ -624,7 +637,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                         <input type={showP12Pass ? 'text' : 'password'} value={p12Pass}
                                             onChange={e => setP12Pass(e.target.value)}
                                             placeholder="Certificate password"
-                                            className="w-full pr-9 px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:ring-2 focus:ring-violet-400 font-mono dark:text-white" />
+                                            className="w-full pr-9 px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] outline-none focus:ring-2 focus:ring-violet-400 font-mono dark:text-white" />
                                         <button onClick={() => setShowP12Pass(v => !v)}
                                             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
                                             {showP12Pass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -632,7 +645,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                     </div>
 
                                     <button onClick={parseP12File} disabled={!p12File || !p12Pass}
-                                        className="w-full py-2 bg-violet-100 dark:bg-violet-900/30 hover:bg-violet-200 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300 text-xs font-black rounded-xl transition-colors disabled:opacity-40">
+                                        className="w-full py-2 bg-violet-100 dark:bg-violet-900/30 hover:bg-violet-200 dark:hover:bg-violet-900/50 text-violet-700 dark:text-violet-300 text-xs font-black rounded-[5px] transition-colors disabled:opacity-40">
                                         Load Certificate
                                     </button>
 
@@ -690,7 +703,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
 
                                 <div className="p-4">
                                     <button onClick={handleDigitalSign} disabled={isSigning || !pdfFile || !certInfo}
-                                        className="w-full py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm font-black rounded-xl flex items-center justify-center gap-2 shadow-md transition-all">
+                                        className="w-full py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm font-black rounded-[5px] flex items-center justify-center gap-2 shadow-md transition-all">
                                         {isSigning
                                             ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing… {progress}%</>
                                             : <><ShieldCheck className="w-4 h-4" /> Apply Digital Signature</>}
@@ -700,7 +713,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                             <motion.div className="h-full bg-violet-500" animate={{ width: `${progress}%` }} transition={{ duration: 0.3 }} />
                                         </div>
                                     )}
-                                    <div className="mt-3 p-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-500/20 rounded-xl">
+                                    <div className="mt-3 p-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-500/20 rounded-[5px]">
                                         <p className="text-[9px] text-amber-700 dark:text-amber-300 leading-tight">
                                             <strong>Note:</strong> This uses application-level RSA-SHA256 signing verifiable within OmniPDF. For ISO 32000 byte-range PDF signatures, server-side infrastructure is required.
                                         </p>
@@ -715,7 +728,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                 className="flex flex-col flex-1 p-4 gap-4">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Upload PDF to Verify</p>
 
-                                <label className={`flex flex-col items-center gap-3 py-8 border-2 border-dashed rounded-2xl cursor-pointer transition-colors
+                                <label className={`flex flex-col items-center gap-3 py-8 border-2 border-dashed rounded-[5px] cursor-pointer transition-colors
                   ${verifyFile ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'border-gray-200 dark:border-white/10 hover:border-violet-300'}`}>
                                     <Search className="w-7 h-7 text-gray-300" />
                                     <span className="text-xs font-bold text-gray-500 dark:text-gray-400 text-center">
@@ -726,7 +739,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                 </label>
 
                                 <button onClick={handleVerify} disabled={!verifyFile || isVerifying}
-                                    className="w-full py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm font-black rounded-xl flex items-center justify-center gap-2 transition-all">
+                                    className="w-full py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm font-black rounded-[5px] flex items-center justify-center gap-2 transition-all">
                                     {isVerifying ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying…</> : <><Search className="w-4 h-4" /> Verify Signature</>}
                                 </button>
 
@@ -734,7 +747,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                 {verifyResult && (
                                     <AnimatePresence>
                                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                                            className={`p-4 rounded-2xl border ${!verifyResult.hasCryptographicSignature
+                                            className={`p-4 rounded-[5px] border ${!verifyResult.hasCryptographicSignature
                                                 ? 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10'
                                                 : verifyResult.isValid
                                                     ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-500/30'
@@ -783,7 +796,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                     </AnimatePresence>
                                 )}
 
-                                <div className="p-3 bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-500/20 rounded-xl mt-auto">
+                                <div className="p-3 bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-500/20 rounded-[5px] mt-auto">
                                     <p className="text-[10px] text-violet-700 dark:text-violet-300 leading-relaxed">
                                         Verifies OmniPDF RSA-SHA256 signatures. Detects: signer identity, signing date, document integrity, certificate validity.
                                     </p>
@@ -799,7 +812,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                     {/* PDF controls */}
                     {mode !== 'verify' && (
                         <div className="shrink-0 flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-[#262636] border-b border-gray-100 dark:border-white/5">
-                            <label className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 border-dashed cursor-pointer text-xs font-bold transition-colors
+                            <label className={`flex items-center gap-2 px-3 py-1.5 rounded-[5px] border-2 border-dashed cursor-pointer text-xs font-bold transition-colors
                 ${pdfFile ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300' : 'border-gray-200 dark:border-white/10 text-gray-500 hover:border-violet-300'}`}>
                                 <Upload className="w-3.5 h-3.5" />
                                 {pdfFile ? pdfFile.name.slice(0, 28) + (pdfFile.name.length > 28 ? '…' : '') : 'Upload PDF'}
@@ -811,28 +824,28 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                 <>
                                     <div className="flex items-center gap-1 ml-auto">
                                         <button onClick={() => setCurPage(p => Math.max(1, p - 1))} disabled={curPage <= 1}
-                                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-30">
+                                            className="p-1.5 rounded-[5px] hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-30">
                                             <ChevronLeft className="w-4 h-4" />
                                         </button>
                                         <span className="text-xs font-bold dark:text-white px-2">{curPage} / {totalPages}</span>
                                         <button onClick={() => setCurPage(p => Math.min(totalPages, p + 1))} disabled={curPage >= totalPages}
-                                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-30">
+                                            className="p-1.5 rounded-[5px] hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-30">
                                             <ChevronRight className="w-4 h-4" />
                                         </button>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <button onClick={() => setRenderScale(s => Math.max(0.5, s - 0.2))}
-                                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10">
+                                            className="p-1.5 rounded-[5px] hover:bg-gray-100 dark:hover:bg-white/10">
                                             <ZoomOut className="w-4 h-4" />
                                         </button>
                                         <span className="text-[10px] font-bold text-gray-400 w-10 text-center">{Math.round(renderScale * 100)}%</span>
                                         <button onClick={() => setRenderScale(s => Math.min(3, s + 0.2))}
-                                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10">
+                                            className="p-1.5 rounded-[5px] hover:bg-gray-100 dark:hover:bg-white/10">
                                             <ZoomIn className="w-4 h-4" />
                                         </button>
                                     </div>
                                     {sigDataUrl && (
-                                        <div className="flex items-center gap-1.5 px-3 py-1 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
+                                        <div className="flex items-center gap-1.5 px-3 py-1 bg-violet-100 dark:bg-violet-900/30 rounded-[5px]">
                                             <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
                                             <span className="text-[10px] font-black text-violet-700 dark:text-violet-300">Drag signature to position</span>
                                         </div>
@@ -848,11 +861,11 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                             <div ref={pdfDropRef} onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
                                 onDragLeave={() => setIsDragOver(false)}
                                 onDrop={onPdfDrop}
-                                className={`flex flex-col items-center justify-center gap-4 w-full max-w-xl h-80 border-2 border-dashed rounded-3xl transition-all cursor-pointer
+                                className={`flex flex-col items-center justify-center gap-4 w-full max-w-xl h-80 border-2 border-dashed rounded-[5px] transition-all cursor-pointer
                   ${isDragOver ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20 scale-[0.98]' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636]'}`}
                                 onClick={() => (document.querySelector('input[accept=".pdf"]') as HTMLInputElement)?.click()}>
                                 <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 3 }}
-                                    className="p-5 bg-violet-100 dark:bg-violet-900/30 rounded-2xl shadow-lg">
+                                    className="p-5 bg-violet-100 dark:bg-violet-900/30 rounded-[5px] shadow-lg">
                                     <PenLine className="w-8 h-8 text-violet-600 dark:text-violet-400" />
                                 </motion.div>
                                 <div className="text-center">
@@ -862,7 +875,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                             </div>
                         ) : mode === 'verify' ? (
                             <div className="flex flex-col items-center justify-center gap-4 w-full max-w-md h-80 text-center">
-                                <div className="p-6 bg-violet-100 dark:bg-violet-900/30 rounded-2xl">
+                                <div className="p-6 bg-violet-100 dark:bg-violet-900/30 rounded-[5px]">
                                     <Search className="w-10 h-10 text-violet-500" />
                                 </div>
                                 <p className="text-base font-black dark:text-white">Upload a signed PDF and click Verify</p>
@@ -876,12 +889,12 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                 onPointerUp={() => { onSigPointerUp(); onResizePointerUp(); }}>
 
                                 {isRenderingPdf && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-black/30 rounded-lg z-20">
+                                    <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-black/30 rounded-[5px] z-20">
                                         <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
                                     </div>
                                 )}
 
-                                <canvas ref={pdfCanvasRef} className="block rounded-lg shadow-2xl" />
+                                <canvas ref={pdfCanvasRef} className="block rounded-[5px] shadow-2xl" />
 
                                 {/* Signature overlay */}
                                 {sigDataUrl && (
@@ -891,7 +904,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                         onPointerDown={onSigPointerDown}>
 
                                         {/* Blue selection border */}
-                                        <div className="absolute inset-0 border-2 border-violet-500 rounded-lg bg-violet-500/5 pointer-events-none" />
+                                        <div className="absolute inset-0 border-2 border-violet-500 rounded-[5px] bg-violet-500/5 pointer-events-none" />
 
                                         <img src={sigDataUrl} alt="sig" className="w-full h-full object-contain pointer-events-none" style={{ display: 'block' }} />
 
@@ -903,7 +916,7 @@ export const SignPDF: React.FC<Props> = ({ onBack }) => {
                                         </div>
 
                                         {/* Label */}
-                                        <div className="absolute -top-5 left-0 text-[9px] font-black text-violet-600 bg-white dark:bg-[#262636] px-1.5 rounded shadow border border-violet-200 whitespace-nowrap">
+                                        <div className="absolute -top-5 left-0 text-[9px] font-black text-violet-600 bg-white dark:bg-[#262636] px-1.5 rounded-[5px] shadow border border-violet-200 whitespace-nowrap">
                                             Drag to position · {Math.round(sigSize.w)}×{Math.round(sigSize.h)}px
                                         </div>
                                     </div>

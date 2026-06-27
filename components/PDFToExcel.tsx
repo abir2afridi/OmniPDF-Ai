@@ -27,6 +27,7 @@ import {
     type PdfToExcelResult,
 } from '../services/pdfToExcelService';
 import { downloadBlob } from '../services/pdfService';
+import { PDFTool } from '../types';
 import JSZip from 'jszip';
 
 async function loadPdfjs() {
@@ -57,7 +58,7 @@ interface ManagedFile {
 
 interface Toast { id: string; type: 'success' | 'error' | 'info'; message: string; }
 
-interface PDFToExcelProps { onBack?: () => void; }
+interface PDFToExcelProps { onBack?: () => void; activeTool?: PDFTool; }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -94,7 +95,7 @@ function parseRange(raw: string, total: number): number[] {
 const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) => (
     <motion.div layout initial={{ opacity: 0, x: 60, scale: 0.9 }} animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
+        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
       ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
                 : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
                     : 'bg-sky-50 dark:bg-sky-900/60 border-sky-200 dark:border-sky-500/30 text-sky-800 dark:text-sky-200'}`}>
@@ -144,14 +145,14 @@ const FileCard: React.FC<FileCardProps> = ({
 
     return (
         <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            className="bg-white dark:bg-[#262636] border border-gray-100 dark:border-white/5 rounded-[5px] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
 
             {/* Main row */}
             <div className="flex items-center gap-3 p-4">
                 <div className={`w-2 h-2 rounded-full shrink-0 ${dot[entry.status]}`} />
 
                 {/* Thumbnail */}
-                <div className="w-10 h-12 shrink-0 rounded-lg overflow-hidden bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center">
+                <div className="w-10 h-12 shrink-0 rounded-[5px] overflow-hidden bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center">
                     {entry.thumb
                         ? <img src={entry.thumb} alt="preview" className="w-full h-full object-cover" />
                         : <FileSpreadsheet className="w-5 h-5 text-gray-300 dark:text-gray-600" />}
@@ -187,12 +188,12 @@ const FileCard: React.FC<FileCardProps> = ({
                         <>
                             {entry.totalPages > 1 && (
                                 <button onClick={() => setShowRange(v => !v)} title="Page range"
-                                    className="p-1.5 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg text-green-400 hover:text-green-600 transition-colors">
+                                    className="p-1.5 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-[5px] text-green-400 hover:text-green-600 transition-colors">
                                     <Settings2 className="w-4 h-4" />
                                 </button>
                             )}
                             <button onClick={onConvert} disabled={isAnyConverting}
-                                className="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm">
+                                className="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-[5px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm">
                                 Convert
                             </button>
                         </>
@@ -206,23 +207,23 @@ const FileCard: React.FC<FileCardProps> = ({
                     {entry.status === 'done' && (
                         <>
                             <button onClick={onConvert} title="Re-convert"
-                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg text-gray-400 transition-colors">
+                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] text-gray-400 transition-colors">
                                 <RotateCcw className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={onDownload}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
                                 <Download className="w-3.5 h-3.5" /> <span className="hidden sm:inline">.xlsx</span>
                             </button>
                         </>
                     )}
                     {entry.status === 'error' && (
                         <button onClick={onConvert}
-                            className="px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+                            className="px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
                             <RotateCcw className="w-3.5 h-3.5" /> Retry
                         </button>
                     )}
                     <button onClick={onRemove}
-                        className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-gray-300 hover:text-red-500 transition-colors">
+                        className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] text-gray-300 hover:text-red-500 transition-colors">
                         <Trash2 className="w-3.5 h-3.5" />
                     </button>
                 </div>
@@ -251,13 +252,13 @@ const FileCard: React.FC<FileCardProps> = ({
                                 <input type="text" value={rangeVal} onChange={e => setRangeVal(e.target.value)}
                                     onBlur={() => onPageRangeChange(rangeVal)}
                                     placeholder={`1-${entry.totalPages}`}
-                                    className="flex-1 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-mono dark:text-white outline-none focus:ring-2 focus:ring-green-400" />
+                                    className="flex-1 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] text-xs font-mono dark:text-white outline-none focus:ring-2 focus:ring-green-400" />
                                 <button onClick={() => { onPageRangeChange(rangeVal); setShowRange(false); }}
-                                    className="px-3 py-2 bg-green-600 text-white text-xs font-bold rounded-xl hover:bg-green-500">
+                                    className="px-3 py-2 bg-green-600 text-white text-xs font-bold rounded-[5px] hover:bg-green-500">
                                     Apply
                                 </button>
                                 <button onClick={() => { setRangeVal(''); onPageRangeChange(''); }}
-                                    className="px-3 py-2 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 text-xs font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-white/10">
+                                    className="px-3 py-2 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 text-xs font-bold rounded-[5px] hover:bg-gray-200 dark:hover:bg-white/10">
                                     All
                                 </button>
                             </div>
@@ -276,7 +277,7 @@ const FileCard: React.FC<FileCardProps> = ({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export const PDFToExcel: React.FC<PDFToExcelProps> = ({ onBack }) => {
+export const PDFToExcel: React.FC<PDFToExcelProps> = ({ onBack, activeTool }) => {
     const [files, setFiles] = useState<ManagedFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const [toasts, setToasts] = useState<Toast[]>([]);
@@ -421,12 +422,24 @@ export const PDFToExcel: React.FC<PDFToExcelProps> = ({ onBack }) => {
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button onClick={onBack}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500">
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
                     )}
-                    <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
-                        <FileSpreadsheet className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-green-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+                        {activeTool?.imageUrl ? (
+                            <>
+                                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-5 h-5 object-contain" />
+                                {activeTool.toImageUrl && (
+                                    <>
+                                        <span className="text-[10px] font-bold text-gray-400">→</span>
+                                        <img src={activeTool.toImageUrl} alt="To" className="w-5 h-5 object-contain" />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <FileSpreadsheet className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        )}
                     </div>
                     <div className="min-w-0">
                         <h1 className="text-lg font-black dark:text-white tracking-tight">PDF to Excel</h1>
@@ -436,19 +449,19 @@ export const PDFToExcel: React.FC<PDFToExcelProps> = ({ onBack }) => {
                 <div className="flex items-center gap-1 lg:gap-2">
                     {doneCount > 1 && (
                         <button onClick={downloadAll}
-                            className="px-3 py-2 text-xs font-bold text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl flex items-center gap-1.5 transition-colors">
+                            className="px-3 py-2 text-xs font-bold text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-[5px] flex items-center gap-1.5 transition-colors">
                             <Archive className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Download All ({doneCount})</span>
                         </button>
                     )}
                     {readyCount > 1 && (
                         <button onClick={convertAll} disabled={isConverting}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+                            className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-40 text-white text-xs font-bold rounded-[5px] transition-colors shadow-sm flex items-center gap-1.5">
                             <FileDown className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Convert All ({readyCount})</span>
                         </button>
                     )}
                     {files.length > 0 && (
                         <button onClick={() => setFiles([])}
-                            className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl flex items-center gap-1.5 transition-colors">
+                            className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-[5px] flex items-center gap-1.5 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clear</span>
                         </button>
                     )}
@@ -465,13 +478,13 @@ export const PDFToExcel: React.FC<PDFToExcelProps> = ({ onBack }) => {
                     {/* Drop zone */}
                     <div ref={dropRef} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
                         onClick={() => fileRef.current?.click()}
-                        className={`shrink-0 flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-2xl py-10 cursor-pointer transition-all duration-200
+                        className={`shrink-0 flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-[5px] py-10 cursor-pointer transition-all duration-200
               ${isDragOver ? 'border-green-500 bg-green-500/5 scale-[0.99]' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#262636]'}
               hover:border-green-400 dark:hover:border-green-500/50 hover:bg-green-50/30 dark:hover:bg-green-900/10`}>
                         <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden"
                             onChange={e => e.target.files && addFiles(e.target.files)} />
                         <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                            className="p-4 bg-green-100 dark:bg-green-900/30 rounded-2xl shadow-lg shadow-green-200 dark:shadow-green-900/30">
+                            className="p-4 bg-green-100 dark:bg-green-900/30 rounded-[5px] shadow-lg shadow-green-200 dark:shadow-green-900/30">
                             <Upload className="w-7 h-7 text-green-600 dark:text-green-400" />
                         </motion.div>
                         <div className="text-center">
@@ -525,7 +538,7 @@ export const PDFToExcel: React.FC<PDFToExcelProps> = ({ onBack }) => {
                                     { label: 'Ready', value: readyCount, color: 'text-gray-500 dark:text-gray-400' },
                                     { label: 'Converted', value: doneCount, color: 'text-emerald-600 dark:text-emerald-400' },
                                 ].map(s => (
-                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-center">
+                                    <div key={s.label} className="bg-gray-50 dark:bg-white/5 rounded-[5px] p-3 text-center">
                                         <p className={`text-base font-black ${s.color}`}>{s.value}</p>
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">{s.label}</p>
                                     </div>
@@ -543,7 +556,7 @@ export const PDFToExcel: React.FC<PDFToExcelProps> = ({ onBack }) => {
                                 { v: false, label: 'Combined', icon: FileSpreadsheet, note: 'All pages in one sheet' },
                             ] as const).map(opt => (
                                 <button key={String(opt.v)} onClick={() => setOneSheetPerPage(opt.v)}
-                                    className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all text-[10px] font-bold
+                                    className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-[5px] border-2 transition-all text-[10px] font-bold
                     ${oneSheetPerPage === opt.v
                                             ? 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                                             : 'border-gray-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-green-200'}`}>
@@ -574,7 +587,7 @@ export const PDFToExcel: React.FC<PDFToExcelProps> = ({ onBack }) => {
                                         <p className="text-amber-600 dark:text-amber-400 font-bold">
                                             ⚠ Complex merged cells, rotated text, or overlapping columns may not reconstruct perfectly.
                                         </p>
-                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
+                                        <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-500/20 rounded-[5px]">
                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                                             <p className="text-[10px] text-emerald-700 dark:text-emerald-300">
                                                 <strong>100% in your browser.</strong> Files never leave your device.
@@ -606,8 +619,8 @@ export const PDFToExcel: React.FC<PDFToExcelProps> = ({ onBack }) => {
 
                     {/* Excel badge */}
                     <div className="p-5 border-t border-gray-100 dark:border-white/5 sticky bottom-0 z-10">
-                        <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                            <div className="w-8 h-8 shrink-0 rounded-lg bg-green-600 flex items-center justify-center">
+                        <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-[5px]">
+                            <div className="w-8 h-8 shrink-0 rounded-[5px] bg-green-600 flex items-center justify-center">
                                 <FileSpreadsheet className="w-4 h-4 text-white" />
                             </div>
                             <div>

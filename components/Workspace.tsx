@@ -80,7 +80,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 flex flex-col items-center"
       >
-        <div className="w-24 h-24 bg-gradient-to-tr from-brand-600 to-indigo-600 rounded-3xl shadow-2xl shadow-brand-500/30 flex items-center justify-center mb-8 rotate-3 group-hover:rotate-0 transition-transform duration-500">
+        <div className="w-24 h-24 bg-gradient-to-tr from-brand-600 to-indigo-600 rounded-[5px] shadow-2xl shadow-brand-500/30 flex items-center justify-center mb-8 rotate-3 group-hover:rotate-0 transition-transform duration-500">
           <Upload className="w-10 h-10 text-white animate-pulse" />
         </div>
 
@@ -93,7 +93,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
           {t('Drag & drop your vision here.')}
         </p>
 
-        <label className="group/btn relative px-10 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer overflow-hidden">
+        <label className="group/btn relative px-10 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[5px] font-black uppercase tracking-widest text-[11px] shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer overflow-hidden">
           <span className="relative z-10">{t('Select Project Source')}</span>
           <div className="absolute inset-0 bg-brand-500 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
           <input type="file" multiple className="hidden" onChange={(e) => e.target.files && onUpload(Array.from(e.target.files))} />
@@ -121,8 +121,18 @@ export const Workspace: React.FC<WorkspaceProps> = ({
     <div className="flex-1 flex flex-col p-4 lg:p-8 h-full overflow-hidden">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-2xl ${activeTool?.color || 'bg-brand-500'} bg-opacity-10 dark:bg-opacity-20 shadow-inner ring-1 ring-white/10`}>
-            {activeTool ? <activeTool.icon className={`w-6 h-6 ${activeTool.color.replace('bg-', 'text-')}`} /> : <File className="w-6 h-6 text-brand-500" />}
+          <div className={`${activeTool?.toImageUrl ? 'h-12 w-auto px-2' : 'w-12 h-12'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-brand-500'} bg-opacity-10 dark:bg-opacity-20 shadow-inner ring-1 ring-white/10 overflow-hidden gap-1.5`}>
+            {activeTool?.imageUrl ? (
+              <>
+                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-8 h-8 object-contain" />
+                {activeTool.toImageUrl && (
+                  <>
+                    <span className="text-xs font-bold text-gray-400">→</span>
+                    <img src={activeTool.toImageUrl} alt="To" className="w-8 h-8 object-contain" />
+                  </>
+                )}
+              </>
+            ) : activeTool ? <activeTool.icon className={`w-6 h-6 ${activeTool.color.replace('bg-', 'text-')}`} /> : <File className="w-6 h-6 text-brand-500" />}
           </div>
           <div>
             <h1 className="text-2xl font-black dark:text-white tracking-tight">{activeTool ? t(activeTool.name) : t('Workspace')}</h1>
@@ -135,21 +145,21 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onClear}
-            className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 dark:hover:bg-red-500/10 rounded-xl transition-all border border-transparent hover:border-red-500/20"
+            className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 dark:hover:bg-red-500/10 rounded-[5px] transition-all border border-transparent hover:border-red-500/20"
           >
             Purge Session
           </button>
 
           <div className="h-8 w-px bg-gray-200 dark:bg-white/10 mx-2" />
 
-          <label className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:border-brand-500 dark:hover:border-brand-500/50 rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95">
+          <label className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest bg-[#f3f1ea] dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:border-brand-500 dark:hover:border-brand-500/50 rounded-[5px] transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95">
             <Plus className="w-3.5 h-3.5" /> Import More
             <input ref={addMoreInputRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && onUpload(Array.from(e.target.files))} />
           </label>
 
           <button
             onClick={onExport}
-            className="px-8 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 ring-1 ring-white/20"
+            className="px-8 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[5px] text-[10px] font-black uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 ring-1 ring-white/20"
           >
             <Download className="w-3.5 h-3.5" /> {getExportLabel()}
           </button>
@@ -164,7 +174,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
 
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="p-2 inline-flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-400"
+            className="p-2 inline-flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-400"
             title={theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
           >
             {theme === 'dark' ? <Sun className="w-4 h-4 text-yellow-500" /> : <Moon className="w-4 h-4" />}
@@ -197,7 +207,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                 <div className="absolute left-1.5 top-1/2 -translate-y-1/2 opacity-20 group-hover:opacity-100 transition-opacity">
                   <GripVertical className="w-3.5 h-3.5 text-gray-400" />
                 </div>
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ring-1 ring-black/5 dark:ring-white/5
+                <div className={`w-12 h-12 rounded-[5px] flex items-center justify-center shrink-0 shadow-inner ring-1 ring-black/5 dark:ring-white/5
                                 ${file.type.includes('pdf') ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'}`}>
                   <FileText className="w-6 h-6" />
                 </div>
@@ -207,7 +217,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(file.id); }}
-                  className="absolute right-3 p-2 opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white text-red-500 rounded-xl transition-all shadow-lg shadow-red-500/20"
+                  className="absolute right-3 p-2 opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white text-red-500 rounded-[5px] transition-all shadow-lg shadow-red-500/20"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -235,29 +245,29 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                   initial={{ opacity: 0, y: 30, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -30, scale: 0.9 }}
-                  className="w-full max-w-3xl aspect-[1/1.414] bg-white dark:bg-[#1e1e2e] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] rounded-2xl flex flex-col relative ring-1 ring-black/5 dark:ring-white/5"
+                  className="w-full max-w-3xl aspect-[1/1.414] bg-white dark:bg-[#1e1e2e] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] rounded-[5px] flex flex-col relative ring-1 ring-black/5 dark:ring-white/5"
                   style={{ transform: `rotate(${selectedFile.rotation || 0}deg)` }}
                 >
                   {/* Header of Paper */}
                   <div className="h-16 border-b border-gray-100 dark:border-white/5 flex items-center px-8">
-                    <div className="w-8 h-8 rounded bg-gray-100 dark:bg-white/5 mr-4" />
-                    <div className="w-40 h-3 rounded bg-gray-100 dark:bg-white/5" />
+                    <div className="w-8 h-8 rounded-[5px] bg-gray-100 dark:bg-white/5 mr-4" />
+                    <div className="w-40 h-3 rounded-[5px] bg-gray-100 dark:bg-white/5" />
                   </div>
 
                   {/* Content Content */}
                   <div className="flex-1 p-12 space-y-6">
-                    <div className="w-2/3 h-4 rounded bg-gray-100 dark:bg-white/10" />
-                    <div className="w-full h-4 rounded bg-gray-100 dark:bg-white/10" />
-                    <div className="w-full h-4 rounded bg-gray-100 dark:bg-white/10" />
-                    <div className="w-full h-4 bg-gray-100 dark:bg-white/10 rounded" />
+                    <div className="w-2/3 h-4 rounded-[5px] bg-gray-100 dark:bg-white/10" />
+                    <div className="w-full h-4 rounded-[5px] bg-gray-100 dark:bg-white/10" />
+                    <div className="w-full h-4 rounded-[5px] bg-gray-100 dark:bg-white/10" />
+                    <div className="w-full h-4 bg-gray-100 dark:bg-white/10 rounded-[5px]" />
 
                     <div className="grid grid-cols-2 gap-4 pt-8">
-                      <div className="aspect-video bg-gray-100 dark:bg-white/10 rounded" />
-                      <div className="aspect-video bg-gray-100 dark:bg-white/10 rounded" />
+                      <div className="aspect-video bg-gray-100 dark:bg-white/10 rounded-[5px]" />
+                      <div className="aspect-video bg-gray-100 dark:bg-white/10 rounded-[5px]" />
                     </div>
 
-                    <div className="w-1/2 h-4 rounded bg-gray-100 dark:bg-white/10" />
-                    <div className="w-full h-40 bg-gray-100 dark:bg-white/10 rounded" />
+                    <div className="w-1/2 h-4 rounded-[5px] bg-gray-100 dark:bg-white/10" />
+                    <div className="w-full h-40 bg-gray-100 dark:bg-white/10 rounded-[5px]" />
                   </div>
 
                   {/* Tool-specific Overlay layers */}
@@ -267,7 +277,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                       animate={{ opacity: 1, scale: 1 }}
                       className="absolute inset-0 flex items-center justify-center bg-brand-600/10 backdrop-blur-[1px] pointer-events-none"
                     >
-                      <div className="bg-white/90 dark:bg-gray-900/90 p-8 rounded-3xl shadow-2xl border border-brand-500/30 flex flex-col items-center animate-pulse">
+                      <div className="bg-white/90 dark:bg-gray-900/90 p-8 rounded-[5px] shadow-2xl border border-brand-500/30 flex flex-col items-center animate-pulse">
                         <Lock className="w-16 h-16 text-brand-600 mb-4" />
                         <span className="text-xl font-bold text-brand-900 dark:text-white">File Protected</span>
                         <span className="text-xs text-brand-500 font-mono mt-2">AES-256 Encryption Active</span>
@@ -279,7 +289,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                     <motion.div
                       drag
                       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-                      className="absolute bottom-20 right-20 p-4 border-2 border-dashed border-brand-400 rounded-lg cursor-move bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm group/sig"
+                      className="absolute bottom-20 right-20 p-4 border-2 border-dashed border-brand-400 rounded-[5px] cursor-move bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm group/sig"
                     >
                       <span
                         className="text-3xl"
@@ -290,7 +300,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                       >
                         {toolOptions.signatureText}
                       </span>
-                      <div className="absolute -top-6 left-0 bg-brand-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover/sig:opacity-100 transition-opacity uppercase tracking-widest">
+                      <div className="absolute -top-6 left-0 bg-brand-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-[5px] opacity-0 group-hover/sig:opacity-100 transition-opacity uppercase tracking-widest">
                         Your Signature
                       </div>
                     </motion.div>
@@ -298,15 +308,15 @@ export const Workspace: React.FC<WorkspaceProps> = ({
 
                   {activeTool?.id === 'unlock' && (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-900/40 backdrop-blur-[2px]">
-                      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-xs w-full">
+                      <div className="bg-white dark:bg-gray-800 p-8 rounded-[5px] shadow-2xl max-w-xs w-full">
                         <Unlock className="w-10 h-10 text-amber-500 mb-4 mx-auto" />
                         <h4 className="text-sm font-bold text-center mb-4">This file is password protected</h4>
                         <input
                           type="password"
                           placeholder="Enter Password"
-                          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2 text-sm text-center focus:ring-2 focus:ring-amber-500 outline-none"
+                          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[5px] px-4 py-2 text-sm text-center focus:ring-2 focus:ring-amber-500 outline-none"
                         />
-                        <button className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-xl text-xs font-bold transition-colors">
+                        <button className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-[5px] text-xs font-bold transition-colors">
                           Unlock & Edit
                         </button>
                       </div>
@@ -315,13 +325,13 @@ export const Workspace: React.FC<WorkspaceProps> = ({
 
                   {/* Floating Action Buttons for the file - Premium Style */}
                   <div className="absolute top-6 right-0 lg:-right-16 flex flex-col gap-3 lg:group-hover:right-6 transition-all duration-500">
-                    <button className="w-12 h-12 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl text-gray-500 hover:text-brand-500 hover:scale-110 active:scale-95 transition-all flex items-center justify-center">
+                    <button className="w-12 h-12 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-[5px] shadow-2xl text-gray-500 hover:text-brand-500 hover:scale-110 active:scale-95 transition-all flex items-center justify-center">
                       <RotateCw className="w-5 h-5" />
                     </button>
-                    <button className="w-12 h-12 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl text-gray-500 hover:text-brand-500 hover:scale-110 active:scale-95 transition-all flex items-center justify-center">
+                    <button className="w-12 h-12 bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-[5px] shadow-2xl text-gray-500 hover:text-brand-500 hover:scale-110 active:scale-95 transition-all flex items-center justify-center">
                       <Settings2 className="w-5 h-5" />
                     </button>
-                    <button className="w-12 h-12 bg-red-500 border border-red-600 rounded-2xl shadow-[0_10px_20px_rgba(239,68,68,0.3)] text-white hover:scale-110 active:scale-95 transition-all flex items-center justify-center">
+                    <button className="w-12 h-12 bg-red-500 border border-red-600 rounded-[5px] shadow-[0_10px_20px_rgba(239,68,68,0.3)] text-white hover:scale-110 active:scale-95 transition-all flex items-center justify-center">
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
@@ -331,9 +341,9 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                       <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur rounded-full px-6 py-3 shadow-2xl flex items-center gap-4">
                         <span className="text-xs font-bold dark:text-gray-300">Editing Mode</span>
                         <div className="w-px h-6 bg-gray-200 dark:bg-white/10" />
-                        <button className="p-1.5 bg-brand-500 text-white rounded-lg shadow-lg"><FileText className="w-4 h-4" /></button>
-                        <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg"><PenTool className="w-4 h-4" /></button>
-                        <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg"><Wand2 className="w-4 h-4" /></button>
+                        <button className="p-1.5 bg-brand-500 text-white rounded-[5px] shadow-lg"><FileText className="w-4 h-4" /></button>
+                        <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px]"><PenTool className="w-4 h-4" /></button>
+                        <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px]"><Wand2 className="w-4 h-4" /></button>
                       </div>
                     </div>
                   )}
@@ -357,7 +367,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
 
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Format</span>
-                <span className="bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white px-2 py-0.5 rounded text-[10px] font-black">ISO 32000-1</span>
+                <span className="bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white px-2 py-0.5 rounded-[5px] text-[10px] font-black">ISO 32000-1</span>
               </div>
             </div>
 
@@ -365,7 +375,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Magnification</span>
-                  <div className="flex items-center bg-gray-100 dark:bg-white/5 rounded-lg px-2 py-1 ring-1 ring-black/5 dark:ring-white/5">
+                  <div className="flex items-center bg-gray-100 dark:bg-white/5 rounded-[5px] px-2 py-1 ring-1 ring-black/5 dark:ring-white/5">
                     <span className="text-[10px] font-black dark:text-white">100%</span>
                   </div>
                 </div>
@@ -377,10 +387,10 @@ export const Workspace: React.FC<WorkspaceProps> = ({
               </div>
 
               <div className="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-white/10">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 hover:text-brand-500 transition-colors cursor-pointer">
+                <div className="w-8 h-8 rounded-[5px] bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 hover:text-brand-500 transition-colors cursor-pointer">
                   <Search className="w-4 h-4" />
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 hover:text-brand-500 transition-colors cursor-pointer">
+                <div className="w-8 h-8 rounded-[5px] bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 hover:text-brand-500 transition-colors cursor-pointer">
                   <Share2 className="w-4 h-4" />
                 </div>
               </div>
@@ -398,12 +408,22 @@ export const Workspace: React.FC<WorkspaceProps> = ({
         <div className="flex items-center gap-3">
           {onBack && (
             <button onClick={onBack}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-500 dark:text-gray-400">
+              className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-500 dark:text-gray-400">
               <ArrowLeft className="w-4 h-4" />
             </button>
           )}
-          <div className={`p-2 rounded-xl ${activeTool?.color || 'bg-brand-500'} bg-opacity-10 dark:bg-opacity-20`}>
-            {activeTool ? <activeTool.icon className={`w-5 h-5 ${activeTool.color.replace('bg-', 'text-')}`} /> : <File className="w-5 h-5 text-brand-500" />}
+          <div className={`${activeTool?.toImageUrl ? 'h-8 w-auto px-1.5' : 'w-8 h-8'} rounded-[5px] flex items-center justify-center ${activeTool?.color || 'bg-brand-500'} bg-opacity-10 dark:bg-opacity-20 overflow-hidden gap-1`}>
+            {activeTool?.imageUrl ? (
+              <>
+                <img src={activeTool.imageUrl} alt={activeTool.name} className="w-6 h-6 object-contain" />
+                {activeTool.toImageUrl && (
+                  <>
+                    <span className="text-[10px] font-bold text-gray-400">→</span>
+                    <img src={activeTool.toImageUrl} alt="To" className="w-6 h-6 object-contain" />
+                  </>
+                )}
+              </>
+            ) : activeTool ? <activeTool.icon className={`w-5 h-5 ${activeTool.color.replace('bg-', 'text-')}`} /> : <File className="w-5 h-5 text-brand-500" />}
           </div>
           <div>
             <h1 className="text-lg font-black dark:text-white tracking-tight">{activeTool ? t(activeTool.name) : t('Workspace')}</h1>
@@ -422,7 +442,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
           </span>
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-gray-400"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-[5px] transition-colors text-gray-400"
             title={theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
           >
             {theme === 'dark' ? <Sun className="w-4 h-4 text-yellow-500" /> : <Moon className="w-4 h-4" />}
