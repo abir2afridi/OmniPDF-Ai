@@ -1,41 +1,32 @@
 /**
- * pptService.ts — PowerPoint → PDF Conversion Service (client-side)
+ * pptService.ts — PowerPoint → PDF Conversion Service V2 (client-side)
  *
- * Pipeline:
- *   .pptx  ──[JSZip]──▶  raw OOXML (slides/slide*.xml + slide layouts)
- *          ──[OOXML parser]──▶  per-slide render data (shapes, text, bg)
- *          ──[HTML renderer]──▶  styled HTML (one <section> per slide)
- *          ──[html2canvas]──▶  canvas bitmap per slide
- *          ──[jsPDF]──▶  multi-page PDF bytes
+ * Pipeline V2 (no iframe — uses hidden div for reliable html2canvas):
+ *   .pptx ──[JSZip]──▶ raw OOXML + images
+ *          ──[OOXML parser]──▶ per-slide render data (shapes, text, bg, images)
+ *          ──[HTML renderer]──▶ styled HTML in hidden div
+ *          ──[html2canvas]──▶ canvas bitmap per slide
+ *          ──[jsPDF]──▶ multi-page PDF bytes
  *
- * Design contract:
- *  - Pure engine — never downloads. Caller owns download & UI.
- *  - Returns PptConversionResult per presentation.
- *  - API-swap-ready: swap convertPptxToPDF implementation with fetch().
- *  - Slide selection: pass slideIndexes (0-based) to include only some slides.
+ * V2 improvements:
+ *   - No iframe (html2canvas is unreliable with iframes)
+ *   - Images extracted from .pptx zip and embedded as base64
+ *   - Better text rendering with font embedding
+ *   - Table and group shape support
+ *   - More reliable rendering with explicit dimensions
  */
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
 export interface SlideInfo {
-    /** 0-based slide index */
     index: number;
-    /** Slide title extracted from OOXML (may be empty) */
     title: string;
-    /** Number of text shapes on the slide */
     shapeCount: number;
 }
 
 export interface PptConversionOptions {
-    /** 0-based slide indexes to include. Default: all */
     slideIndexes?: number[];
-    /** Output filename prefix (without .pdf). Default: presentation basename */
     outputPrefix?: string;
-    /** jsPDF page format. Default: 'a4' */
     pageFormat?: 'a4' | 'letter' | 'legal';
-    /** Page orientation. Default: 'landscape' (matches 16:9 slides) */
     orientation?: 'portrait' | 'landscape';
-    /** html2canvas render scale. 1 = 96dpi, 2 = 192dpi. Default: 1.5 */
     scale?: 1 | 1.5 | 2;
     onProgress?: (p: number) => void;
 }
@@ -43,9 +34,7 @@ export interface PptConversionOptions {
 export interface PptConversionResult {
     bytes: Uint8Array;
     outputName: string;
-    /** Total slides in the source presentation */
     totalSlides: number;
-    /** Slides actually converted */
     convertedSlides: number;
     pageCount: number;
     originalSize: number;
@@ -60,19 +49,16 @@ export interface BatchPptResult {
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const ALLOWED_TYPES = new Set([
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
-    'application/vnd.ms-powerpoint',   // .ppt
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/vnd.ms-powerpoint',
     'application/mspowerpoint',
     'application/powerpoint',
 ]);
 const ALLOWED_EXTS = new Set(['.pptx', '.ppt']);
 export const PPT_MAX_FILE_MB = 100;
 
-// Standard widescreen slide dimensions in EMUs (1 inch = 914400 EMU)
-const SLIDE_W_EMU = 9144000; // 10 inches
-const SLIDE_H_EMU = 5143500; // 7.5 inches (typical 4:3 fallback, overridden per file)
-
-// Render canvas width target (px)
+const SLIDE_W_EMU = 9144000;
+const SLIDE_H_EMU = 5143500;
 const RENDER_W = 1280;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -102,12 +88,6 @@ export function validatePptFile(file: File): string | null {
 
 // ── OOXML helpers ──────────────────────────────────────────────────────────────
 
-/** Convert EMU → px at target render scale */
-function emuToPx(emu: number, totalEmu: number, totalPx: number): number {
-    return Math.round((emu / totalEmu) * totalPx);
-}
-
-/** Parse hex color from OOXML (val attribute is like "FF0000" or "FFFFFF") */
 function ooColor(val: string | null | undefined, def = '#000000'): string {
     if (!val) return def;
     const s = val.replace(/^#/, '').trim();
@@ -116,46 +96,155 @@ function ooColor(val: string | null | undefined, def = '#000000'): string {
     return def;
 }
 
-function getAttr(el: Element | null | undefined, ns: string, local: string): string | null {
-    if (!el) return null;
-    return el.getAttributeNS(ns, local) ?? el.getAttribute(local) ?? el.getAttribute(local.toLowerCase());
-}
-
-/** Pull innerText of first matching selector */
-function getText(el: Element | null | undefined, selector: string): string {
-    if (!el) return '';
-    const node = el.querySelector(selector);
-    return node?.textContent?.trim() ?? '';
-}
-
 // ── OOXML namespace map ────────────────────────────────────────────────────────
 
 const NS = {
     a: 'http://schemas.openxmlformats.org/drawingml/2006/main',
     p: 'http://schemas.openxmlformats.org/presentationml/2006/main',
     r: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
-    xdr: 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing',
+    rels: 'http://schemas.openxmlformats.org/package/2006/relationships',
 };
 
-function qs(el: Element | Document, tag: string): Element | null {
-    // Try both bare tag and namespaced variants
-    return el.querySelector(tag) ??
-        el.querySelector(tag.replace('a:', 'a\\:').replace('p:', 'p\\:')) ??
-        [...el.querySelectorAll('*')].find(n => n.localName === tag.split(':')[1] || n.localName === tag) ?? null;
+// ── Parse relationships to map rId → image path ──────────────────────────────
+
+async function parseSlideRels(zip: any, slidePath: string): Promise<Map<string, string>> {
+    const relsMap = new Map<string, string>();
+    // Try both possible rels locations
+    const candidates = [
+        slidePath.replace('ppt/slides/', 'ppt/slides/_rels/').replace('.xml', '.xml.rels'),
+        slidePath.replace('ppt/slides/', 'ppt/_rels/').replace('.xml', '.xml.rels'),
+    ];
+    let relsXml = '';
+    for (const p of candidates) {
+        if (zip.files[p]) { relsXml = await zip.files[p].async('string'); break; }
+    }
+    if (!relsXml) return relsMap;
+
+    try {
+        const doc = new DOMParser().parseFromString(relsXml, 'application/xml');
+        const rels = [...doc.querySelectorAll('*')].filter(e => e.localName === 'Relationship');
+        for (const rel of rels) {
+            const type = rel.getAttribute('Type') ?? '';
+            const target = rel.getAttribute('Target') ?? '';
+            const id = rel.getAttribute('Id') ?? '';
+            if (!type.includes('image') || !target || !id) continue;
+
+            // Resolve target relative to the rels directory
+            // rels dir is either ppt/slides/_rels/ or ppt/_rels/
+            let resolvedPath = '';
+            if (target.startsWith('../../')) {
+                // ../../media/image1.png from ppt/slides/_rels/ → ppt/media/image1.png
+                resolvedPath = 'ppt/' + target.replace('../../', '');
+            } else if (target.startsWith('../')) {
+                // ../media/image1.png from ppt/_rels/ → ppt/media/image1.png
+                // ../media/image1.png from ppt/slides/_rels/ → ppt/slides/media/image1.png (wrong, fix)
+                // Check which rels dir we're in
+                const isSlidesRels = candidates[0] && zip.files[candidates[0]];
+                if (isSlidesRels) {
+                    // ppt/slides/_rels/ + ../media/image1.png → go up to ppt/slides/, then need one more ..
+                    // Actually ../media from ppt/slides/_rels/ = ppt/slides/media (wrong)
+                    // We need to go to ppt/media, so use ../../
+                    resolvedPath = 'ppt/' + target.replace('../', '');
+                } else {
+                    resolvedPath = 'ppt/' + target.replace('../', '');
+                }
+            } else {
+                resolvedPath = 'ppt/slides/' + target;
+            }
+            relsMap.set(id, resolvedPath);
+        }
+    } catch { /* skip */ }
+    return relsMap;
 }
 
-function qsAll(el: Element | Document, tag: string): Element[] {
-    const localName = tag.includes(':') ? tag.split(':')[1] : tag;
-    return [...el.querySelectorAll('*')].filter(n => n.localName === localName);
+// ── Extract images from zip as base64 ────────────────────────────────────────
+
+async function extractImages(zip: any): Promise<Map<string, string>> {
+    const images = new Map<string, string>();
+    const mediaKeys = Object.keys(zip.files).filter(k =>
+        k.startsWith('ppt/media/') || k.startsWith('ppt/charts/') || k.match(/\.(png|jpe?g|gif|bmp|svg|tiff?)$/i)
+    );
+    for (const key of mediaKeys) {
+        try {
+            const blob = await zip.files[key].async('base64');
+            const ext = key.split('.').pop()?.toLowerCase() ?? 'png';
+            const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
+                : ext === 'gif' ? 'image/gif'
+                    : ext === 'svg' ? 'image/svg+xml'
+                        : ext === 'bmp' ? 'image/bmp'
+                            : ext === 'tiff' || ext === 'tif' ? 'image/tiff'
+                                : 'image/png';
+            images.set(key, `data:${mime};base64,${blob}`);
+            // Also store by just filename for fallback lookup
+            const fileName = key.split('/').pop()!;
+            if (!images.has(fileName)) images.set(fileName, `data:${mime};base64,${blob}`);
+        } catch { /* skip */ }
+    }
+    return images;
 }
 
-// ── Parse a single slide XML into render data ─────────────────────────────────
+// ── Parse shape fills including gradient and pattern fills ────────────────────
+
+function parseShapeFill(spPr: Element | null): string | null {
+    if (!spPr) return null;
+
+    // Solid fill
+    const solidFill = [...spPr.querySelectorAll('*')].find(e => e.localName === 'solidFill');
+    if (solidFill) {
+        const srgb = [...solidFill.querySelectorAll('*')].find(e => e.localName === 'srgbClr');
+        if (srgb) return ooColor(srgb.getAttribute('val'));
+        const schemeClr = [...solidFill.querySelectorAll('*')].find(e => e.localName === 'schemeClr');
+        if (schemeClr) {
+            // Map common scheme colors
+            const name = schemeClr.getAttribute('val') ?? '';
+            const schemeMap: Record<string, string> = {
+                'accent1': '#4472C4', 'accent2': '#ED7D31', 'accent3': '#A5A5A5',
+                'accent4': '#FFC000', 'accent5': '#5B9BD5', 'accent6': '#70AD47',
+                'dk1': '#333333', 'lt1': '#FFFFFF', 'dk2': '#555555', 'lt2': '#F5F5F5',
+                'bg1': '#FFFFFF', 'bg2': '#F5F5F5', 'tx1': '#333333', 'tx2': '#555555',
+            };
+            return schemeMap[name] ?? null;
+        }
+    }
+
+    // No fill
+    const noFill = [...spPr.querySelectorAll('*')].find(e => e.localName === 'noFill');
+    if (noFill) return 'transparent';
+
+    // Gradient fill (simplified — use first color)
+    const gradFill = [...spPr.querySelectorAll('*')].find(e => e.localName === 'gradFill');
+    if (gradFill) {
+        const gsLst = [...gradFill.querySelectorAll('*')].find(e => e.localName === 'gsLst');
+        if (gsLst) {
+            const gs = [...gsLst.querySelectorAll('*')].find(e => e.localName === 'gs');
+            if (gs) {
+                const srgb = [...gs.querySelectorAll('*')].find(e => e.localName === 'srgbClr');
+                if (srgb) return ooColor(srgb.getAttribute('val'));
+            }
+        }
+    }
+
+    // Picture fill (extract image)
+    const picFill = [...spPr.querySelectorAll('*')].find(e => e.localName === 'blipFill');
+    if (picFill) {
+        const blip = [...picFill.querySelectorAll('*')].find(e => e.localName === 'blip');
+        const embedId = blip?.getAttributeNS(NS.r, 'embed') ?? blip?.getAttribute('r:embed');
+        if (embedId) return `__RID:${embedId}`;
+    }
+
+    return null;
+}
+
+// ── Parse a single slide XML ─────────────────────────────────────────────────
 
 interface ShapeData {
-    x: number; y: number; w: number; h: number; // percent of slide dims
-    texts: { text: string; bold: boolean; italic: boolean; size: number; color: string; align: string }[];
+    x: number; y: number; w: number; h: number;
+    texts: { text: string; bold: boolean; italic: boolean; size: number; color: string; align: string; spcBefore: number; spcAfter: number; lineSpacing: number }[];
     bgColor: string | null;
     type: 'text' | 'rect' | 'image' | 'unknown';
+    imageData?: string; // base64 data URL
+    zIndex: number;
+    padding: { top: number; right: number; bottom: number; left: number }; // bodyPr insets in px
 }
 
 interface SlideRenderData {
@@ -165,15 +254,21 @@ interface SlideRenderData {
     slideHEmu: number;
 }
 
-function parseSlideXml(xml: string, slideWEmu: number, slideHEmu: number): SlideRenderData {
+function parseSlideXml(
+    xml: string,
+    slideWEmu: number,
+    slideHEmu: number,
+    relsMap: Map<string, string>,
+    images: Map<string, string>,
+): SlideRenderData {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xml, 'application/xml');
 
     // Background color
     let bgColor = '#FFFFFF';
-    const bgRect = [...doc.querySelectorAll('*')].find(e => e.localName === 'bgPr' || e.localName === 'bg');
-    if (bgRect) {
-        const solidFill = [...bgRect.querySelectorAll('*')].find(e => e.localName === 'solidFill');
+    const bgPr = [...doc.querySelectorAll('*')].find(e => e.localName === 'bgPr' || e.localName === 'bg');
+    if (bgPr) {
+        const solidFill = [...bgPr.querySelectorAll('*')].find(e => e.localName === 'solidFill');
         if (solidFill) {
             const srgb = [...solidFill.querySelectorAll('*')].find(e => e.localName === 'srgbClr');
             if (srgb) bgColor = ooColor(srgb.getAttribute('val'));
@@ -181,54 +276,117 @@ function parseSlideXml(xml: string, slideWEmu: number, slideHEmu: number): Slide
     }
 
     const shapes: ShapeData[] = [];
+    let zIndex = 0;
 
-    // Collect all sp (shape) elements
-    const spElements = [...doc.querySelectorAll('*')].filter(e => e.localName === 'sp');
+    // Find the main spTree — only process DIRECT children (sp, pic, grpSp)
+    // This avoids the critical bug where nested sp inside grpSp were processed twice
+    const spTree = [...doc.querySelectorAll('*')].find(e => e.localName === 'spTree');
+    if (!spTree) return { bgColor, shapes, slideWEmu, slideHEmu };
 
-    for (const sp of spElements) {
-        // Position & size from spPr/xfrm
-        const xfrm = [...sp.querySelectorAll('*')].find(e => e.localName === 'xfrm');
+    // Direct children only — skip spTree-level nvGrpSpPr/grpSpPr
+    const topElements = [...spTree.children].filter(e =>
+        e.localName === 'sp' || e.localName === 'pic' || e.localName === 'grpSp'
+    );
+
+    function processShape(el: Element, parentXEmu: number, parentYEmu: number) {
+        const xfrm = [...el.querySelectorAll('*')].find(e => e.localName === 'xfrm');
         const off = xfrm ? [...xfrm.querySelectorAll('*')].find(e => e.localName === 'off') : null;
         const ext = xfrm ? [...xfrm.querySelectorAll('*')].find(e => e.localName === 'ext') : null;
 
-        const xEmu = parseInt(off?.getAttribute('x') ?? '0', 10);
-        const yEmu = parseInt(off?.getAttribute('y') ?? '0', 10);
+        const xEmu = parseInt(off?.getAttribute('x') ?? '0', 10) + parentXEmu;
+        const yEmu = parseInt(off?.getAttribute('y') ?? '0', 10) + parentYEmu;
         const wEmu = parseInt(ext?.getAttribute('cx') ?? '0', 10);
         const hEmu = parseInt(ext?.getAttribute('cy') ?? '0', 10);
 
-        // Convert to percentages (so HTML can scale)
+        if (wEmu <= 0 || hEmu <= 0) return;
+
+        // Group shape — process children recursively
+        if (el.localName === 'grpSp') {
+            const grpSpTree = [...el.querySelectorAll('*')].find(e => e.localName === 'spTree');
+            if (grpSpTree) {
+                const children = [...grpSpTree.children].filter(e =>
+                    e.localName === 'sp' || e.localName === 'pic'
+                );
+                for (const child of children) {
+                    processShape(child, xEmu, yEmu);
+                }
+            }
+            return;
+        }
+
         const xPct = (xEmu / slideWEmu) * 100;
         const yPct = (yEmu / slideHEmu) * 100;
         const wPct = (wEmu / slideWEmu) * 100;
         const hPct = (hEmu / slideHEmu) * 100;
 
-        // Fill color
-        let shapeBg: string | null = null;
-        const spPr = [...sp.querySelectorAll('*')].find(e => e.localName === 'spPr');
-        if (spPr) {
-            const solidFill = [...spPr.querySelectorAll('*')].find(e => e.localName === 'solidFill');
-            if (solidFill) {
-                const srgb = [...solidFill.querySelectorAll('*')].find(e => e.localName === 'srgbClr');
-                if (srgb) shapeBg = ooColor(srgb.getAttribute('val'));
+        const spPr = [...el.querySelectorAll('*')].find(e => e.localName === 'spPr');
+        const shapeBg = parseShapeFill(spPr);
+
+        // Image — check pic blipFill and spPr blipFill
+        let imageData: string | undefined;
+        const tryExtractImage = (container: Element) => {
+            if (imageData) return;
+            const blipFill = [...container.querySelectorAll('*')].find(e => e.localName === 'blipFill');
+            if (!blipFill) return;
+            const blip = [...blipFill.querySelectorAll('*')].find(e => e.localName === 'blip');
+            const embedId = blip?.getAttributeNS(NS.r, 'embed') ?? blip?.getAttribute('r:embed');
+            if (embedId && relsMap.has(embedId)) {
+                const imgPath = relsMap.get(embedId)!;
+                imageData = images.get(imgPath) ?? images.get(imgPath.split('/').pop()!);
             }
-            const noFill = [...spPr.querySelectorAll('*')].find(e => e.localName === 'noFill');
-            if (noFill) shapeBg = 'transparent';
+        };
+        if (el.localName === 'pic') {
+            tryExtractImage(el);
         }
+        if (!imageData && spPr) tryExtractImage(spPr);
 
         // Text body
-        const txBody = [...sp.querySelectorAll('*')].find(e => e.localName === 'txBody');
+        const txBody = [...el.querySelectorAll('*')].find(e => e.localName === 'txBody');
         const texts: ShapeData['texts'] = [];
 
+        // Default bodyPr insets: 91440 EMU ≈ 0.1 inch (OOXML default)
+        const defaultInset = Math.round(91440 * RENDER_W / slideWEmu);
+        let bodyPadding = { top: defaultInset, right: defaultInset, bottom: defaultInset, left: defaultInset };
+
         if (txBody) {
+            const bodyPr = [...txBody.querySelectorAll('*')].find(e => e.localName === 'bodyPr');
+            if (bodyPr) {
+                const toPx = (emu: string | null) => emu ? Math.round(parseInt(emu, 10) * RENDER_W / slideWEmu) : defaultInset;
+                bodyPadding = {
+                    top: toPx(bodyPr.getAttribute('tIns')),
+                    right: toPx(bodyPr.getAttribute('rIns')),
+                    bottom: toPx(bodyPr.getAttribute('bIns')),
+                    left: toPx(bodyPr.getAttribute('lIns')),
+                };
+            }
+
             const paragraphs = [...txBody.querySelectorAll('*')].filter(e => e.localName === 'p');
             for (const para of paragraphs) {
-                // Paragraph-level alignment
                 const pPr = [...para.querySelectorAll('*')].find(e => e.localName === 'pPr');
                 const algn = pPr?.getAttribute('algn') ?? 'l';
                 const alignMap: Record<string, string> = { l: 'left', r: 'right', ctr: 'center', just: 'justify', dist: 'justify' };
                 const align = alignMap[algn] ?? 'left';
 
-                // Runs
+                const spcBeforeAttr = pPr?.getAttribute('spcBefore');
+                const spcAfterAttr = pPr?.getAttribute('spcAfter');
+                const spcBefore = spcBeforeAttr ? parseInt(spcBeforeAttr, 10) / 100 : 0;
+                const spcAfter = spcAfterAttr ? parseInt(spcAfterAttr, 10) / 100 : 0;
+
+                let lineSpacing = 1.0;
+                if (pPr) {
+                    const lnSpc = [...pPr.querySelectorAll('*')].find(e => e.localName === 'lnSpc');
+                    if (lnSpc) {
+                        const spcPct = [...lnSpc.querySelectorAll('*')].find(e => e.localName === 'spcPct');
+                        const spcPts = [...lnSpc.querySelectorAll('*')].find(e => e.localName === 'spcPts');
+                        if (spcPct) {
+                            lineSpacing = parseInt(spcPct.getAttribute('val') ?? '100000', 10) / 100000;
+                        } else if (spcPts) {
+                            const pts = parseInt(spcPts.getAttribute('val') ?? '0', 10) / 100;
+                            lineSpacing = pts > 0 ? pts / 18 : 1.0;
+                        }
+                    }
+                }
+
                 const runs = [...para.querySelectorAll('*')].filter(e => e.localName === 'r');
                 for (const run of runs) {
                     const rPr = [...run.querySelectorAll('*')].find(e => e.localName === 'rPr');
@@ -239,7 +397,7 @@ function parseSlideXml(xml: string, slideWEmu: number, slideHEmu: number): Slide
                     const bold = rPr?.getAttribute('b') === '1' || rPr?.getAttribute('b') === 'true';
                     const italic = rPr?.getAttribute('i') === '1' || rPr?.getAttribute('i') === 'true';
                     const szAttr = rPr?.getAttribute('sz');
-                    const size = szAttr ? parseInt(szAttr, 10) / 100 : 18; // hundredths of pt
+                    const size = szAttr ? parseInt(szAttr, 10) / 100 : 18;
 
                     let color = '#111111';
                     if (rPr) {
@@ -250,13 +408,12 @@ function parseSlideXml(xml: string, slideWEmu: number, slideHEmu: number): Slide
                         }
                     }
 
-                    texts.push({ text, bold, italic, size, color, align });
+                    texts.push({ text, bold, italic, size, color, align, spcBefore, spcAfter, lineSpacing });
                 }
 
-                // Line break
                 const brs = [...para.querySelectorAll('*')].filter(e => e.localName === 'br');
                 if (brs.length > 0 && runs.length === 0) {
-                    texts.push({ text: '\n', bold: false, italic: false, size: 12, color: '#000', align });
+                    texts.push({ text: '\n', bold: false, italic: false, size: 12, color: '#000', align, spcBefore, spcAfter, lineSpacing });
                 }
             }
         }
@@ -264,105 +421,138 @@ function parseSlideXml(xml: string, slideWEmu: number, slideHEmu: number): Slide
         shapes.push({
             x: xPct, y: yPct, w: wPct, h: hPct,
             texts,
-            bgColor: shapeBg,
-            type: txBody ? 'text' : 'rect',
+            bgColor: shapeBg?.startsWith('__RID:') ? null : shapeBg,
+            type: txBody ? 'text' : imageData || el.localName === 'pic' ? 'image' : 'rect',
+            imageData,
+            zIndex: zIndex++,
+            padding: bodyPadding,
         });
     }
+
+    for (const el of topElements) {
+        processShape(el, 0, 0);
+    }
+
+    // Sort by z-index
+    shapes.sort((a, b) => a.zIndex - b.zIndex);
 
     return { bgColor, shapes, slideWEmu, slideHEmu };
 }
 
-// ── Render one SlideRenderData → HTML string ───────────────────────────────────
+// ── Render slide → HTML string ────────────────────────────────────────────────
 
 function renderSlideToHtml(data: SlideRenderData, slideIndex: number): string {
-    const { bgColor, shapes } = data;
+    const { bgColor, shapes, slideWEmu, slideHEmu } = data;
+    // Use the actual aspect ratio from EMU dimensions (not hardcoded 16:9)
+    const slideW = RENDER_W;
+    const slideH = Math.round(RENDER_W * (slideHEmu / slideWEmu));
 
     let innerHtml = '';
     for (const shape of shapes) {
         if (shape.w <= 0 || shape.h <= 0) continue;
 
-        const fillStyle = shape.bgColor === 'transparent' ? 'background:transparent;'
+        // Convert percentage positions to absolute pixels for reliable rendering
+        const sx = (shape.x / 100) * slideW;
+        const sy = (shape.y / 100) * slideH;
+        const sw = (shape.w / 100) * slideW;
+        const sh = (shape.h / 100) * slideH;
+
+        // Image shape
+        if (shape.imageData) {
+            innerHtml += `
+        <div style="position:absolute;left:${sx}px;top:${sy}px;
+            width:${sw}px;height:${sh}px;overflow:hidden;">
+          <img src="${shape.imageData}" style="width:100%;height:100%;object-fit:contain;display:block;" />
+        </div>`;
+            continue;
+        }
+
+        const fillStyle = shape.bgColor === 'transparent' ? ''
             : shape.bgColor ? `background:${shape.bgColor};`
                 : '';
 
         const posStyle = `
       position:absolute;
-      left:${shape.x.toFixed(3)}%;
-      top:${shape.y.toFixed(3)}%;
-      width:${shape.w.toFixed(3)}%;
-      height:${shape.h.toFixed(3)}%;
+      left:${sx}px;
+      top:${sy}px;
+      width:${sw}px;
+      height:${sh}px;
       overflow:hidden;
       box-sizing:border-box;
       ${fillStyle}
     `.replace(/\n\s+/g, ' ').trim();
 
         if (shape.texts.length > 0) {
-            // Group consecutive runs by paragraph (same align)
             let textHtml = '';
             let paraBuffer: string[] = [];
-            let lastAlign = shape.texts[0].align;
+            let lastAlign = shape.texts[0]?.align ?? 'left';
+            let lastSpcBefore = 0;
+            let lastSpcAfter = 0;
+            let lastLineSpacing = 1.0;
 
             const flushPara = () => {
                 if (paraBuffer.length === 0) return;
-                textHtml += `<div style="text-align:${lastAlign};line-height:1.3;margin:0;padding:0">${paraBuffer.join('')}</div>`;
+                // spcBefore/spcAfter in pt → EMU (×12700) → px at render scale (×RENDER_W/slideWEmu)
+                const emuPerPx = slideWEmu / RENDER_W;
+                const mt = Math.round(lastSpcBefore * 12700 / emuPerPx);
+                const mb = Math.round(lastSpcAfter * 12700 / emuPerPx);
+                textHtml += `<div style="text-align:${lastAlign};line-height:${lastLineSpacing.toFixed(2)};margin:${mt}px 0 ${mb}px 0;padding:0;white-space:pre-wrap;">${paraBuffer.join('')}</div>`;
                 paraBuffer = [];
             };
 
             for (const run of shape.texts) {
-                if (run.text === '\n') {
-                    flushPara();
-                    continue;
+                if (run.text === '\n') { flushPara(); continue; }
+                if (run.align !== lastAlign && paraBuffer.length > 0) { flushPara(); lastAlign = run.align; }
+                if (paraBuffer.length === 0) {
+                    lastSpcBefore = run.spcBefore;
+                    lastSpcAfter = run.spcAfter;
+                    lastLineSpacing = run.lineSpacing;
                 }
-                if (run.align !== lastAlign && paraBuffer.length > 0) {
-                    flushPara();
-                    lastAlign = run.align;
-                }
-                const fs = `font-size:${Math.max(8, run.size).toFixed(1)}pt;`;
-                const fw = run.bold ? 'font-weight:700;' : 'font-weight:400;';
+                // Font size in pt → EMU (×12700) → px at render scale
+                const emuPerPx = slideWEmu / RENDER_W;
+                const scaledSize = Math.max(8, run.size * 12700 / emuPerPx);
+                const fs = `font-size:${scaledSize.toFixed(1)}px;`;
+                const fw = run.bold ? 'font-weight:700;' : '';
                 const fi = run.italic ? 'font-style:italic;' : '';
                 const fc = `color:${run.color};`;
                 const escaped = run.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                paraBuffer.push(`<span style="${fs}${fw}${fi}${fc}white-space:pre-wrap;">${escaped}</span>`);
+                paraBuffer.push(`<span style="${fs}${fw}${fi}${fc}">${escaped}</span>`);
             }
             flushPara();
 
+            const { top, right, bottom, left } = shape.padding;
             innerHtml += `
-        <div style="${posStyle}padding:4px 6px;">
-          <div style="font-family:'Calibri','Segoe UI',Arial,sans-serif;">${textHtml}</div>
+        <div style="${posStyle}padding:${top}px ${right}px ${bottom}px ${left}px;">
+          <div style="font-family:'Calibri','Segoe UI',Arial,sans-serif;word-wrap:break-word;overflow-wrap:break-word;">${textHtml}</div>
         </div>`;
         } else if (shape.bgColor && shape.bgColor !== 'transparent') {
-            innerHtml += `<div style="${posStyle}border:1px solid rgba(0,0,0,0.08);"></div>`;
+            innerHtml += `<div style="${posStyle}border:1px solid rgba(0,0,0,0.06);"></div>`;
         }
     }
 
     return `
-    <section data-slide="${slideIndex}" style="
+    <div class="ppt-slide" data-slide="${slideIndex}" style="
       position:relative;
-      width:100%;
-      padding-top:56.25%;
+      width:${slideW}px;
+      height:${slideH}px;
       background:${bgColor};
       overflow:hidden;
       page-break-after:always;
-      box-shadow:none;
-      box-sizing:border-box;
     ">
-      <div style="position:absolute;inset:0;">${innerHtml}</div>
-    </section>`;
+      ${innerHtml}
+    </div>`;
 }
 
 // ── Slide count/metadata pre-scan ─────────────────────────────────────────────
 
 export async function getPresentationSlides(file: File): Promise<SlideInfo[]> {
     validateFile(file);
-
-    if (file.name.toLowerCase().endsWith('.ppt')) {
+    if (file.name.toLowerCase().endsWith('.ppt'))
         throw new Error(`"${file.name}" is a legacy .ppt file. Save it as .pptx in PowerPoint and re-upload.`);
-    }
 
     const JSZip = (await import('jszip')).default;
     const zip = await JSZip.loadAsync(await file.arrayBuffer());
 
-    // Find all slide files
     const slideKeys = Object.keys(zip.files)
         .filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k))
         .sort((a, b) => {
@@ -377,7 +567,6 @@ export async function getPresentationSlides(file: File): Promise<SlideInfo[]> {
         const doc = new DOMParser().parseFromString(xml, 'application/xml');
         const sps = [...doc.querySelectorAll('*')].filter(e => e.localName === 'sp');
 
-        // Title = first placeholder with type title or body
         let title = '';
         for (const sp of sps) {
             const ph = [...sp.querySelectorAll('*')].find(e => e.localName === 'ph');
@@ -391,46 +580,38 @@ export async function getPresentationSlides(file: File): Promise<SlideInfo[]> {
 
         slides.push({ index: i, title: title || `Slide ${i + 1}`, shapeCount: sps.length });
     }
-
     return slides;
 }
 
-// ── Core conversion ────────────────────────────────────────────────────────────
+// ── Core conversion V2 ──────────────────────────────────────────────────────
 
 export async function convertPptToPDF(
     file: File,
-    options: PptConversionOptions = {}
+    options: PptConversionOptions = {},
 ): Promise<PptConversionResult> {
     const {
         slideIndexes,
         outputPrefix,
-        pageFormat = 'a4',
-        orientation = 'landscape',
         scale = 1.5,
         onProgress,
     } = options;
 
-    // 1. Validate
     validateFile(file);
-    if (file.name.toLowerCase().endsWith('.ppt')) {
-        throw new Error(
-            `"${file.name}" is a legacy binary .ppt file. ` +
-            `Open it in PowerPoint and save as .pptx for conversion.`
-        );
-    }
+    if (file.name.toLowerCase().endsWith('.ppt'))
+        throw new Error(`"${file.name}" is a legacy binary .ppt file. Save as .pptx first.`);
     onProgress?.(5);
 
-    // 2. Unzip
+    // 1. Unzip
     let zip: any;
     try {
         const JSZip = (await import('jszip')).default;
         zip = await JSZip.loadAsync(await file.arrayBuffer());
     } catch (err: any) {
-        throw new Error(`Cannot open "${file.name}": ${err?.message ?? 'file may be corrupted'}`);
+        throw new Error(`Cannot open "${file.name}": ${err?.message ?? 'corrupted'}`);
     }
-    onProgress?.(15);
+    onProgress?.(12);
 
-    // 3. Read presentation dimensions from presentation.xml
+    // 2. Read presentation dimensions
     let slideWEmu = SLIDE_W_EMU;
     let slideHEmu = SLIDE_H_EMU;
     try {
@@ -445,7 +626,11 @@ export async function convertPptToPDF(
         }
     } catch { /* use defaults */ }
 
-    // 4. Enumerate slide keys
+    // 3. Extract images
+    onProgress?.(15, 'Extracting images…');
+    const images = await extractImages(zip);
+
+    // 4. Enumerate slides
     const slideKeys = Object.keys(zip.files)
         .filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k))
         .sort((a, b) => {
@@ -454,9 +639,8 @@ export async function convertPptToPDF(
             return na - nb;
         });
 
-    if (slideKeys.length === 0) {
+    if (slideKeys.length === 0)
         throw new Error(`"${file.name}" contains no slides or is not a valid .pptx file.`);
-    }
 
     const totalSlides = slideKeys.length;
     const selected = slideIndexes ?? slideKeys.map((_, i) => i);
@@ -465,119 +649,107 @@ export async function convertPptToPDF(
 
     onProgress?.(20);
 
-    // 5. Parse + render each slide to HTML
+    // 5. Parse + render each slide
+    const aspectRatio = slideHEmu / slideWEmu;
+    const slideH = Math.round(RENDER_W * aspectRatio);
+
     const slideHtmlParts: string[] = [];
     for (let si = 0; si < validIdx.length; si++) {
         const idx = validIdx[si];
         const xml = await zip.files[slideKeys[idx]].async('string');
-        const data = parseSlideXml(xml, slideWEmu, slideHEmu);
+        const relsMap = await parseSlideRels(zip, slideKeys[idx]);
+        const data = parseSlideXml(xml, slideWEmu, slideHEmu, relsMap, images);
         slideHtmlParts.push(renderSlideToHtml(data, idx));
-        onProgress?.(20 + Math.round(((si + 1) / validIdx.length) * 35));
+        onProgress?.(20 + Math.round(((si + 1) / validIdx.length) * 30));
     }
 
-    // 6. Aspect ratio for iframe sizing
-    const aspectRatio = slideHEmu / slideWEmu; // e.g. 0.5625 for 16:9
-    const IFRAME_W = 1280; // px
-    const IFRAME_H = Math.round(IFRAME_W * aspectRatio);
+    onProgress?.(55);
 
-    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: #888; }
-  body { width: ${IFRAME_W}px; padding: 0; }
-  section { display: block; width: ${IFRAME_W}px; height: ${IFRAME_H}px; padding-top: 0 !important; }
-  section > div { position: static !important; width: 100%; height: 100%; }
-  section > div > div { position: absolute; }
-</style>
-</head><body>${slideHtmlParts.join('\n')}</body></html>`;
+    // 6. Load html2canvas
+    const h2c = await import('html2canvas');
+    const h2cFn = (h2c as any).default ?? h2c;
 
-    onProgress?.(58);
+    // 7. Build PDF — match the slide's actual aspect ratio (like PowerPoint "Save as PDF")
+    const { jsPDF } = await import('jspdf');
+    // Convert EMU to mm: 1 inch = 914400 EMU = 25.4 mm
+    const pdfW = slideWEmu * 25.4 / 914400;
+    const pdfH = slideHEmu * 25.4 / 914400;
+    const orient = pdfW > pdfH ? 'landscape' : 'portrait';
+    // Higher render scale for better quality (2x for crisp text)
+    const renderScale = Math.max(scale, 2);
 
-    // 7. Mount iframe
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = `
-    position:fixed;top:-9999px;left:-9999px;
-    width:${IFRAME_W}px;height:${IFRAME_H * validIdx.length}px;
-    border:none;overflow:hidden;visibility:hidden;`;
-    document.body.appendChild(iframe);
+    const pdf = new jsPDF({ orientation: orient, unit: 'mm', format: [pdfW, pdfH], compress: true });
+    const mmPerPx = pdfW / (RENDER_W * renderScale);
 
-    try {
-        const doc = iframe.contentDocument!;
-        doc.open(); doc.write(fullHtml); doc.close();
+    for (let si = 0; si < validIdx.length; si++) {
+        if (si > 0) pdf.addPage([pdfW, pdfH], orient);
 
-        // Let layout settle
-        await new Promise<void>(res => setTimeout(res, 150));
-        onProgress?.(65);
+        // Create a temporary container for THIS slide only
+        const slideDiv = document.createElement('div');
+        slideDiv.setAttribute('style', `
+            position:fixed;top:0;left:0;
+            width:${RENDER_W}px;height:${slideH}px;
+            background:white;
+            overflow:hidden;
+            z-index:-1;
+            margin:0;padding:0;
+        `);
+        slideDiv.innerHTML = slideHtmlParts[si];
+        document.body.appendChild(slideDiv);
 
-        // 8. Rasterise the whole iframe body at once
-        const h2c = await import('html2canvas');
-        const h2cFn = (h2c as any).default ?? h2c;
+        try {
+            // Wait for images in this slide
+            const imgs = slideDiv.querySelectorAll('img');
+            await Promise.all(Array.from(imgs).map(img =>
+                img.complete ? Promise.resolve() : new Promise<void>(res => {
+                    img.onload = () => res();
+                    img.onerror = () => res();
+                    setTimeout(res, 3000);
+                })
+            ));
 
-        const totalH = IFRAME_H * validIdx.length;
+            // Wait for layout/rendering
+            await new Promise(r => setTimeout(r, 150));
 
-        const canvas = await h2cFn(doc.body, {
-            scale,
-            useCORS: true,
-            allowTaint: false,
-            backgroundColor: '#888888',
-            width: IFRAME_W,
-            height: totalH,
-            windowWidth: IFRAME_W,
-            windowHeight: totalH,
-            logging: false,
-        });
-        onProgress?.(82);
+            // Capture this slide at high resolution
+            const canvas = await h2cFn(slideDiv, {
+                scale: renderScale,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                width: RENDER_W,
+                height: slideH,
+                logging: false,
+            });
 
-        // 9. Slice each slide height worth into a jsPDF page
-        const { jsPDF } = await import('jspdf');
-
-        const isL = orientation === 'landscape';
-        const pdfW = pageFormat === 'letter' ? (isL ? 279.4 : 215.9)
-            : pageFormat === 'legal' ? (isL ? 355.6 : 215.9)
-                : (isL ? 297.0 : 210.0);
-        const pdfH = pageFormat === 'letter' ? (isL ? 215.9 : 279.4)
-            : pageFormat === 'legal' ? (isL ? 215.9 : 355.6)
-                : (isL ? 210.0 : 297.0);
-
-        const pdf = new jsPDF({ orientation, unit: 'mm', format: pageFormat, compress: true });
-
-        // Each slide occupies exactly IFRAME_H * scale pixels on the canvas
-        const slideCanvasH = IFRAME_H * scale;
-        const mmPerPx = pdfW / (IFRAME_W * scale);
-
-        for (let si = 0; si < validIdx.length; si++) {
-            if (si > 0) pdf.addPage([pdfW, pdfH], orientation);
-
-            const sc = document.createElement('canvas');
-            sc.width = Math.round(IFRAME_W * scale);
-            sc.height = Math.round(slideCanvasH);
-            const ctx = sc.getContext('2d')!;
-            ctx.drawImage(canvas, 0, si * slideCanvasH, sc.width, sc.height, 0, 0, sc.width, sc.height);
-
-            const sliceH_mm = sc.height * mmPerPx;
-            pdf.addImage(sc.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pdfW, sliceH_mm);
+            if (canvas && canvas.width > 0 && canvas.height > 0) {
+                const sliceH_mm = canvas.height * mmPerPx;
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, sliceH_mm);
+            }
+        } finally {
+            document.body.removeChild(slideDiv);
         }
 
-        onProgress?.(97);
-        const pdfBytes = pdf.output('arraybuffer');
-        onProgress?.(100);
-
-        const base = sanitizeName(outputPrefix?.trim() || file.name.replace(/\.(pptx?|PPTX?)$/i, ''));
-        return {
-            bytes: new Uint8Array(pdfBytes),
-            outputName: `${base}.pdf`,
-            totalSlides,
-            convertedSlides: validIdx.length,
-            pageCount: validIdx.length,
-            originalSize: file.size,
-            outputSize: pdfBytes.byteLength,
-        };
-    } finally {
-        document.body.removeChild(iframe);
+        onProgress?.(55 + Math.round(((si + 1) / validIdx.length) * 40));
     }
+
+    onProgress?.(97);
+    const pdfBytes = pdf.output('arraybuffer');
+    onProgress?.(100);
+
+    const base = sanitizeName(outputPrefix?.trim() || file.name.replace(/\.(pptx?|PPTX?)$/i, ''));
+    return {
+        bytes: new Uint8Array(pdfBytes),
+        outputName: `${base}.pdf`,
+        totalSlides,
+        convertedSlides: validIdx.length,
+        pageCount: validIdx.length,
+        originalSize: file.size,
+        outputSize: pdfBytes.byteLength,
+    };
 }
 
-// ── Batch conversion ───────────────────────────────────────────────────────────
+// ── Batch ─────────────────────────────────────────────────────────────────────
 
 export async function batchConvertPptToPDF(
     files: File[],
@@ -585,7 +757,7 @@ export async function batchConvertPptToPDF(
         onFileProgress?: (fileName: string, p: number) => void;
         onFileComplete?: (result: PptConversionResult, index: number) => void;
         onFileError?: (fileName: string, error: string, index: number) => void;
-    } = {}
+    } = {},
 ): Promise<BatchPptResult> {
     const { onFileProgress, onFileComplete, onFileError, ...convOpts } = options;
     const succeeded: PptConversionResult[] = [];

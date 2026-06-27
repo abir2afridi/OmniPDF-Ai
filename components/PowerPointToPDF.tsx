@@ -17,6 +17,7 @@ import {
     Settings2, FileDown, Trash2, RotateCw, Package,
     Play, Layers, SlidersHorizontal, Film, Plus,
 } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     convertPptToPDF, getPresentationSlides, validatePptFile, PPT_MAX_FILE_MB,
@@ -26,12 +27,6 @@ import { downloadBytes } from '../services/pdfService';
 import { PDFTool } from '../types';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
-
-interface Toast {
-    id: string;
-    type: 'success' | 'error' | 'info';
-    message: string;
-}
 
 type FileStatus = 'idle' | 'loading-slides' | 'ready' | 'converting' | 'done' | 'error';
 
@@ -73,23 +68,6 @@ const SLIDE_COLORS = [
 ];
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
-
-const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) => (
-    <motion.div layout initial={{ opacity: 0, x: 60, scale: 0.9 }} animate={{ opacity: 1, x: 0, scale: 1 }}
-        exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
-      ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
-                : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
-                    : 'bg-blue-50 dark:bg-blue-900/60 border-blue-200 dark:border-blue-500/30 text-blue-800 dark:text-blue-200'}`}>
-        {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />}
-        {toast.type === 'error' && <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
-        {toast.type === 'info' && <Info className="w-4 h-4 shrink-0 mt-0.5" />}
-        <span className="flex-1 leading-snug">{toast.message}</span>
-        <button onClick={onDismiss} className="shrink-0 opacity-60 hover:opacity-100 transition-opacity">
-            <X className="w-3.5 h-3.5" />
-        </button>
-    </motion.div>
-);
 
 const CircularProgress = ({ value }: { value: number }) => {
     const r = 15; const circ = 2 * Math.PI * r;
@@ -279,7 +257,7 @@ const FileCard: React.FC<FileCardProps> = ({
 export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack, activeTool }) => {
     const [files, setFiles] = useState<ManagedFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
-    const [toasts, setToasts] = useState<Toast[]>([]);
+    const { toast } = useToast();
     const [advancedOpen, setAdvancedOpen] = useState(false);
 
     // Output settings
@@ -289,14 +267,6 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack, active
 
     const dropRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
-
-    // ── Toasts
-    const toast = useCallback((type: Toast['type'], message: string) => {
-        const id = uid();
-        setToasts(prev => [...prev.slice(-4), { id, type, message }]);
-        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 6000);
-    }, []);
-    const dismissToast = useCallback((id: string) => setToasts(prev => prev.filter(t => t.id !== id)), []);
 
     // ── Add files
     const addFiles = useCallback(async (incoming: FileList | File[]) => {
@@ -430,17 +400,6 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack, active
 
     return (
         <div className="flex-1 flex flex-col h-full bg-[#f3f1ea] dark:bg-[#1e1e2e] overflow-hidden relative">
-
-            {/* Toasts */}
-            <div className="fixed top-6 right-6 z-[200] flex flex-col gap-2 items-end pointer-events-none">
-                <AnimatePresence>
-                    {toasts.map(t => (
-                        <div key={t.id} className="pointer-events-auto">
-                            <ToastItem toast={t} onDismiss={() => dismissToast(t.id)} />
-                        </div>
-                    ))}
-                </AnimatePresence>
-            </div>
 
             {/* Header */}
             <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
