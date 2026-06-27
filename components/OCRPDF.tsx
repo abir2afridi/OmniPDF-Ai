@@ -27,6 +27,7 @@ import {
     ChevronDown, ChevronUp, Archive, Sparkles, Eye, EyeOff,
     Settings2, Languages, FileText, FileJson, FilePlus2,
 } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 import { ToolHeaderExtras } from './ToolHeaderExtras';
 import {
     runOcr, validatePdfForOcr, fmtSize, OCR_LANGUAGES, OCR_MAX_MB, OCR_MAX_PAGES,
@@ -64,7 +65,6 @@ interface ManagedFile {
     showPreview: boolean;
 }
 
-interface Toast { id: string; type: 'success' | 'error' | 'info' | 'warn'; message: string; }
 interface Props { onBack?: () => void; activeTool?: PDFTool; }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -125,25 +125,6 @@ const ConfidenceMeter = ({ value, label }: { value: number; label: string }) => 
         </div>
     );
 };
-
-// ── Toast ─────────────────────────────────────────────────────────────────────
-
-const ToastItem = ({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) => (
-    <motion.div layout initial={{ opacity: 0, x: 60, scale: 0.9 }} animate={{ opacity: 1, x: 0, scale: 1 }}
-        exit={{ opacity: 0, x: 60, scale: 0.9 }}
-        className={`flex items-start gap-3 px-4 py-3 rounded-[5px] shadow-xl max-w-sm text-sm font-medium border backdrop-blur-md pointer-events-auto
-      ${toast.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/60 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
-                : toast.type === 'error' ? 'bg-red-50 dark:bg-red-900/60 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-200'
-                    : toast.type === 'warn' ? 'bg-amber-50 dark:bg-amber-900/60 border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-200'
-                        : 'bg-indigo-50 dark:bg-indigo-900/60 border-indigo-200 dark:border-indigo-500/30 text-indigo-800 dark:text-indigo-200'}`}>
-        {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />}
-        {toast.type === 'error' && <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
-        {toast.type === 'warn' && <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
-        {toast.type === 'info' && <Info className="w-4 h-4 shrink-0 mt-0.5" />}
-        <span className="flex-1 leading-snug">{toast.message}</span>
-        <button onClick={onDismiss}><X className="w-3.5 h-3.5 opacity-60 hover:opacity-100" /></button>
-    </motion.div>
-);
 
 // ── File Card ─────────────────────────────────────────────────────────────────
 
@@ -236,6 +217,7 @@ const FileCard: React.FC<FileCardProps> = ({
                                 <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                                     ✓ {r.pages.length} page{r.pages.length !== 1 ? 's' : ''} · {r.avgConfidence}% confidence
                                     {r.aiEnhanced ? ' · AI ✨' : ''}
+                                    {r.totalRetries > 0 && <span className="text-amber-500"> · {r.totalRetries} retry</span>}
                                 </span>
                             )}
                             {entry.status === 'error' && (
@@ -370,6 +352,7 @@ const FileCard: React.FC<FileCardProps> = ({
                                 <div key={i} className="space-y-1">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500">
                                         Page {pg.pageIndex + 1} — {pg.confidence}% confidence
+                                        {pg.retryUsed && <span className="text-amber-500 ml-1">[retry]</span>}
                                         {pg.headings.length > 0 && <span className="text-violet-500 ml-2">· {pg.headings.length} heading{pg.headings.length !== 1 ? 's' : ''}</span>}
                                     </p>
                                     <div className="flex gap-3">
@@ -412,7 +395,7 @@ const FileCard: React.FC<FileCardProps> = ({
 export const OCRPDF: React.FC<Props> = ({ onBack, activeTool }) => {
     const [files, setFiles] = useState<ManagedFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
-    const [toasts, setToasts] = useState<Toast[]>([]);
+    const { toast } = useToast();
     const [infoOpen, setInfoOpen] = useState(false);
     const [language, setLanguage] = useState<OcrLang>('eng');
     const [aiEnhancement, setAiEnhancement] = useState(true);
@@ -420,12 +403,6 @@ export const OCRPDF: React.FC<Props> = ({ onBack, activeTool }) => {
 
     const dropRef = useRef<HTMLDivElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
-
-    const toast = useCallback((type: Toast['type'], message: string) => {
-        const id = uid();
-        setToasts(prev => [...prev.slice(-4), { id, type, message }]);
-        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 8000);
-    }, []);
 
     const initFile = useCallback(async (raw: File): Promise<ManagedFile> => {
         let thumb = '', totalPages = 0;
@@ -550,17 +527,6 @@ export const OCRPDF: React.FC<Props> = ({ onBack, activeTool }) => {
     return (
         <div className="flex-1 flex flex-col h-full bg-[#f3f1ea] dark:bg-[#1e1e2e] overflow-hidden relative">
 
-            {/* Toasts */}
-            <div className="fixed top-6 right-6 z-[200] flex flex-col gap-2 items-end pointer-events-none">
-                <AnimatePresence>
-                    {toasts.map(t => (
-                        <div key={t.id} className="pointer-events-auto">
-                            <ToastItem toast={t} onDismiss={() => setToasts(p => p.filter(x => x.id !== t.id))} />
-                        </div>
-                    ))}
-                </AnimatePresence>
-            </div>
-
             {/* Header */}
             <div className="shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 bg-[#f3f1ea] dark:bg-[#262636] border-b border-gray-100 dark:border-white/5 shadow-sm">
                 <div className="flex items-center gap-3">
@@ -589,7 +555,7 @@ export const OCRPDF: React.FC<Props> = ({ onBack, activeTool }) => {
                             OCR PDF
                             <span className="text-[10px] font-black bg-gradient-to-r from-indigo-500 to-violet-500 text-white px-2 py-0.5 rounded-full">HYBRID AI</span>
                         </h1>
-                        <p className="text-[11px] text-gray-400 font-medium truncate">Tesseract OCR + AI text reconstruction</p>
+                        <p className="text-[11px] text-gray-400 font-medium truncate">Multi-pass OCR + adaptive preprocessing + AI</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-1 lg:gap-2">
@@ -764,10 +730,10 @@ export const OCRPDF: React.FC<Props> = ({ onBack, activeTool }) => {
                                     <div className="px-5 pb-5 space-y-2 text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
                                         {[
                                             { n: '1', c: 'text-blue-500', t: 'Text Detection — checks if PDF already has selectable text.' },
-                                            { n: '2', c: 'text-violet-500', t: 'Render → Canvas at 2.5× scale + contrast boost for accuracy.' },
-                                            { n: '3', c: 'text-orange-500', t: 'Tesseract.js OCR extracts text with per-page confidence scores.' },
-                                            { n: '4', c: 'text-pink-500', t: 'OpenRouter AI fixes OCR errors, reconstructs paragraphs and tables.' },
-                                            { n: '5', c: 'text-teal-500', t: 'Output: plain text, searchable PDF (invisible text layer), or JSON.' },
+                                            { n: '2', c: 'text-violet-500', t: 'Enhanced Preprocessing — 3× DPI render, adaptive thresholding, despeckle, unsharp mask sharpening.' },
+                                            { n: '3', c: 'text-orange-500', t: 'Tesseract.js OCR — multi-pass: retries with aggressive preprocessing if confidence < 60%.' },
+                                            { n: '4', c: 'text-pink-500', t: 'OpenRouter AI (Llama 3.3 70B) — fixes OCR errors, reconstructs paragraphs and tables.' },
+                                            { n: '5', c: 'text-teal-500', t: 'Output: plain text, searchable PDF (preserves original images), or structured JSON.' },
                                         ].map(s => (
                                             <div key={s.n} className="flex items-start gap-2">
                                                 <span className={`w-4 h-4 rounded-full text-white text-[9px] font-black flex items-center justify-center shrink-0 mt-0.5 ${s.c.replace('text-', 'bg-')}`}>{s.n}</span>
@@ -795,8 +761,8 @@ export const OCRPDF: React.FC<Props> = ({ onBack, activeTool }) => {
                                 <Sparkles className="w-4 h-4 text-white" />
                             </div>
                             <div>
-                                <p className="text-[11px] font-black text-indigo-700 dark:text-indigo-300">Hybrid AI OCR</p>
-                                <p className="text-[9px] text-indigo-500 leading-tight">Tesseract · OpenRouter · pdf-lib</p>
+                                <p className="text-[11px] font-black text-indigo-700 dark:text-indigo-300">Hybrid AI OCR V2</p>
+                                <p className="text-[9px] text-indigo-500 leading-tight">Multi-pass · Adaptive · Llama 3.3 · pdf-lib</p>
                             </div>
                         </div>
                     </div>
