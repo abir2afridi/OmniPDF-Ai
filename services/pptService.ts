@@ -130,16 +130,16 @@ async function parseSlideRels(zip: any, slidePath: string): Promise<Map<string, 
             if (!type.includes('image') || !target || !id) continue;
 
             // Resolve target relative to the rels directory
+            // rels dir is either ppt/slides/_rels/ or ppt/_rels/
             let resolvedPath = '';
             if (target.startsWith('../../')) {
+                // ../../media/image1.png from ppt/slides/_rels/ → ppt/media/image1.png
                 resolvedPath = 'ppt/' + target.replace('../../', '');
             } else if (target.startsWith('../')) {
+                // ../media/image1.png from rels dir → ppt/media/image1.png
                 resolvedPath = 'ppt/' + target.replace('../', '');
             } else {
-                // Same directory — e.g. target = "image1.png" from ppt/slides/_rels/slide1.xml.rels
-                const relsDir = slidePath.replace('ppt/slides/', 'ppt/slides/_rels/').replace('.xml', '.xml.rels');
-                const dir = slidePath.substring(0, slidePath.lastIndexOf('/') + 1);
-                resolvedPath = dir + target;
+                resolvedPath = 'ppt/slides/' + target;
             }
             relsMap.set(id, resolvedPath);
         }
@@ -617,7 +617,7 @@ export async function convertPptToPDF(
     } catch { /* use defaults */ }
 
     // 3. Extract images
-    onProgress?.(15);
+    onProgress?.(15, 'Extracting images…');
     const images = await extractImages(zip);
 
     // 4. Enumerate slides
