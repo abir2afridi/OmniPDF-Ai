@@ -239,12 +239,14 @@ function parseShapeFill(spPr: Element | null): string | null {
 
 interface ShapeData {
     x: number; y: number; w: number; h: number;
-    texts: { text: string; bold: boolean; italic: boolean; size: number; color: string; align: string; spcBefore: number; spcAfter: number; lineSpacing: number; fontFamily?: string; paraMarL: number; paraMarR: number; paraIndent: number }[];
+    texts: { text: string; bold: boolean; italic: boolean; size: number; color: string; align: string; spcBefore: number; spcAfter: number; lineSpacing: number; lineSpacingAbs: number; fontFamily?: string; paraMarL: number; paraMarR: number; paraIndent: number }[];
     bgColor: string | null;
     type: 'text' | 'rect' | 'image' | 'unknown';
-    imageData?: string; // base64 data URL
+    imageData?: string;
     zIndex: number;
-    padding: { top: number; right: number; bottom: number; left: number }; // bodyPr insets in px
+    padding: { top: number; right: number; bottom: number; left: number };
+    vAnchor: string;
+    wrapNone: boolean;
 }
 
 interface SlideRenderData {
@@ -347,6 +349,8 @@ function parseSlideXml(
         // Default bodyPr insets: 91440 EMU ≈ 0.1 inch (OOXML default)
         const defaultInset = Math.round(91440 * RENDER_W / slideWEmu);
         let bodyPadding = { top: defaultInset, right: defaultInset, bottom: defaultInset, left: defaultInset };
+        let vAnchor = 't';
+        let wrapNone = false;
 
         if (txBody) {
             const bodyPr = [...txBody.querySelectorAll('*')].find(e => e.localName === 'bodyPr');
@@ -358,6 +362,8 @@ function parseSlideXml(
                     bottom: toPx(bodyPr.getAttribute('bIns')),
                     left: toPx(bodyPr.getAttribute('lIns')),
                 };
+                vAnchor = bodyPr.getAttribute('anchor') ?? 't';
+                wrapNone = bodyPr.getAttribute('wrap') === 'none';
             }
 
             const paragraphs = [...txBody.querySelectorAll('*')].filter(e => e.localName === 'p');
@@ -387,6 +393,7 @@ function parseSlideXml(
                 }
 
                 let lineSpacing = 1.0;
+                let lineSpacingAbs = 0;
                 if (pPr) {
                     const lnSpc = [...pPr.querySelectorAll('*')].find(e => e.localName === 'lnSpc');
                     if (lnSpc) {
@@ -395,8 +402,7 @@ function parseSlideXml(
                         if (spcPct) {
                             lineSpacing = parseInt(spcPct.getAttribute('val') ?? '100000', 10) / 100000;
                         } else if (spcPts) {
-                            const pts = parseInt(spcPts.getAttribute('val') ?? '0', 10) / 100;
-                            lineSpacing = pts > 0 ? pts / 18 : 1.0;
+                            lineSpacingAbs = parseInt(spcPts.getAttribute('val') ?? '0', 10) / 100;
                         }
                     }
                 }
@@ -437,7 +443,7 @@ function parseSlideXml(
 
                 const brs = [...para.querySelectorAll('*')].filter(e => e.localName === 'br');
                 if (brs.length > 0 && runs.length === 0) {
-                    texts.push({ text: '\n', bold: false, italic: false, size: 12, color: '#000', align, spcBefore, spcAfter, lineSpacing, fontFamily: '', paraMarL, paraMarR, paraIndent });
+                    texts.push({ text: '\n', bold: false, italic: false, size: 12, color: '#000', align, spcBefore, spcAfter, lineSpacing, lineSpacingAbs, fontFamily: '', paraMarL, paraMarR, paraIndent });
                 }
             }
         }
@@ -450,6 +456,8 @@ function parseSlideXml(
             imageData,
             zIndex: zIndex++,
             padding: bodyPadding,
+            vAnchor,
+            wrapNone,
         });
     }
 
@@ -472,6 +480,7 @@ function renderSlideToHtml(data: SlideRenderData, slideIndex: number): string {
     const slideH = Math.round(RENDER_W * (slideHEmu / slideWEmu));
 
     let innerHtml = '';
+    const anchorMap: Record<string, string> = { t: 'flex-start', ctr: 'center', b: 'flex-end', just: 'space-between', dist: 'space-evenly' };
     for (const shape of shapes) {
         if (shape.w <= 0 || shape.h <= 0) continue;
 
@@ -495,13 +504,15 @@ function renderSlideToHtml(data: SlideRenderData, slideIndex: number): string {
             : shape.bgColor ? `background:${shape.bgColor};`
                 : '';
 
+        const anchorMap: Record<string, string> = { t: 'flex-start', ctr: 'center', b: 'flex-end', just: 'space-between', dist: 'space-evenly' };
+
         const posStyle = `
       position:absolute;
       left:${sx}px;
       top:${sy}px;
       width:${sw}px;
       height:${sh}px;
-      overflow:hidden;
+      ${shape.wrapNone ? 'overflow:visible;' : 'overflow:hidden;'}
       box-sizing:border-box;
       ${fillStyle}
     `.replace(/\n\s+/g, ' ').trim();
@@ -513,6 +524,7 @@ function renderSlideToHtml(data: SlideRenderData, slideIndex: number): string {
             let lastSpcBefore = 0;
             let lastSpcAfter = 0;
             let lastLineSpacing = 1.0;
+            let lastLineSpacingAbs = 0;
             let lastParaMarL = 0;
             let lastParaIndent = 0;
 
@@ -523,7 +535,14 @@ function renderSlideToHtml(data: SlideRenderData, slideIndex: number): string {
                 const mb = Math.round(lastSpcAfter * 12700 / emuPerPx);
                 const pl = Math.round(lastParaMarL / emuPerPx);
                 const ti = Math.round(lastParaIndent / emuPerPx);
-                textHtml += `<div style="text-align:${lastAlign};line-height:${lastLineSpacing.toFixed(2)};margin:${mt}px 0 ${mb}px 0;padding-left:${pl}px;text-indent:${ti}px;white-space:pre-wrap;">${paraBuffer.join('')}</div>`;
+                let lhStyle: string;
+                if (lastLineSpacingAbs > 0) {
+                    const lhPx = Math.round(lastLineSpacingAbs * 12700 / emuPerPx);
+                    lhStyle = `line-height:${lhPx}px;`;
+                } else {
+                    lhStyle = `line-height:${lastLineSpacing.toFixed(2)};`;
+                }
+                textHtml += `<div style="text-align:${lastAlign};${lhStyle}margin:${mt}px 0 ${mb}px 0;padding-left:${pl}px;text-indent:${ti}px;white-space:${shape.wrapNone ? 'nowrap' : 'pre-wrap'};">${paraBuffer.join('')}</div>`;
                 paraBuffer = [];
             };
 
@@ -534,6 +553,7 @@ function renderSlideToHtml(data: SlideRenderData, slideIndex: number): string {
                     lastSpcBefore = run.spcBefore;
                     lastSpcAfter = run.spcAfter;
                     lastLineSpacing = run.lineSpacing;
+                    lastLineSpacingAbs = run.lineSpacingAbs;
                     lastParaMarL = run.paraMarL;
                     lastParaIndent = run.paraIndent;
                 }
@@ -550,9 +570,10 @@ function renderSlideToHtml(data: SlideRenderData, slideIndex: number): string {
             flushPara();
 
             const { top, right, bottom, left } = shape.padding;
+            const justify = anchorMap[shape.vAnchor] ?? 'flex-start';
             innerHtml += `
-        <div style="${posStyle}padding:${top}px ${right}px ${bottom}px ${left}px;">
-          <div style="font-family:'Calibri','Segoe UI',Arial,sans-serif;word-wrap:break-word;overflow-wrap:break-word;">${textHtml}</div>
+        <div style="${posStyle}padding:${top}px ${right}px ${bottom}px ${left}px;display:flex;flex-direction:column;justify-content:${justify};">
+          <div style="font-family:'Calibri','Segoe UI',Arial,sans-serif;${shape.wrapNone ? 'white-space:nowrap;overflow:visible;' : 'word-wrap:break-word;overflow-wrap:break-word;'}">${textHtml}</div>
         </div>`;
         } else if (shape.bgColor && shape.bgColor !== 'transparent') {
             innerHtml += `<div style="${posStyle}border:1px solid rgba(0,0,0,0.06);"></div>`;
