@@ -9,7 +9,7 @@
  * - Stats: total slides, selected, pages in output
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     Presentation, Upload, X, Download, Loader2, CheckCircle2,
@@ -256,6 +256,8 @@ const FileCard: React.FC<FileCardProps> = ({
 
 export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack, activeTool }) => {
     const [files, setFiles] = useState<ManagedFile[]>([]);
+    const filesRef = useRef(files);
+    filesRef.current = files;
     const [isDragOver, setIsDragOver] = useState(false);
     const { toast } = useToast();
     const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -313,11 +315,16 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack, active
 
     // ── Per-file conversion
     const convertOne = useCallback(async (id: string) => {
-        const entry = files.find(f => f.id === id);
+        setFiles(prev => {
+            const entry = prev.find(f => f.id === id);
+            if (!entry) return prev;
+            return prev.map(f => f.id === id
+                ? { ...f, status: 'converting', progress: 0, errorMsg: undefined }
+                : f);
+        });
+        // Read entry from state ref — avoid stale closure
+        const entry = filesRef.current.find(f => f.id === id);
         if (!entry) return;
-        setFiles(prev => prev.map(f => f.id === id
-            ? { ...f, status: 'converting', progress: 0, errorMsg: undefined }
-            : f));
         try {
             const result = await convertPptToPDF(entry.file, {
                 slideIndexes: Array.from(entry.selectedSlides),
@@ -327,22 +334,25 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack, active
                 onProgress: p => setFiles(prev => prev.map(f => f.id === id ? { ...f, progress: p } : f)),
             });
             setFiles(prev => prev.map(f => f.id === id ? { ...f, status: 'done', progress: 100, result } : f));
-            toast('success', `✅ "${entry.file.name}" → ${result.pageCount} PDF page(s).`);
+            toast('success', `"${entry.file.name}" → ${result.pageCount} PDF page(s).`);
         } catch (err: any) {
             const msg = err?.message || 'Conversion failed.';
             setFiles(prev => prev.map(f => f.id === id ? { ...f, status: 'error', progress: 0, errorMsg: msg } : f));
             toast('error', `"${entry.file.name}" — ${msg}`);
         }
-    }, [files, pageFormat, orientation, quality, toast]);
+    }, [pageFormat, orientation, quality, toast]);
 
     // ── Batch conversion
     const isAnyConverting = files.some(f => f.status === 'converting' || f.status === 'loading-slides');
     const convertAll = useCallback(async () => {
-        const ready = files.filter(f => f.status === 'ready' || f.status === 'error');
+        const ready = filesRef.current.filter(f => f.status === 'ready' || f.status === 'error');
         if (ready.length === 0) { toast('info', 'No files ready to convert.'); return; }
-        for (const entry of ready) await convertOne(entry.id);
+        for (const entry of ready) {
+            if (!filesRef.current.find(f => f.id === entry.id && (f.status === 'ready' || f.status === 'error'))) continue;
+            await convertOne(entry.id);
+        }
         toast('success', 'Batch conversion complete.');
-    }, [files, convertOne, toast]);
+    }, [convertOne, toast]);
 
     // ── Download
     const downloadOne = useCallback((entry: ManagedFile) => {
@@ -353,9 +363,10 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack, active
     }, [toast]);
 
     const downloadAll = useCallback(async () => {
-        const done = files.filter(f => f.status === 'done' && f.result);
+        const done = filesRef.current.filter(f => f.status === 'done' && f.result);
         if (done.length === 0) { toast('info', 'No converted PDFs to download.'); return; }
-        const JSZip = (await import('jszip')).default;
+        const JSZipMod = await import('jszip');
+        const JSZip = (JSZipMod as any).default ?? JSZipMod;
         const zip = new JSZip();
         for (const entry of done) {
             const name = (entry.customName.trim() || entry.file.name.replace(/\.(pptx?)/i, '')) + '.pdf';
@@ -367,7 +378,7 @@ export const PowerPointToPDF: React.FC<PowerPointToPDFProps> = ({ onBack, active
         a.href = url; a.download = 'ppt-to-pdf-bundle.zip'; a.click();
         setTimeout(() => URL.revokeObjectURL(url), 10_000);
         toast('success', `Downloaded ${done.length} PDFs as ZIP.`);
-    }, [files, toast]);
+    }, [toast]);
 
     // ── Slide management
     const toggleSlide = useCallback((fileId: string, slideIdx: number) => {
