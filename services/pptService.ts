@@ -1,19 +1,20 @@
 /**
- * pptService.ts — PowerPoint → PDF Conversion Service V2 (client-side)
+ * pptService.ts — PowerPoint → PDF Conversion Service V4 (direct pdf-lib)
  *
- * Pipeline V2 (no iframe — uses hidden div for reliable html2canvas):
+ * Pipeline V4 (no html2canvas — direct vector PDF rendering):
  *   .pptx ──[JSZip]──▶ raw OOXML + images
  *          ──[OOXML parser]──▶ per-slide render data (shapes, text, bg, images)
- *          ──[HTML renderer]──▶ styled HTML in hidden div
- *          ──[html2canvas]──▶ canvas bitmap per slide
- *          ──[jsPDF]──▶ multi-page PDF bytes
+ *          ──[pdf-lib direct render]──▶ vector PDF with selectable text
  *
- * V2 improvements:
- *   - No iframe (html2canvas is unreliable with iframes)
- *   - Images extracted from .pptx zip and embedded as base64
- *   - Better text rendering with font embedding
- *   - Table and group shape support
- *   - More reliable rendering with explicit dimensions
+ * V4 improvements:
+ *   - No html2canvas (eliminates browser rendering bottlenecks)
+ *   - No jsPDF (direct pdf-lib vector output)
+ *   - Selectable/searchable text in PDF
+ *   - Vector graphics (not bitmap images of slides)
+ *   - Much smaller file size, faster conversion
+ *   - Precise EMU→PDF coordinate mapping
+ *   - Font mapping to standard PDF fonts (Helvetica, Times, Courier)
+ *   - Text wrapping, paragraph spacing, vertical anchor support
  */
 
 export interface SlideInfo {
@@ -59,7 +60,6 @@ export const PPT_MAX_FILE_MB = 100;
 
 const SLIDE_W_EMU = 9144000;
 const SLIDE_H_EMU = 5143500;
-const RENDER_W = 1280;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -239,12 +239,13 @@ function parseShapeFill(spPr: Element | null): string | null {
 
 interface ShapeData {
     x: number; y: number; w: number; h: number;
+    xEmu: number; yEmu: number; wEmu: number; hEmu: number;
     texts: { text: string; bold: boolean; italic: boolean; size: number; color: string; align: string; spcBefore: number; spcAfter: number; lineSpacing: number; lineSpacingAbs: number; fontFamily?: string; paraMarL: number; paraMarR: number; paraIndent: number }[];
     bgColor: string | null;
     type: 'text' | 'rect' | 'image' | 'unknown';
     imageData?: string;
     zIndex: number;
-    padding: { top: number; right: number; bottom: number; left: number };
+    padding: { top: number; right: number; bottom: number; left: number }; // bodyPr insets in EMU
     vAnchor: string;
     wrapNone: boolean;
 }
@@ -347,20 +348,20 @@ function parseSlideXml(
         const texts: ShapeData['texts'] = [];
 
         // Default bodyPr insets: 91440 EMU ≈ 0.1 inch (OOXML default)
-        const defaultInset = Math.round(91440 * RENDER_W / slideWEmu);
-        let bodyPadding = { top: defaultInset, right: defaultInset, bottom: defaultInset, left: defaultInset };
+        const defaultInsetEmu = 91440;
+        let bodyPadding = { top: defaultInsetEmu, right: defaultInsetEmu, bottom: defaultInsetEmu, left: defaultInsetEmu };
         let vAnchor = 't';
         let wrapNone = false;
 
         if (txBody) {
             const bodyPr = [...txBody.querySelectorAll('*')].find(e => e.localName === 'bodyPr');
             if (bodyPr) {
-                const toPx = (emu: string | null) => emu ? Math.round(parseInt(emu, 10) * RENDER_W / slideWEmu) : defaultInset;
+                const toEmu = (emu: string | null) => emu ? Math.round(parseInt(emu, 10)) : defaultInsetEmu;
                 bodyPadding = {
-                    top: toPx(bodyPr.getAttribute('tIns')),
-                    right: toPx(bodyPr.getAttribute('rIns')),
-                    bottom: toPx(bodyPr.getAttribute('bIns')),
-                    left: toPx(bodyPr.getAttribute('lIns')),
+                    top: toEmu(bodyPr.getAttribute('tIns')),
+                    right: toEmu(bodyPr.getAttribute('rIns')),
+                    bottom: toEmu(bodyPr.getAttribute('bIns')),
+                    left: toEmu(bodyPr.getAttribute('lIns')),
                 };
                 vAnchor = bodyPr.getAttribute('anchor') ?? 't';
                 wrapNone = bodyPr.getAttribute('wrap') === 'none';
@@ -450,6 +451,7 @@ function parseSlideXml(
 
         shapes.push({
             x: xPct, y: yPct, w: wPct, h: hPct,
+            xEmu, yEmu, wEmu, hEmu,
             texts,
             bgColor: shapeBg?.startsWith('__RID:') ? null : shapeBg,
             type: txBody ? 'text' : imageData || el.localName === 'pic' ? 'image' : 'rect',
@@ -473,124 +475,208 @@ function parseSlideXml(
 
 // ── Render slide → HTML string ────────────────────────────────────────────────
 
-function renderSlideToHtml(data: SlideRenderData, slideIndex: number): string {
+// ── Direct pdf-lib rendering helpers ─────────────────────────────────────
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+    const s = hex.replace('#', '');
+    return {
+        r: parseInt(s.substring(0, 2), 16) / 255,
+        g: parseInt(s.substring(2, 4), 16) / 255,
+        b: parseInt(s.substring(4, 6), 16) / 255,
+    };
+}
+
+const FONT_MAP: Record<string, string> = {
+    calibri: 'Helvetica',
+    arial: 'Helvetica',
+    helvetica: 'Helvetica',
+    'segoe ui': 'Helvetica',
+    verdana: 'Helvetica',
+    tahoma: 'Helvetica',
+    'times new roman': 'TimesRoman',
+    times: 'TimesRoman',
+    georgia: 'TimesRoman',
+    'courier new': 'Courier',
+    courier: 'Courier',
+    consolas: 'Courier',
+};
+
+function pickFont(family: string | undefined, bold: boolean, italic: boolean): string {
+    const key = (family || '').toLowerCase().trim();
+    let base = 'Helvetica';
+    for (const [k, v] of Object.entries(FONT_MAP)) {
+        if (key.includes(k)) { base = v; break; }
+    }
+    if (bold && italic) return base + 'BoldOblique';
+    if (bold) return base + 'Bold';
+    if (italic) return base + 'Oblique';
+    return base;
+}
+
+function wrapTextToLines(text: string, font: any, fontSize: number, maxWidth: number): string[] {
+    if (maxWidth <= 0) return [text];
+    const lines: string[] = [];
+    const paragraphs = text.split('\n');
+    for (const para of paragraphs) {
+        if (!para) { lines.push(''); continue; }
+        const words = para.split(' ');
+        let line = '';
+        for (const word of words) {
+            const test = line ? line + ' ' + word : word;
+            const w = font.widthOfTextAtSize(test, fontSize);
+            if (w > maxWidth && line) {
+                lines.push(line);
+                line = word;
+            } else {
+                line = test;
+            }
+        }
+        if (line) lines.push(line);
+    }
+    return lines.length ? lines : [''];
+}
+
+async function renderSlideToPdfPage(
+    pdfDoc: any,
+    data: SlideRenderData,
+    images: Map<string, string>,
+): Promise<void> {
     const { bgColor, shapes, slideWEmu, slideHEmu } = data;
-    // Use the actual aspect ratio from EMU dimensions (not hardcoded 16:9)
-    const slideW = RENDER_W;
-    const slideH = Math.round(RENDER_W * (slideHEmu / slideWEmu));
+    const pdfW = slideWEmu / 12700;
+    const pdfH = slideHEmu / 12700;
+    const page = pdfDoc.addPage([pdfW, pdfH]);
+    const pdfLib = await import('pdf-lib');
+    const { rgb } = pdfLib;
 
-    let innerHtml = '';
-    const anchorMap: Record<string, string> = { t: 'flex-start', ctr: 'center', b: 'flex-end', just: 'space-between', dist: 'space-evenly' };
-    for (const shape of shapes) {
-        if (shape.w <= 0 || shape.h <= 0) continue;
+    const bg = hexToRgb(bgColor);
+    page.drawRectangle({ x: 0, y: 0, width: pdfW, height: pdfH, color: rgb(bg.r, bg.g, bg.b) });
 
-        // Convert percentage positions to absolute pixels for reliable rendering
-        const sx = (shape.x / 100) * slideW;
-        const sy = (shape.y / 100) * slideH;
-        const sw = (shape.w / 100) * slideW;
-        const sh = (shape.h / 100) * slideH;
+    const fontCache = new Map<string, any>();
+    async function fnt(name: string) {
+        if (!fontCache.has(name)) {
+            const std = (pdfLib as any)[name];
+            fontCache.set(name, await pdfDoc.embedFont(std ?? pdfLib.StandardFonts.Helvetica));
+        }
+        return fontCache.get(name);
+    }
 
-        // Image shape
-        if (shape.imageData) {
-            innerHtml += `
-        <div style="position:absolute;left:${sx}px;top:${sy}px;
-            width:${sw}px;height:${sh}px;overflow:hidden;">
-          <img src="${shape.imageData}" style="width:100%;height:100%;object-fit:contain;display:block;" />
-        </div>`;
+    for (const s of shapes) {
+        if (s.wEmu <= 0 || s.hEmu <= 0) continue;
+
+        const sx = s.xEmu / 12700, sy = pdfH - (s.yEmu + s.hEmu) / 12700;
+        const sw = s.wEmu / 12700, sh = s.hEmu / 12700;
+
+        if (s.bgColor && s.bgColor !== 'transparent') {
+            const c = hexToRgb(s.bgColor);
+            page.drawRectangle({ x: sx, y: sy, width: sw, height: sh, color: rgb(c.r, c.g, c.b) });
+        }
+
+        if (s.imageData) {
+            try {
+                const b64 = s.imageData.split(',')[1];
+                const mime = s.imageData.split(';')[0].split(':')[1];
+                let img;
+                if (mime === 'image/png') img = await pdfDoc.embedPng(b64);
+                else if (mime === 'image/jpeg' || mime === 'image/jpg') img = await pdfDoc.embedJpg(b64);
+                if (img) page.drawImage(img, { x: sx, y: sy, width: sw, height: sh });
+            } catch { /* skip */ }
             continue;
         }
 
-        const fillStyle = shape.bgColor === 'transparent' ? ''
-            : shape.bgColor ? `background:${shape.bgColor};`
-                : '';
+        if (!s.texts.length) continue;
 
-        const anchorMap: Record<string, string> = { t: 'flex-start', ctr: 'center', b: 'flex-end', just: 'space-between', dist: 'space-evenly' };
+        const pl = s.padding.left / 12700, pr = s.padding.right / 12700;
+        const pt = s.padding.top / 12700, pb = s.padding.bottom / 12700;
+        const textW = Math.max(1, sw - pl - pr);
 
-        const posStyle = `
-      position:absolute;
-      left:${sx}px;
-      top:${sy}px;
-      width:${sw}px;
-      height:${sh}px;
-      ${shape.wrapNone ? 'overflow:visible;' : 'overflow:hidden;'}
-      box-sizing:border-box;
-      ${fillStyle}
-    `.replace(/\n\s+/g, ' ').trim();
-
-        if (shape.texts.length > 0) {
-            let textHtml = '';
-            let paraBuffer: string[] = [];
-            let lastAlign = shape.texts[0]?.align ?? 'left';
-            let lastSpcBefore = 0;
-            let lastSpcAfter = 0;
-            let lastLineSpacing = 1.0;
-            let lastLineSpacingAbs = 0;
-            let lastParaMarL = 0;
-            let lastParaIndent = 0;
-
-            const flushPara = () => {
-                if (paraBuffer.length === 0) return;
-                const emuPerPx = slideWEmu / RENDER_W;
-                const mt = Math.round(lastSpcBefore * 12700 / emuPerPx);
-                const mb = Math.round(lastSpcAfter * 12700 / emuPerPx);
-                const pl = Math.round(lastParaMarL / emuPerPx);
-                const ti = Math.round(lastParaIndent / emuPerPx);
-                let lhStyle: string;
-                if (lastLineSpacingAbs > 0) {
-                    const lhPx = Math.round(lastLineSpacingAbs * 12700 / emuPerPx);
-                    lhStyle = `line-height:${lhPx}px;`;
-                } else {
-                    lhStyle = `line-height:${lastLineSpacing.toFixed(2)};`;
-                }
-                textHtml += `<div style="text-align:${lastAlign};${lhStyle}margin:${mt}px 0 ${mb}px 0;padding-left:${pl}px;text-indent:${ti}px;white-space:${shape.wrapNone ? 'nowrap' : 'pre-wrap'};">${paraBuffer.join('')}</div>`;
-                paraBuffer = [];
-            };
-
-            for (const run of shape.texts) {
-                if (run.text === '\n') { flushPara(); continue; }
-                if (run.align !== lastAlign && paraBuffer.length > 0) { flushPara(); lastAlign = run.align; }
-                if (paraBuffer.length === 0) {
-                    lastSpcBefore = run.spcBefore;
-                    lastSpcAfter = run.spcAfter;
-                    lastLineSpacing = run.lineSpacing;
-                    lastLineSpacingAbs = run.lineSpacingAbs;
-                    lastParaMarL = run.paraMarL;
-                    lastParaIndent = run.paraIndent;
-                }
-                const emuPerPx = slideWEmu / RENDER_W;
-                const scaledSize = Math.max(8, run.size * 12700 / emuPerPx);
-                const fs = `font-size:${scaledSize.toFixed(1)}px;`;
-                const fw = run.bold ? 'font-weight:700;' : '';
-                const fi = run.italic ? 'font-style:italic;' : '';
-                const fc = `color:${run.color};`;
-                const ff = run.fontFamily ? `font-family:'${run.fontFamily}',Calibri,'Segoe UI',Arial,sans-serif;` : '';
-                const escaped = run.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                paraBuffer.push(`<span style="${fs}${fw}${fi}${fc}${ff}">${escaped}</span>`);
+        // Group runs into paragraphs
+        const paras: { runs: typeof s.texts; align: string; spcBefore: number; spcAfter: number; lh: number; marL: number; indent: number }[] = [];
+        let cur: any = null;
+        for (const r of s.texts) {
+            if (r.text === '\n') { if (cur) { paras.push(cur); cur = null; } continue; }
+            if (!cur) {
+                const maxFs = s.texts.reduce((a, b) => Math.max(a, b.size), 12);
+                const lh = r.lineSpacingAbs > 0 ? r.lineSpacingAbs : maxFs * r.lineSpacing;
+                cur = { runs: [], align: r.align, spcBefore: r.spcBefore, spcAfter: r.spcAfter, lh, marL: r.paraMarL, indent: r.paraIndent };
             }
-            flushPara();
+            cur.runs.push(r);
+        }
+        if (cur) paras.push(cur);
+        if (!paras.length) continue;
 
-            const { top, right, bottom, left } = shape.padding;
-            const justify = anchorMap[shape.vAnchor] ?? 'flex-start';
-            innerHtml += `
-        <div style="${posStyle}padding:${top}px ${right}px ${bottom}px ${left}px;display:flex;flex-direction:column;justify-content:${justify};">
-          <div style="font-family:'Calibri','Segoe UI',Arial,sans-serif;${shape.wrapNone ? 'white-space:nowrap;overflow:visible;' : 'word-wrap:break-word;overflow-wrap:break-word;'}">${textHtml}</div>
-        </div>`;
-        } else if (shape.bgColor && shape.bgColor !== 'transparent') {
-            innerHtml += `<div style="${posStyle}border:1px solid rgba(0,0,0,0.06);"></div>`;
+        // Calculate total lines & height per paragraph
+        const phs: { lines: number; lh: number; spcB: number; spcA: number }[] = [];
+        let totalLines = 0;
+        for (const p of paras) {
+            let lines = 1;
+            for (const r of p.runs) {
+                if (!r.text) continue;
+                const fn = pickFont(r.fontFamily, r.bold, r.italic);
+                const f = await fnt(fn);
+                const wrapped = wrapTextToLines(r.text, f, r.size, textW);
+                lines = Math.max(lines, wrapped.length);
+            }
+            phs.push({ lines, lh: p.lh, spcB: p.spcBefore, spcA: p.spcAfter });
+            totalLines += lines;
+        }
+
+        if (!totalLines) totalLines = 1;
+
+        // Compute total text height and start Y based on vertical anchor
+        let totalH = 0;
+        for (const ph of phs) totalH += ph.spcB + ph.lines * ph.lh + ph.spcA;
+        const textH = sh - pt - pb;
+        let textTopY: number; // Y where the top of text (first line baseline + offset) should be
+        if (s.vAnchor === 'b') {
+            textTopY = sy + pb + totalH;
+        } else if (s.vAnchor === 'ctr') {
+            textTopY = sy + pt + (textH - totalH) / 2 + totalH;
+        } else {
+            textTopY = sy + sh - pt; // top anchor
+        }
+
+        // Render
+        let cy = textTopY;
+        for (let pi = 0; pi < paras.length; pi++) {
+            const p = paras[pi];
+            const pMarL = p.marL / 12700;
+            const pIndent = p.indent / 12700;
+            cy -= p.spcBefore;
+
+            const lh = p.lh;
+            let firstLine = true;
+            for (const run of p.runs) {
+                if (!run.text) continue;
+                const fn = pickFont(run.fontFamily, run.bold, run.italic);
+                const f = await fnt(fn);
+                const fs = run.size;
+                const lines = wrapTextToLines(run.text, f, fs, textW);
+                if (!lines.length) continue;
+
+                for (let li = 0; li < lines.length; li++) {
+                    const line = lines[li];
+                    if (firstLine && li === 0) {
+                        // first line: stays at cy
+                    } else {
+                        cy -= lh;
+                    }
+                    if (cy - fs < sy + pb) break;
+
+                    const indent = firstLine && li === 0 ? pMarL + pIndent : pMarL;
+                    const baseX = sx + pl + indent;
+                    const lineW = f.widthOfTextAtSize(line, fs);
+                    let drawX = baseX;
+                    if (p.align === 'center') drawX = sx + pl + (textW - lineW) / 2;
+                    else if (p.align === 'right') drawX = sx + pl + textW - lineW;
+
+                    const c = hexToRgb(run.color);
+                    page.drawText(line, { x: drawX, y: cy - fs * 0.15, size: fs, font: f, color: rgb(c.r, c.g, c.b) });
+                    firstLine = false;
+                }
+            }
+            cy -= p.spcAfter;
         }
     }
-
-    return `
-    <div class="ppt-slide" data-slide="${slideIndex}" style="
-      position:relative;
-      width:${slideW}px;
-      height:${slideH}px;
-      background:${bgColor};
-      overflow:hidden;
-      page-break-after:always;
-    ">
-      ${innerHtml}
-    </div>`;
 }
 
 // ── Slide count/metadata pre-scan ─────────────────────────────────────────────
@@ -699,92 +785,21 @@ export async function convertPptToPDF(
 
     onProgress?.(20);
 
-    // 5. Parse + render each slide
-    const aspectRatio = slideHEmu / slideWEmu;
-    const slideH = Math.round(RENDER_W * aspectRatio);
+    // 5. Parse + render each slide directly to PDF with pdf-lib
+    const { PDFDocument } = await import('pdf-lib');
+    const pdfDoc = await PDFDocument.create();
 
-    const slideHtmlParts: string[] = [];
     for (let si = 0; si < validIdx.length; si++) {
         const idx = validIdx[si];
         const xml = await zip.files[slideKeys[idx]].async('string');
         const relsMap = await parseSlideRels(zip, slideKeys[idx]);
         const data = parseSlideXml(xml, slideWEmu, slideHEmu, relsMap, images);
-        slideHtmlParts.push(renderSlideToHtml(data, idx));
-        onProgress?.(20 + Math.round(((si + 1) / validIdx.length) * 30));
+        await renderSlideToPdfPage(pdfDoc, data, images);
+        onProgress?.(20 + Math.round(((si + 1) / validIdx.length) * 70));
     }
 
-    onProgress?.(55);
-
-    // 6. Load html2canvas
-    const h2c = await import('html2canvas');
-    const h2cFn = (h2c as any).default ?? h2c;
-
-    // 7. Build PDF — match the slide's actual aspect ratio (like PowerPoint "Save as PDF")
-    const { jsPDF } = await import('jspdf');
-    // Convert EMU to mm: 1 inch = 914400 EMU = 25.4 mm
-    const pdfW = slideWEmu * 25.4 / 914400;
-    const pdfH = slideHEmu * 25.4 / 914400;
-    const orient = pdfW > pdfH ? 'landscape' : 'portrait';
-    // Higher render scale for better quality (2x for crisp text)
-    const renderScale = Math.max(scale, 2);
-
-    const pdf = new jsPDF({ orientation: orient, unit: 'mm', format: [pdfW, pdfH], compress: true });
-    const mmPerPx = pdfW / (RENDER_W * renderScale);
-
-    for (let si = 0; si < validIdx.length; si++) {
-        if (si > 0) pdf.addPage([pdfW, pdfH], orient);
-
-        // Create a temporary container for THIS slide only
-        const slideDiv = document.createElement('div');
-        slideDiv.setAttribute('style', `
-            position:fixed;top:0;left:0;
-            width:${RENDER_W}px;height:${slideH}px;
-            background:white;
-            overflow:hidden;
-            z-index:-1;
-            margin:0;padding:0;
-        `);
-        slideDiv.innerHTML = slideHtmlParts[si];
-        document.body.appendChild(slideDiv);
-
-        try {
-            // Wait for images in this slide
-            const imgs = slideDiv.querySelectorAll('img');
-            await Promise.all(Array.from(imgs).map(img =>
-                img.complete ? Promise.resolve() : new Promise<void>(res => {
-                    img.onload = () => res();
-                    img.onerror = () => res();
-                    setTimeout(res, 3000);
-                })
-            ));
-
-            // Wait for layout/rendering
-            await new Promise(r => setTimeout(r, 150));
-
-            // Capture this slide at high resolution
-            const canvas = await h2cFn(slideDiv, {
-                scale: renderScale,
-                useCORS: true,
-                allowTaint: true,
-                backgroundColor: '#ffffff',
-                width: RENDER_W,
-                height: slideH,
-                logging: false,
-            });
-
-            if (canvas && canvas.width > 0 && canvas.height > 0) {
-                const sliceH_mm = canvas.height * mmPerPx;
-                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, sliceH_mm);
-            }
-        } finally {
-            document.body.removeChild(slideDiv);
-        }
-
-        onProgress?.(55 + Math.round(((si + 1) / validIdx.length) * 40));
-    }
-
-    onProgress?.(97);
-    const pdfBytes = pdf.output('arraybuffer');
+    onProgress?.(95);
+    const pdfBytes = await pdfDoc.save();
     onProgress?.(100);
 
     const base = sanitizeName(outputPrefix?.trim() || file.name.replace(/\.(pptx?|PPTX?)$/i, ''));
