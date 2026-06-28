@@ -1,6 +1,6 @@
 import React, { useContext, useState, useMemo } from 'react';
 import { PDFTool, ToolCategory } from '../types';
-import { ArrowRight, Sparkles, Search, X, LayoutGrid, Files, PenTool, Shield, Zap, Sun, Moon } from 'lucide-react';
+import { ArrowRight, Sparkles, Search, X, LayoutGrid, Files, PenTool, Shield, Zap, Sun, Moon, Smartphone } from 'lucide-react';
 import { AppContext } from '../App';
 import { Header } from './Header';
 import { motion, AnimatePresence } from 'motion/react';
@@ -37,16 +37,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
     return result;
   }, [tools, searchQuery, activeCategory, t]);
 
-  const tickerItems = useMemo(() =>
-    tools.map(tool => ({
+  const tickerItems = useMemo(() => [
+    { label: 'APP AVAILABLE', val: 'Install OmniPDF AI as PWA', type: 'success' },
+    ...tools.map(tool => ({
       label: tool.name.toUpperCase(),
       val: tool.description.length > 28 ? tool.description.substring(0, 26) + '…' : tool.description,
       type: tool.category === ToolCategory.ORGANIZE ? 'info' :
             tool.category === ToolCategory.CONVERT ? 'warning' :
             tool.category === ToolCategory.SECURITY ? 'success' : 'info',
     })),
-    [tools]
-  );
+  ], [tools]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -152,7 +152,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
                 <div key={i} className="flex gap-12 items-center">
                   {tickerItems.map((msg, idx) => (
                     <div key={idx} className="flex items-center gap-3">
-                      <span className="text-[9px] font-black bg-[#f3f1ea] dark:bg-white/5 text-gray-400 dark:text-gray-500 px-1.5 py-0.5 rounded-[5px] border border-gray-200 dark:border-white/10">{msg.label}</span>
+                      {msg.label === 'APP AVAILABLE' && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                      )}
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-[5px] border ${
+                        msg.label === 'APP AVAILABLE'
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                          : 'bg-[#f3f1ea] dark:bg-white/5 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-white/10'
+                      }`}>{msg.label}</span>
                       <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 tracking-tight">{msg.val}</span>
                     </div>
                   ))}

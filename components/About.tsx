@@ -1,15 +1,38 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { AppContext } from '../App';
 import { Header } from './Header';
 import {
     Shield, Bot, Layers, Cpu, ArrowUpRight, CheckCircle2,
     FileText, Scissors, Minimize2, ShieldCheck, Wand2, Type,
-    Languages, Download, Zap, PenTool, LayoutGrid, Search, Lock, UserCheck, TrendingUp
+    Languages, Download, Zap, PenTool, LayoutGrid, Search, Lock, UserCheck, TrendingUp,
+    Smartphone, Monitor, Apple, Globe, QrCode, Share2, ExternalLink
 } from 'lucide-react';
 
 export const About: React.FC = () => {
     const { t } = useContext(AppContext);
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [isInstalled, setIsInstalled] = useState(false);
+    const [platform, setPlatform] = useState<'android' | 'ios' | 'desktop'>('desktop');
+
+    useEffect(() => {
+        const handler = (e: any) => { e.preventDefault(); setDeferredPrompt(e); };
+        window.addEventListener('beforeinstallprompt', handler);
+        window.addEventListener('appinstalled', () => setIsInstalled(true));
+        const ua = navigator.userAgent.toLowerCase();
+        if (/android/.test(ua)) setPlatform('android');
+        else if (/iphone|ipad/.test(ua)) setPlatform('ios');
+        else setPlatform('desktop');
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, []);
+
+    const handleInstall = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') setIsInstalled(true);
+        setDeferredPrompt(null);
+    };
 
     const detailedTools = [
         {
@@ -95,6 +118,7 @@ export const About: React.FC = () => {
                         {[
                             "SYSTEM STATUS: OPTIMAL",
                             "AI CAPACITY: NEURAL LEVEL 4",
+                            "APP AVAILABLE: INSTALL AS PWA NOW",
                             "LATENCY: 1.2S",
                             "ENCRYPTION: AES-256 BIT",
                             "OCR PRECISION: 99.98%",
@@ -102,6 +126,7 @@ export const About: React.FC = () => {
                             "INFRASTRUCTURE: DISTRIBUTED",
                             "SYSTEM STATUS: OPTIMAL",
                             "AI CAPACITY: NEURAL LEVEL 4",
+                            "APP AVAILABLE: INSTALL AS PWA NOW",
                             "LATENCY: 1.2S",
                             "ENCRYPTION: AES-256 BIT",
                             "OCR PRECISION: 99.98%",
@@ -109,8 +134,8 @@ export const About: React.FC = () => {
                             "INFRASTRUCTURE: DISTRIBUTED"
                         ].map((text, i) => (
                             <div key={i} className="flex items-center gap-4">
-                                <div className="w-1.5 h-1.5 rounded-full bg-brand-500" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-900 dark:text-white">
+                                <div className={`w-1.5 h-1.5 rounded-full ${text.includes('APP AVAILABLE') ? 'bg-emerald-500 animate-pulse' : 'bg-brand-500'}`} />
+                                <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${text.includes('APP AVAILABLE') ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
                                     {text}
                                 </span>
                             </div>
@@ -196,6 +221,140 @@ export const About: React.FC = () => {
                                 </div>
                             ))}
                         </div>
+                    </div>
+                </motion.div>
+
+                {/* Download Our App Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="space-y-12"
+                >
+                    <div className="text-center space-y-4">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20">
+                            <Smartphone className="w-3.5 h-3.5 text-brand-500" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-600 dark:text-brand-400">Available Now</span>
+                        </div>
+                        <h2 className="text-4xl md:text-6xl font-black text-gray-900 dark:text-white tracking-tight">
+                            Download <span className="text-brand-500">OmniPDF AI</span>
+                        </h2>
+                        <p className="text-gray-500 dark:text-gray-400 font-medium text-lg max-w-2xl mx-auto">
+                            Install OmniPDF AI on your device for instant access. Works as a Progressive Web App — no app store needed.
+                        </p>
+                    </div>
+
+                    {/* Install Button */}
+                    <div className="flex justify-center">
+                        {isInstalled ? (
+                            <div className="flex items-center gap-3 px-8 py-4 rounded-[5px] bg-emerald-500/10 border border-emerald-500/20">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">App Installed Successfully</span>
+                            </div>
+                        ) : deferredPrompt ? (
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={handleInstall}
+                                className="flex items-center gap-3 px-10 py-4 rounded-[5px] bg-brand-500 text-white font-bold text-lg shadow-xl shadow-brand-500/30 hover:bg-brand-600 transition-colors"
+                            >
+                                <Download className="w-5 h-5" />
+                                Install App on This Device
+                            </motion.button>
+                        ) : (
+                            <div className="flex items-center gap-3 px-8 py-4 rounded-[5px] bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                                <Globe className="w-5 h-5 text-gray-400" />
+                                <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Open in browser to install</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Platform Instructions */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {[
+                            {
+                                icon: Smartphone,
+                                title: "Android",
+                                active: platform === 'android',
+                                steps: [
+                                    "Tap the menu (3 dots) in Chrome",
+                                    "Select 'Install app' or 'Add to Home Screen'",
+                                    "Confirm — OmniPDF AI is now installed!"
+                                ]
+                            },
+                            {
+                                icon: Apple,
+                                title: "iOS / iPhone",
+                                active: platform === 'ios',
+                                steps: [
+                                    "Tap the Share button (square + arrow)",
+                                    "Scroll down and tap 'Add to Home Screen'",
+                                    "Tap 'Add' — app icon appears on home screen"
+                                ]
+                            },
+                            {
+                                icon: Monitor,
+                                title: "Desktop / Laptop",
+                                active: platform === 'desktop',
+                                steps: [
+                                    "Click the install icon in the address bar",
+                                    "Or go to menu → 'Install OmniPDF AI'",
+                                    "App opens in its own window — no browser tabs"
+                                ]
+                            }
+                        ].map((item, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                viewport={{ once: true }}
+                                className={`p-8 rounded-[5px] border transition-all ${
+                                    item.active
+                                        ? 'bg-brand-500/5 border-brand-500/20 ring-1 ring-brand-500/10'
+                                        : 'bg-white/50 dark:bg-white/[0.02] border-gray-100 dark:border-white/5'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3 mb-5">
+                                    <div className={`w-10 h-10 rounded-[5px] flex items-center justify-center ${
+                                        item.active
+                                            ? 'bg-brand-500 text-white'
+                                            : 'bg-gray-100 dark:bg-white/5 text-gray-400'
+                                    }`}>
+                                        <item.icon className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-gray-900 dark:text-white">{item.title}</h3>
+                                        {item.active && (
+                                            <span className="text-[9px] font-bold text-brand-500 uppercase tracking-widest">Your Device</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <ol className="space-y-3">
+                                    {item.steps.map((step, j) => (
+                                        <li key={j} className="flex items-start gap-3">
+                                            <span className="w-5 h-5 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-400 shrink-0 mt-0.5">{j + 1}</span>
+                                            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium leading-relaxed">{step}</span>
+                                        </li>
+                                    ))}
+                                </ol>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* App Features Strip */}
+                    <div className="flex flex-wrap justify-center gap-4 pt-4">
+                        {[
+                            { icon: Zap, label: "Lightning Fast" },
+                            { icon: ShieldCheck, label: "100% Private" },
+                            { icon: Globe, label: "Works Offline" },
+                            { icon: Minimize2, label: "Tiny Install Size" },
+                        ].map((f, i) => (
+                            <div key={i} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/60 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5">
+                                <f.icon className="w-3.5 h-3.5 text-brand-500" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">{f.label}</span>
+                            </div>
+                        ))}
                     </div>
                 </motion.div>
 
