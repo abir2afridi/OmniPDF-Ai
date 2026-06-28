@@ -367,10 +367,24 @@ function parseSlideXml(
                 const alignMap: Record<string, string> = { l: 'left', r: 'right', ctr: 'center', just: 'justify', dist: 'justify' };
                 const align = alignMap[algn] ?? 'left';
 
-                const spcBeforeAttr = pPr?.getAttribute('spcBefore');
-                const spcAfterAttr = pPr?.getAttribute('spcAfter');
-                const spcBefore = spcBeforeAttr ? parseInt(spcBeforeAttr, 10) / 100 : 0;
-                const spcAfter = spcAfterAttr ? parseInt(spcAfterAttr, 10) / 100 : 0;
+                const spcBef = pPr ? [...pPr.querySelectorAll('*')].find(e => e.localName === 'spcBef') : null;
+                const spcAft = pPr ? [...pPr.querySelectorAll('*')].find(e => e.localName === 'spcAft') : null;
+                let spcBefore = 0;
+                let spcAfter = 8; // default ~8pt after for body text
+                for (const el of [spcBef, spcAft]) {
+                    if (!el) continue;
+                    const spcPts = [...el.querySelectorAll('*')].find(e => e.localName === 'spcPts');
+                    const spcPct = [...el.querySelectorAll('*')].find(e => e.localName === 'spcPct');
+                    if (spcPts) {
+                        const pts = parseInt(spcPts.getAttribute('val') ?? '0', 10) / 100;
+                        if (el === spcBef) spcBefore = pts;
+                        else spcAfter = pts;
+                    } else if (spcPct) {
+                        const pct = parseInt(spcPct.getAttribute('val') ?? '0', 10) / 1000;
+                        if (el === spcBef) spcBefore = pct;
+                        else spcAfter = pct;
+                    }
+                }
 
                 let lineSpacing = 1.0;
                 if (pPr) {
