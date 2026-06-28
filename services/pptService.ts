@@ -707,8 +707,6 @@ export async function convertPptToPDF(
             // Capture this slide at high resolution
             const canvas = await h2cFn(slideDiv, {
                 scale: renderScale,
-                useCORS: true,
-                allowTaint: true,
                 backgroundColor: '#ffffff',
                 width: RENDER_W,
                 height: slideH,
@@ -717,7 +715,7 @@ export async function convertPptToPDF(
 
             if (canvas && canvas.width > 0 && canvas.height > 0) {
                 const sliceH_mm = canvas.height * mmPerPx;
-                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, sliceH_mm);
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pdfW, sliceH_mm);
             } else {
                 // Render fallback: add a blank page with slide number
                 pdf.setFontSize(16);
