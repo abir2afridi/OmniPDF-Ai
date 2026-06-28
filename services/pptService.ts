@@ -1,20 +1,15 @@
 /**
- * pptService.ts — PowerPoint → PDF Conversion Service V4 (direct pdf-lib)
+ * pptService.ts — PowerPoint → PDF Conversion Service V6
  *
- * Pipeline V4 (no html2canvas — direct vector PDF rendering):
- *   .pptx ──[JSZip]──▶ raw OOXML + images
- *          ──[OOXML parser]──▶ per-slide render data (shapes, text, bg, images)
- *          ──[pdf-lib direct render]──▶ vector PDF with selectable text
+ * Rendering pipeline:
+ *   .pptx ──[JSZip]──▶ OOXML parse ──▶ HTML Canvas render ──▶ JPEG ──▶ pdf-lib embed
  *
- * V4 improvements:
- *   - No html2canvas (eliminates browser rendering bottlenecks)
- *   - No jsPDF (direct pdf-lib vector output)
- *   - Selectable/searchable text in PDF
- *   - Vector graphics (not bitmap images of slides)
- *   - Much smaller file size, faster conversion
- *   - Precise EMU→PDF coordinate mapping
- *   - Font mapping to standard PDF fonts (Helvetica, Times, Courier)
- *   - Text wrapping, paragraph spacing, vertical anchor support
+ * V6 key change: every slide is rendered to an off-screen HTML Canvas using the
+ * browser's own font engine.  On Windows with Office installed the browser has
+ * direct access to Calibri, Arial, Times New Roman etc., so the output is
+ * pixel-perfect with respect to text layout and spacing.
+ *
+ * The resulting PDF embeds each slide as a full-page JPEG image.
  */
 
 export interface SlideInfo {
@@ -58,10 +53,28 @@ const ALLOWED_TYPES = new Set([
 const ALLOWED_EXTS = new Set(['.pptx', '.ppt']);
 export const PPT_MAX_FILE_MB = 100;
 
+/** Default widescreen slide size in EMU */
 const SLIDE_W_EMU = 9144000;
 const SLIDE_H_EMU = 5143500;
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+const EMU_PER_INCH = 914400;
+const PT_PER_INCH  = 72;
+const EMU_PER_PT   = EMU_PER_INCH / PT_PER_INCH; // 12700
+
+/** Rendering DPI — higher = sharper PDF, larger file */
+const RENDER_DPI = 150;
+
+// ── Coordinate helpers ────────────────────────────────────────────────────────
+
+function emuToPx(emu: number, dpi = RENDER_DPI): number {
+    return (emu / EMU_PER_INCH) * dpi;
+}
+
+function ptToPx(pt: number, dpi = RENDER_DPI): number {
+    return (pt / PT_PER_INCH) * dpi;
+}
+
+// ── File validation ───────────────────────────────────────────────────────────
 
 function sanitizeName(s: string): string {
     return s.replace(/[<>:"/\\|?*\x00-\x1F]/g, '').replace(/\s+/g, '_').slice(0, 100) || 'presentation';
@@ -86,7 +99,11 @@ export function validatePptFile(file: File): string | null {
     catch (e: any) { return e.message; }
 }
 
-// ── OOXML helpers ──────────────────────────────────────────────────────────────
+// ── OOXML namespace ───────────────────────────────────────────────────────────
+
+const NS_R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+
+// ── Color helper ──────────────────────────────────────────────────────────────
 
 function ooColor(val: string | null | undefined, def = '#000000'): string {
     if (!val) return def;
@@ -96,158 +113,169 @@ function ooColor(val: string | null | undefined, def = '#000000'): string {
     return def;
 }
 
-// ── OOXML namespace map ────────────────────────────────────────────────────────
-
-const NS = {
-    a: 'http://schemas.openxmlformats.org/drawingml/2006/main',
-    p: 'http://schemas.openxmlformats.org/presentationml/2006/main',
-    r: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
-    rels: 'http://schemas.openxmlformats.org/package/2006/relationships',
+const SCHEME_COLORS: Record<string, string> = {
+    accent1: '#4472C4', accent2: '#ED7D31', accent3: '#A5A5A5',
+    accent4: '#FFC000', accent5: '#5B9BD5', accent6: '#70AD47',
+    dk1: '#000000', lt1: '#FFFFFF', dk2: '#444444', lt2: '#EEEEEE',
+    bg1: '#FFFFFF', bg2: '#EEEEEE', tx1: '#000000', tx2: '#444444',
 };
 
-// ── Parse relationships to map rId → image path ──────────────────────────────
+function resolveColor(fill: Element | null | undefined): string | null {
+    if (!fill) return null;
+    const srgb = qn(fill, 'srgbClr');
+    if (srgb) return ooColor(srgb.getAttribute('val'));
+    const scheme = qn(fill, 'schemeClr');
+    if (scheme) return SCHEME_COLORS[scheme.getAttribute('val') ?? ''] ?? null;
+    return null;
+}
+
+/** querySelector by local name (namespace-agnostic) */
+function qn(el: Element | Document, localName: string): Element | null {
+    return [...el.querySelectorAll('*')].find(e => e.localName === localName) ?? null;
+}
+function qna(el: Element | Document, localName: string): Element[] {
+    return [...el.querySelectorAll('*')].filter(e => e.localName === localName);
+}
+
+// ── Relationship parsing ──────────────────────────────────────────────────────
 
 async function parseSlideRels(zip: any, slidePath: string): Promise<Map<string, string>> {
     const relsMap = new Map<string, string>();
-    // Try both possible rels locations
-    const candidates = [
-        slidePath.replace('ppt/slides/', 'ppt/slides/_rels/').replace('.xml', '.xml.rels'),
-        slidePath.replace('ppt/slides/', 'ppt/_rels/').replace('.xml', '.xml.rels'),
-    ];
-    let relsXml = '';
-    for (const p of candidates) {
-        if (zip.files[p]) { relsXml = await zip.files[p].async('string'); break; }
-    }
+    const candidate = slidePath
+        .replace('ppt/slides/', 'ppt/slides/_rels/')
+        .replace('.xml', '.xml.rels');
+    const relsXml: string = zip.files[candidate]
+        ? await zip.files[candidate].async('string')
+        : '';
     if (!relsXml) return relsMap;
 
     try {
         const doc = new DOMParser().parseFromString(relsXml, 'application/xml');
-        const rels = [...doc.querySelectorAll('*')].filter(e => e.localName === 'Relationship');
-        for (const rel of rels) {
-            const type = rel.getAttribute('Type') ?? '';
+        for (const rel of qna(doc as unknown as Element, 'Relationship')) {
+            const type   = rel.getAttribute('Type') ?? '';
             const target = rel.getAttribute('Target') ?? '';
-            const id = rel.getAttribute('Id') ?? '';
+            const id     = rel.getAttribute('Id') ?? '';
             if (!type.includes('image') || !target || !id) continue;
 
-            // Resolve target relative to the rels directory
-            // rels dir is either ppt/slides/_rels/ or ppt/_rels/
-            let resolvedPath = '';
-            if (target.startsWith('../../')) {
-                // ../../media/image1.png from ppt/slides/_rels/ → ppt/media/image1.png
-                resolvedPath = 'ppt/' + target.replace('../../', '');
-            } else if (target.startsWith('../')) {
-                // ../media/image1.png from ppt/_rels/ → ppt/media/image1.png
-                // ../media/image1.png from ppt/slides/_rels/ → ppt/slides/media/image1.png (wrong, fix)
-                // Check which rels dir we're in
-                const isSlidesRels = candidates[0] && zip.files[candidates[0]];
-                if (isSlidesRels) {
-                    // ppt/slides/_rels/ + ../media/image1.png → go up to ppt/slides/, then need one more ..
-                    // Actually ../media from ppt/slides/_rels/ = ppt/slides/media (wrong)
-                    // We need to go to ppt/media, so use ../../
-                    resolvedPath = 'ppt/' + target.replace('../', '');
-                } else {
-                    resolvedPath = 'ppt/' + target.replace('../', '');
-                }
-            } else {
-                resolvedPath = 'ppt/slides/' + target;
-            }
-            relsMap.set(id, resolvedPath);
+            let resolved: string;
+            if (target.startsWith('../../')) resolved = 'ppt/' + target.replace('../../', '');
+            else if (target.startsWith('../')) resolved = 'ppt/' + target.replace('../', '');
+            else resolved = 'ppt/slides/' + target;
+            relsMap.set(id, resolved);
         }
     } catch { /* skip */ }
     return relsMap;
 }
 
-// ── Extract images from zip as base64 ────────────────────────────────────────
+// ── Image extraction ──────────────────────────────────────────────────────────
 
 async function extractImages(zip: any): Promise<Map<string, string>> {
     const images = new Map<string, string>();
     const mediaKeys = Object.keys(zip.files).filter(k =>
-        k.startsWith('ppt/media/') || k.startsWith('ppt/charts/') || k.match(/\.(png|jpe?g|gif|bmp|svg|tiff?)$/i)
+        k.startsWith('ppt/media/') || k.match(/\.(png|jpe?g|gif|bmp|svg|tiff?)$/i)
     );
     for (const key of mediaKeys) {
         try {
-            const blob = await zip.files[key].async('base64');
-            const ext = key.split('.').pop()?.toLowerCase() ?? 'png';
+            const b64  = await zip.files[key].async('base64');
+            const ext  = key.split('.').pop()?.toLowerCase() ?? 'png';
             const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
-                : ext === 'gif' ? 'image/gif'
-                    : ext === 'svg' ? 'image/svg+xml'
-                        : ext === 'bmp' ? 'image/bmp'
-                            : ext === 'tiff' || ext === 'tif' ? 'image/tiff'
-                                : 'image/png';
-            images.set(key, `data:${mime};base64,${blob}`);
-            // Also store by just filename for fallback lookup
-            const fileName = key.split('/').pop()!;
-            if (!images.has(fileName)) images.set(fileName, `data:${mime};base64,${blob}`);
+                       : ext === 'gif' ? 'image/gif'
+                       : ext === 'svg' ? 'image/svg+xml'
+                       : ext === 'bmp' ? 'image/bmp'
+                       : 'image/png';
+            const dataUrl = `data:${mime};base64,${b64}`;
+            images.set(key, dataUrl);
+            const fn = key.split('/').pop()!;
+            if (!images.has(fn)) images.set(fn, dataUrl);
         } catch { /* skip */ }
     }
     return images;
 }
 
-// ── Parse shape fills including gradient and pattern fills ────────────────────
+// ── Image loader (browser) ────────────────────────────────────────────────────
 
-function parseShapeFill(spPr: Element | null): string | null {
-    if (!spPr) return null;
+const imgCache = new Map<string, HTMLImageElement>();
 
-    // Solid fill
-    const solidFill = [...spPr.querySelectorAll('*')].find(e => e.localName === 'solidFill');
-    if (solidFill) {
-        const srgb = [...solidFill.querySelectorAll('*')].find(e => e.localName === 'srgbClr');
-        if (srgb) return ooColor(srgb.getAttribute('val'));
-        const schemeClr = [...solidFill.querySelectorAll('*')].find(e => e.localName === 'schemeClr');
-        if (schemeClr) {
-            // Map common scheme colors
-            const name = schemeClr.getAttribute('val') ?? '';
-            const schemeMap: Record<string, string> = {
-                'accent1': '#4472C4', 'accent2': '#ED7D31', 'accent3': '#A5A5A5',
-                'accent4': '#FFC000', 'accent5': '#5B9BD5', 'accent6': '#70AD47',
-                'dk1': '#333333', 'lt1': '#FFFFFF', 'dk2': '#555555', 'lt2': '#F5F5F5',
-                'bg1': '#FFFFFF', 'bg2': '#F5F5F5', 'tx1': '#333333', 'tx2': '#555555',
-            };
-            return schemeMap[name] ?? null;
-        }
-    }
-
-    // No fill
-    const noFill = [...spPr.querySelectorAll('*')].find(e => e.localName === 'noFill');
-    if (noFill) return 'transparent';
-
-    // Gradient fill (simplified — use first color)
-    const gradFill = [...spPr.querySelectorAll('*')].find(e => e.localName === 'gradFill');
-    if (gradFill) {
-        const gsLst = [...gradFill.querySelectorAll('*')].find(e => e.localName === 'gsLst');
-        if (gsLst) {
-            const gs = [...gsLst.querySelectorAll('*')].find(e => e.localName === 'gs');
-            if (gs) {
-                const srgb = [...gs.querySelectorAll('*')].find(e => e.localName === 'srgbClr');
-                if (srgb) return ooColor(srgb.getAttribute('val'));
-            }
-        }
-    }
-
-    // Picture fill (extract image)
-    const picFill = [...spPr.querySelectorAll('*')].find(e => e.localName === 'blipFill');
-    if (picFill) {
-        const blip = [...picFill.querySelectorAll('*')].find(e => e.localName === 'blip');
-        const embedId = blip?.getAttributeNS(NS.r, 'embed') ?? blip?.getAttribute('r:embed');
-        if (embedId) return `__RID:${embedId}`;
-    }
-
-    return null;
+function loadImg(src: string): Promise<HTMLImageElement> {
+    if (imgCache.has(src)) return Promise.resolve(imgCache.get(src)!);
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload  = () => { imgCache.set(src, img); resolve(img); };
+        img.onerror = () => reject(new Error('img load failed'));
+        img.src = src;
+    });
 }
 
-// ── Parse a single slide XML ─────────────────────────────────────────────────
+// ── OOXML data structures ─────────────────────────────────────────────────────
+
+interface RunData {
+    text: string;
+    bold: boolean;
+    italic: boolean;
+    underline: boolean;
+    strike: boolean;
+    /** font size in points */
+    fontSize: number;
+    color: string;
+    fontFamily: string;
+}
+
+interface ParaData {
+    runs: RunData[];
+    align: 'left' | 'center' | 'right' | 'justify';
+    /** space before in points */
+    spcBefore: number;
+    /** space after in points */
+    spcAfter: number;
+    /** line-spacing multiplier (1.0 = single) */
+    lineSpacing: number;
+    /** absolute line spacing in points, 0 = use multiplier */
+    lineSpacingAbs: number;
+    /** left margin in EMU */
+    marL: number;
+    /** right margin in EMU */
+    marR: number;
+    /** first-line indent in EMU (negative = hanging) */
+    indent: number;
+    bulletChar?: string;
+    bulletFont?: string;
+    bulletSzPt?: number;
+    bulletColor?: string;
+    lvl: number;
+    /** fallback font size */
+    defaultFontSize: number;
+}
+
+interface CellData {
+    paras: ParaData[];
+    bgColor: string | null;
+    colspan: number;
+}
+
+interface TableData {
+    cells: CellData[];
+    colWidths: number[];   // EMU
+    rowHeights: number[];  // EMU
+    cols: number;
+    rows: number;
+    borderColor: string;
+    borderWidth: number;
+}
 
 interface ShapeData {
-    x: number; y: number; w: number; h: number;
     xEmu: number; yEmu: number; wEmu: number; hEmu: number;
-    texts: { text: string; bold: boolean; italic: boolean; size: number; color: string; align: string; spcBefore: number; spcAfter: number; lineSpacing: number; lineSpacingAbs: number; fontFamily?: string; paraMarL: number; paraMarR: number; paraIndent: number }[];
+    paras: ParaData[];
     bgColor: string | null;
-    type: 'text' | 'rect' | 'image' | 'unknown';
+    type: 'text' | 'rect' | 'image' | 'table' | 'line';
     imageData?: string;
     zIndex: number;
-    padding: { top: number; right: number; bottom: number; left: number }; // bodyPr insets in EMU
-    vAnchor: string;
+    padding: { top: number; right: number; bottom: number; left: number }; // EMU
+    vAnchor: 'top' | 'mid' | 'bottom';
     wrapNone: boolean;
+    outlineColor?: string;
+    outlineWidthPt?: number;
+    table?: TableData;
+    lineData?: { flipH: boolean; flipV: boolean; color: string; widthPt: number };
 }
 
 interface SlideRenderData {
@@ -255,7 +283,161 @@ interface SlideRenderData {
     shapes: ShapeData[];
     slideWEmu: number;
     slideHEmu: number;
+    bgImageData?: string;
 }
+
+// ── Parse one <a:p> paragraph ─────────────────────────────────────────────────
+
+function parsePara(para: Element, defaultFs = 18): ParaData {
+    const pPr = [...para.children].find(e => e.localName === 'pPr') ?? null;
+
+    // Alignment
+    const algn = pPr?.getAttribute('algn') ?? 'l';
+    const alignMap: Record<string, 'left' | 'center' | 'right' | 'justify'> = {
+        l: 'left', r: 'right', ctr: 'center', just: 'justify', dist: 'justify',
+    };
+    const align = alignMap[algn] ?? 'left';
+
+    // spcBefore / spcAfter — in hundredths of a point
+    let spcBefore = 0, spcAfter = 0;
+    if (pPr) {
+        for (const [tag, isAfter] of [['spcBef', false], ['spcAft', true]] as [string, boolean][]) {
+            const el = qn(pPr, tag);
+            if (!el) continue;
+            const pts = qn(el, 'spcPts');
+            const pct = qn(el, 'spcPct');
+            if (pts) {
+                const v = parseInt(pts.getAttribute('val') ?? '0', 10) / 100;
+                if (isAfter) spcAfter = v; else spcBefore = v;
+            } else if (pct) {
+                // store negative to indicate "percent × defaultFs" — resolved at render time
+                const v = parseInt(pct.getAttribute('val') ?? '0', 10) / 100000;
+                if (isAfter) spcAfter = -(v * 100); else spcBefore = -(v * 100);
+            }
+        }
+    }
+
+    // Line spacing
+    let lineSpacing = 1.15, lineSpacingAbs = 0;
+    const lnSpc = pPr ? qn(pPr, 'lnSpc') : null;
+    if (lnSpc) {
+        const pct = qn(lnSpc, 'spcPct');
+        const pts = qn(lnSpc, 'spcPts');
+        if (pct) lineSpacing = parseInt(pct.getAttribute('val') ?? '100000', 10) / 100000;
+        else if (pts) lineSpacingAbs = parseInt(pts.getAttribute('val') ?? '0', 10) / 100;
+    }
+
+    // Margins / indent (EMU)
+    const marL   = pPr ? parseInt(pPr.getAttribute('marL')   ?? '0', 10) : 0;
+    const marR   = pPr ? parseInt(pPr.getAttribute('marR')   ?? '0', 10) : 0;
+    const indent = pPr ? parseInt(pPr.getAttribute('indent') ?? '0', 10) : 0;
+
+    // Bullet
+    let bulletChar: string | undefined, bulletFont: string | undefined;
+    let bulletSzPt: number | undefined, bulletColor: string | undefined;
+    let lvl = 0;
+    if (pPr) {
+        const buLvl = pPr.getAttribute('lvl');
+        if (buLvl) lvl = parseInt(buLvl, 10);
+
+        if (!qn(pPr, 'buNone')) {
+            const buChar = qn(pPr, 'buChar');
+            if (buChar) bulletChar = buChar.getAttribute('char') ?? '•';
+            const buFont = qn(pPr, 'buFont');
+            if (buFont) bulletFont = buFont.getAttribute('typeface') ?? undefined;
+            const buSzPts = qn(pPr, 'buSzPts');
+            if (buSzPts) bulletSzPt = parseInt(buSzPts.getAttribute('val') ?? '0', 10) / 100;
+            const buClr = qn(pPr, 'buClr');
+            if (buClr) bulletColor = resolveColor(qn(buClr, 'solidFill') ?? buClr) ?? undefined;
+        }
+    }
+
+    // Runs
+    const runs: RunData[] = [];
+    let lastFontSize = defaultFs;
+
+    for (const child of para.children) {
+        if (child.localName === 'br') {
+            runs.push({ text: '\n', bold: false, italic: false, underline: false, strike: false, fontSize: lastFontSize, color: '#000000', fontFamily: '' });
+            continue;
+        }
+        if (child.localName !== 'r') continue;
+
+        const rPr = [...child.children].find(e => e.localName === 'rPr') ?? null;
+        const tEl = [...child.children].find(e => e.localName === 't');
+        const rawText = tEl?.textContent ?? '';
+        if (!rawText) continue;
+        const text = rawText.replace(/\t/g, '    ').replace(/\r/g, '');
+
+        const bold      = rPr?.getAttribute('b') === '1' || rPr?.getAttribute('b') === 'true';
+        const italic    = rPr?.getAttribute('i') === '1' || rPr?.getAttribute('i') === 'true';
+        const uAttr     = rPr?.getAttribute('u') ?? '';
+        const underline = uAttr !== '' && uAttr !== 'none';
+        const strike    = rPr?.getAttribute('strike') === 'sngStrike' || rPr?.getAttribute('strike') === 'dblStrike';
+
+        const szAttr    = rPr?.getAttribute('sz');
+        const fontSize  = szAttr ? parseInt(szAttr, 10) / 100 : defaultFs;
+        lastFontSize    = fontSize;
+
+        // Color
+        let color = '#111111';
+        if (rPr) {
+            const solidFill = qn(rPr, 'solidFill');
+            if (solidFill) {
+                const c = resolveColor(solidFill);
+                if (c) color = c;
+            }
+        }
+
+        // Font family
+        const latin = rPr ? qn(rPr, 'latin') : null;
+        const ea    = rPr ? qn(rPr, 'ea')    : null;
+        const fontFamily = ea?.getAttribute('typeface') || latin?.getAttribute('typeface') || '';
+
+        runs.push({ text, bold, italic, underline, strike, fontSize, color, fontFamily });
+    }
+
+    return {
+        runs, align, spcBefore, spcAfter,
+        lineSpacing, lineSpacingAbs,
+        marL, marR, indent,
+        bulletChar, bulletFont, bulletSzPt, bulletColor,
+        lvl,
+        defaultFontSize: lastFontSize || defaultFs,
+    };
+}
+
+// ── Parse shape fill ──────────────────────────────────────────────────────────
+
+function parseShapeFill(spPr: Element | null): string | null {
+    if (!spPr) return null;
+    if (qn(spPr, 'noFill')) return 'transparent';
+
+    const solidFill = qn(spPr, 'solidFill');
+    if (solidFill) return resolveColor(solidFill);
+
+    const gradFill = qn(spPr, 'gradFill');
+    if (gradFill) {
+        const gsLst = qn(gradFill, 'gsLst');
+        if (gsLst) {
+            const gs = qn(gsLst, 'gs');
+            if (gs) {
+                const sf = qn(gs, 'solidFill');
+                if (sf) return resolveColor(sf);
+            }
+        }
+    }
+
+    const blipFill = qn(spPr, 'blipFill');
+    if (blipFill) {
+        const blip = qn(blipFill, 'blip');
+        const id = blip?.getAttributeNS(NS_R, 'embed') ?? blip?.getAttribute('r:embed');
+        if (id) return `__RID:${id}`;
+    }
+    return null;
+}
+
+// ── Parse slide XML ───────────────────────────────────────────────────────────
 
 function parseSlideXml(
     xml: string,
@@ -264,419 +446,706 @@ function parseSlideXml(
     relsMap: Map<string, string>,
     images: Map<string, string>,
 ): SlideRenderData {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xml, 'application/xml');
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
 
-    // Background color
+    // ── Background ──────────────────────────────────────────────────────────────
     let bgColor = '#FFFFFF';
-    const bgPr = [...doc.querySelectorAll('*')].find(e => e.localName === 'bgPr' || e.localName === 'bg');
-    if (bgPr) {
-        const solidFill = [...bgPr.querySelectorAll('*')].find(e => e.localName === 'solidFill');
-        if (solidFill) {
-            const srgb = [...solidFill.querySelectorAll('*')].find(e => e.localName === 'srgbClr');
-            if (srgb) bgColor = ooColor(srgb.getAttribute('val'));
+    let bgImageData: string | undefined;
+
+    const bg = [...doc.querySelectorAll('*')].find(e => e.localName === 'bg');
+    if (bg) {
+        const bgPr = qn(bg, 'bgPr');
+        if (bgPr) {
+            const sf = qn(bgPr, 'solidFill');
+            if (sf) bgColor = resolveColor(sf) ?? bgColor;
+
+            const blipFill = qn(bgPr, 'blipFill');
+            if (blipFill) {
+                const blip = qn(blipFill, 'blip');
+                const id = blip?.getAttributeNS(NS_R, 'embed') ?? blip?.getAttribute('r:embed');
+                if (id && relsMap.has(id)) {
+                    const p = relsMap.get(id)!;
+                    bgImageData = images.get(p) ?? images.get(p.split('/').pop()!);
+                }
+            }
+
+            // gradient → first stop
+            const gradFill = qn(bgPr, 'gradFill');
+            if (gradFill) {
+                const gs = qn(gradFill, 'gs');
+                if (gs) bgColor = resolveColor(qn(gs, 'solidFill') ?? gs) ?? bgColor;
+            }
         }
     }
 
+    // ── Shapes ──────────────────────────────────────────────────────────────────
     const shapes: ShapeData[] = [];
     let zIndex = 0;
 
-    // Find the main spTree — only process DIRECT children (sp, pic, grpSp)
-    // This avoids the critical bug where nested sp inside grpSp were processed twice
     const spTree = [...doc.querySelectorAll('*')].find(e => e.localName === 'spTree');
-    if (!spTree) return { bgColor, shapes, slideWEmu, slideHEmu };
+    if (!spTree) return { bgColor, shapes, slideWEmu, slideHEmu, bgImageData };
 
-    // Direct children only — skip spTree-level nvGrpSpPr/grpSpPr
-    const topElements = [...spTree.children].filter(e =>
-        e.localName === 'sp' || e.localName === 'pic' || e.localName === 'grpSp'
-    );
-
-    function processShape(el: Element, parentXEmu: number, parentYEmu: number) {
-        const xfrm = [...el.querySelectorAll('*')].find(e => e.localName === 'xfrm');
-        const off = xfrm ? [...xfrm.querySelectorAll('*')].find(e => e.localName === 'off') : null;
-        const ext = xfrm ? [...xfrm.querySelectorAll('*')].find(e => e.localName === 'ext') : null;
-
-        const xEmu = parseInt(off?.getAttribute('x') ?? '0', 10) + parentXEmu;
-        const yEmu = parseInt(off?.getAttribute('y') ?? '0', 10) + parentYEmu;
-        const wEmu = parseInt(ext?.getAttribute('cx') ?? '0', 10);
-        const hEmu = parseInt(ext?.getAttribute('cy') ?? '0', 10);
-
-        if (wEmu <= 0 || hEmu <= 0) return;
-
-        // Group shape — process children recursively
+    function processEl(el: Element, offsetXEmu = 0, offsetYEmu = 0) {
         if (el.localName === 'grpSp') {
-            const grpSpTree = [...el.querySelectorAll('*')].find(e => e.localName === 'spTree');
-            if (grpSpTree) {
-                const children = [...grpSpTree.children].filter(e =>
-                    e.localName === 'sp' || e.localName === 'pic'
-                );
-                for (const child of children) {
-                    processShape(child, xEmu, yEmu);
+            // Read group's own transform to compute child offset
+            const grpSpPr = [...el.children].find(e => e.localName === 'grpSpPr');
+            const grpXfrm = grpSpPr ? [...grpSpPr.children].find(e => e.localName === 'xfrm') : null;
+            const grpOff  = grpXfrm ? [...grpXfrm.children].find(e => e.localName === 'off')   : null;
+            const grpExt  = grpXfrm ? [...grpXfrm.children].find(e => e.localName === 'ext')   : null;
+            const grpChOff = grpXfrm ? [...grpXfrm.children].find(e => e.localName === 'chOff') : null;
+            const grpChExt = grpXfrm ? [...grpXfrm.children].find(e => e.localName === 'chExt') : null;
+
+            const gx  = parseInt(grpOff?.getAttribute('x')  ?? '0', 10);
+            const gy  = parseInt(grpOff?.getAttribute('y')  ?? '0', 10);
+            const gcx = parseInt(grpExt?.getAttribute('cx') ?? '0', 10);
+            const gcy = parseInt(grpExt?.getAttribute('cy') ?? '0', 10);
+            const chx = parseInt(grpChOff?.getAttribute('x')  ?? '0', 10);
+            const chy = parseInt(grpChOff?.getAttribute('y')  ?? '0', 10);
+            const chcx = parseInt(grpChExt?.getAttribute('cx') ?? '1', 10) || 1;
+            const chcy = parseInt(grpChExt?.getAttribute('cy') ?? '1', 10) || 1;
+
+            // scaleX = gcx/chcx, scaleY = gcy/chcy (usually 1 for non-scaled groups)
+            // child slide coords = gx + (childX - chx) * gcx/chcx
+            for (const child of el.children) {
+                if (['sp','pic','cxnSp','grpSp','graphicFrame'].includes(child.localName)) {
+                    // Store group transform info in offsetXEmu/offsetYEmu params
+                    // Simplified: pass absolute group origin + child offset correction
+                    processEl(child, offsetXEmu + gx - chx, offsetYEmu + gy - chy);
                 }
             }
             return;
         }
 
-        const xPct = (xEmu / slideWEmu) * 100;
-        const yPct = (yEmu / slideHEmu) * 100;
-        const wPct = (wEmu / slideWEmu) * 100;
-        const hPct = (hEmu / slideHEmu) * 100;
+        // ── graphicFrame — contains tables, charts, SmartArt ──
+        if (el.localName === 'graphicFrame') {
+            // xfrm is a DIRECT child of graphicFrame (not inside spPr)
+            const gfXfrm = [...el.children].find(e => e.localName === 'xfrm') ?? null;
+            const gfOff  = gfXfrm ? [...gfXfrm.children].find(e => e.localName === 'off') : null;
+            const gfExt  = gfXfrm ? [...gfXfrm.children].find(e => e.localName === 'ext') : null;
+            const gfXEmu = parseInt(gfOff?.getAttribute('x')  ?? '0', 10) + offsetXEmu;
+            const gfYEmu = parseInt(gfOff?.getAttribute('y')  ?? '0', 10) + offsetYEmu;
+            const gfWEmu = parseInt(gfExt?.getAttribute('cx') ?? '0', 10);
+            const gfHEmu = parseInt(gfExt?.getAttribute('cy') ?? '0', 10);
+            if (gfWEmu <= 0 || gfHEmu <= 0) return;
 
-        const spPr = [...el.querySelectorAll('*')].find(e => e.localName === 'spPr');
-        const shapeBg = parseShapeFill(spPr);
+            // Table inside graphicData
+            const tbl = qn(el, 'tbl');
+            if (tbl) {
+                const tblGrid = qn(tbl, 'tblGrid');
+                const colWidths: number[] = [];
+                if (tblGrid) {
+                    for (const gc of qna(tblGrid, 'gridCol')) {
+                        colWidths.push(parseInt(gc.getAttribute('w') ?? '0', 10));
+                    }
+                }
+                const trEls = [...tbl.querySelectorAll('*')].filter(e => e.localName === 'tr');
+                const rowHeights: number[] = [];
+                const cells: CellData[] = [];
 
-        // Image — check pic blipFill and spPr blipFill
-        let imageData: string | undefined;
-        const tryExtractImage = (container: Element) => {
-            if (imageData) return;
-            const blipFill = [...container.querySelectorAll('*')].find(e => e.localName === 'blipFill');
-            if (!blipFill) return;
-            const blip = [...blipFill.querySelectorAll('*')].find(e => e.localName === 'blip');
-            const embedId = blip?.getAttributeNS(NS.r, 'embed') ?? blip?.getAttribute('r:embed');
-            if (embedId && relsMap.has(embedId)) {
-                const imgPath = relsMap.get(embedId)!;
-                imageData = images.get(imgPath) ?? images.get(imgPath.split('/').pop()!);
+                for (const tr of trEls) {
+                    const trPr = [...tr.children].find(e => e.localName === 'trPr');
+                    const h = trPr ? parseInt(trPr.getAttribute('h') ?? '0', 10) : 0;
+                    rowHeights.push(h || Math.round(gfHEmu / Math.max(trEls.length, 1)));
+                    for (const tc of [...tr.children].filter(e => e.localName === 'tc')) {
+                        const tcPr = [...tc.children].find(e => e.localName === 'tcPr');
+                        const cs = parseInt(tcPr?.getAttribute('gridSpan') ?? '1', 10);
+                        let cellBg: string | null = null;
+                        if (tcPr) { const sf = qn(tcPr, 'solidFill'); if (sf) cellBg = resolveColor(sf); }
+                        const paras: ParaData[] = [];
+                        const txBody = [...tc.children].find(e => e.localName === 'txBody');
+                        if (txBody) {
+                            for (const p of [...txBody.children].filter(e => e.localName === 'p')) {
+                                paras.push(parsePara(p, 11));
+                            }
+                        }
+                        cells.push({ paras, bgColor: cellBg, colspan: cs });
+                    }
+                }
+
+                shapes.push({
+                    xEmu: gfXEmu, yEmu: gfYEmu, wEmu: gfWEmu, hEmu: gfHEmu,
+                    paras: [], bgColor: null, type: 'table', zIndex: zIndex++,
+                    padding: { top: 0, right: 0, bottom: 0, left: 0 },
+                    vAnchor: 'top', wrapNone: false,
+                    table: { cells, colWidths, rowHeights, cols: colWidths.length, rows: trEls.length, borderColor: '#999999', borderWidth: 0.5 },
+                });
             }
-        };
-        if (el.localName === 'pic') {
-            tryExtractImage(el);
+            return;
         }
-        if (!imageData && spPr) tryExtractImage(spPr);
 
-        // Text body
-        const txBody = [...el.querySelectorAll('*')].find(e => e.localName === 'txBody');
-        const texts: ShapeData['texts'] = [];
+        // Find xfrm — try spPr first (sp/pic), then direct child (graphicFrame fallback)
+        const spPrEl = [...el.children].find(e => e.localName === 'spPr') ?? null;
+        const xfrm   = (spPrEl ? [...spPrEl.children].find(e => e.localName === 'xfrm') : null)
+                    ?? [...el.children].find(e => e.localName === 'xfrm') ?? null;
+        const off    = xfrm ? [...xfrm.children].find(e => e.localName === 'off') : null;
+        const ext    = xfrm ? [...xfrm.children].find(e => e.localName === 'ext') : null;
 
-        // Default bodyPr insets: 91440 EMU ≈ 0.1 inch (OOXML default)
+        const xEmu = parseInt(off?.getAttribute('x') ?? '0', 10) + offsetXEmu;
+        const yEmu = parseInt(off?.getAttribute('y') ?? '0', 10) + offsetYEmu;
+        const wEmu = parseInt(ext?.getAttribute('cx') ?? '0', 10);
+        const hEmu = parseInt(ext?.getAttribute('cy') ?? '0', 10);
+        if (wEmu <= 0 || hEmu <= 0) return;
+
+        const flipH = xfrm?.getAttribute('flipH') === '1';
+        const flipV = xfrm?.getAttribute('flipV') === '1';
+
+        const shapeBg = parseShapeFill(spPrEl);
+
+        // Resolve image from __RID
+        const resolveRid = (rid: string | null) => {
+            if (!rid) return undefined;
+            const path = relsMap.get(rid);
+            if (!path) return undefined;
+            return images.get(path) ?? images.get(path.split('/').pop()!);
+        };
+
+        const bgResolved = shapeBg?.startsWith('__RID:')
+            ? resolveRid(shapeBg.slice(6))
+            : undefined;
+        const finalBgColor = shapeBg?.startsWith('__RID:') ? null : shapeBg;
+
+        // Outline
+        let outlineColor: string | undefined, outlineWidthPt: number | undefined;
+        if (spPrEl) {
+            const ln = [...spPrEl.children].find(e => e.localName === 'ln');
+            if (ln) {
+                const w = parseInt(ln.getAttribute('w') ?? '0', 10);
+                if (w > 0) {
+                    outlineWidthPt = w / EMU_PER_PT;
+                    const sf = qn(ln, 'solidFill');
+                    if (sf) outlineColor = resolveColor(sf) ?? '#000000';
+                    else outlineColor = '#000000';
+                }
+            }
+        }
+
+        // ── Table ──
+        const tbl = qn(el, 'tbl');
+        if (tbl) {
+            const tblGrid = qn(tbl, 'tblGrid');
+            const colWidths: number[] = [];
+            if (tblGrid) {
+                for (const gc of qna(tblGrid, 'gridCol')) {
+                    colWidths.push(parseInt(gc.getAttribute('w') ?? '0', 10));
+                }
+            }
+            const trEls = qna(tbl, 'tr');
+            const rowHeights: number[] = [];
+            const cells: CellData[] = [];
+
+            for (const tr of trEls) {
+                const trPr = [...tr.children].find(e => e.localName === 'trPr');
+                const h = trPr ? parseInt(trPr.getAttribute('h') ?? '0', 10) : 0;
+                rowHeights.push(h || Math.round(hEmu / Math.max(trEls.length, 1)));
+                for (const tc of [...tr.children].filter(e => e.localName === 'tc')) {
+                    const tcPr = [...tc.children].find(e => e.localName === 'tcPr');
+                    const cs = parseInt(tcPr?.getAttribute('gridSpan') ?? '1', 10);
+                    let cellBg: string | null = null;
+                    if (tcPr) {
+                        const sf = qn(tcPr, 'solidFill');
+                        if (sf) cellBg = resolveColor(sf);
+                    }
+                    const paras: ParaData[] = [];
+                    const txBody = [...tc.children].find(e => e.localName === 'txBody');
+                    if (txBody) {
+                        for (const p of [...txBody.children].filter(e => e.localName === 'p')) {
+                            paras.push(parsePara(p, 11));
+                        }
+                    }
+                    cells.push({ paras, bgColor: cellBg, colspan: cs });
+                }
+            }
+
+            shapes.push({
+                xEmu, yEmu, wEmu, hEmu,
+                paras: [],
+                bgColor: finalBgColor,
+                type: 'table',
+                zIndex: zIndex++,
+                padding: { top: 0, right: 0, bottom: 0, left: 0 },
+                vAnchor: 'top',
+                wrapNone: false,
+                outlineColor, outlineWidthPt,
+                table: { cells, colWidths, rowHeights, cols: colWidths.length, rows: trEls.length, borderColor: '#999999', borderWidth: 0.5 },
+            });
+            return;
+        }
+
+        // ── Connector / Line ──
+        if (el.localName === 'cxnSp') {
+            let color = '#000000', widthPt = 1;
+            if (spPrEl) {
+                const ln = [...spPrEl.children].find(e => e.localName === 'ln');
+                if (ln) {
+                    widthPt = parseInt(ln.getAttribute('w') ?? '12700', 10) / EMU_PER_PT;
+                    const sf = qn(ln, 'solidFill');
+                    if (sf) color = resolveColor(sf) ?? color;
+                }
+            }
+            shapes.push({
+                xEmu, yEmu, wEmu, hEmu,
+                paras: [], bgColor: null, type: 'line',
+                zIndex: zIndex++,
+                padding: { top: 0, right: 0, bottom: 0, left: 0 },
+                vAnchor: 'top', wrapNone: false,
+                lineData: { flipH, flipV, color, widthPt },
+            });
+            return;
+        }
+
+        // ── Image (pic) ──
+        let imageData: string | undefined;
+        if (el.localName === 'pic') {
+            const blipFill = qn(el, 'blipFill');
+            if (blipFill) {
+                const blip = qn(blipFill, 'blip');
+                const id = blip?.getAttributeNS(NS_R, 'embed') ?? blip?.getAttribute('r:embed');
+                imageData = resolveRid(id ?? null);
+            }
+        }
+        if (!imageData && spPrEl) {
+            const blipFill = qn(spPrEl, 'blipFill');
+            if (blipFill) {
+                const blip = qn(blipFill, 'blip');
+                const id = blip?.getAttributeNS(NS_R, 'embed') ?? blip?.getAttribute('r:embed');
+                imageData = resolveRid(id ?? null);
+            }
+        }
+        // Shape background image (from __RID)
+        if (!imageData && bgResolved) imageData = bgResolved;
+
+        // ── Text body ──
+        const txBody = qn(el, 'txBody');
+        const paras: ParaData[] = [];
         const defaultInsetEmu = 91440;
-        let bodyPadding = { top: defaultInsetEmu, right: defaultInsetEmu, bottom: defaultInsetEmu, left: defaultInsetEmu };
-        let vAnchor = 't';
+        let padding = { top: defaultInsetEmu, right: defaultInsetEmu, bottom: defaultInsetEmu, left: defaultInsetEmu };
+        let vAnchor: 'top' | 'mid' | 'bottom' = 'top';
         let wrapNone = false;
 
         if (txBody) {
-            const bodyPr = [...txBody.querySelectorAll('*')].find(e => e.localName === 'bodyPr');
+            const bodyPr = [...txBody.children].find(e => e.localName === 'bodyPr');
             if (bodyPr) {
-                const toEmu = (emu: string | null) => emu ? Math.round(parseInt(emu, 10)) : defaultInsetEmu;
-                bodyPadding = {
-                    top: toEmu(bodyPr.getAttribute('tIns')),
-                    right: toEmu(bodyPr.getAttribute('rIns')),
+                const toEmu = (v: string | null) => v !== null && v !== '' ? parseInt(v, 10) : defaultInsetEmu;
+                padding = {
+                    top:    toEmu(bodyPr.getAttribute('tIns')),
+                    right:  toEmu(bodyPr.getAttribute('rIns')),
                     bottom: toEmu(bodyPr.getAttribute('bIns')),
-                    left: toEmu(bodyPr.getAttribute('lIns')),
+                    left:   toEmu(bodyPr.getAttribute('lIns')),
                 };
-                vAnchor = bodyPr.getAttribute('anchor') ?? 't';
+                const anch = bodyPr.getAttribute('anchor') ?? 't';
+                vAnchor = anch === 'b' ? 'bottom' : anch === 'ctr' ? 'mid' : 'top';
                 wrapNone = bodyPr.getAttribute('wrap') === 'none';
             }
-
-            const paragraphs = [...txBody.querySelectorAll('*')].filter(e => e.localName === 'p');
-            for (const para of paragraphs) {
-                const pPr = [...para.querySelectorAll('*')].find(e => e.localName === 'pPr');
-                const algn = pPr?.getAttribute('algn') ?? 'l';
-                const alignMap: Record<string, string> = { l: 'left', r: 'right', ctr: 'center', just: 'justify', dist: 'justify' };
-                const align = alignMap[algn] ?? 'left';
-
-                const spcBef = pPr ? [...pPr.querySelectorAll('*')].find(e => e.localName === 'spcBef') : null;
-                const spcAft = pPr ? [...pPr.querySelectorAll('*')].find(e => e.localName === 'spcAft') : null;
-                let spcBefore = 0;
-                let spcAfter = 8; // default ~8pt after for body text
-                for (const el of [spcBef, spcAft]) {
-                    if (!el) continue;
-                    const spcPts = [...el.querySelectorAll('*')].find(e => e.localName === 'spcPts');
-                    const spcPct = [...el.querySelectorAll('*')].find(e => e.localName === 'spcPct');
-                    if (spcPts) {
-                        const pts = parseInt(spcPts.getAttribute('val') ?? '0', 10) / 100;
-                        if (el === spcBef) spcBefore = pts;
-                        else spcAfter = pts;
-                    } else if (spcPct) {
-                        const pct = parseInt(spcPct.getAttribute('val') ?? '0', 10) / 1000;
-                        if (el === spcBef) spcBefore = pct;
-                        else spcAfter = pct;
-                    }
-                }
-
-                let lineSpacing = 1.0;
-                let lineSpacingAbs = 0;
-                if (pPr) {
-                    const lnSpc = [...pPr.querySelectorAll('*')].find(e => e.localName === 'lnSpc');
-                    if (lnSpc) {
-                        const spcPct = [...lnSpc.querySelectorAll('*')].find(e => e.localName === 'spcPct');
-                        const spcPts = [...lnSpc.querySelectorAll('*')].find(e => e.localName === 'spcPts');
-                        if (spcPct) {
-                            lineSpacing = parseInt(spcPct.getAttribute('val') ?? '100000', 10) / 100000;
-                        } else if (spcPts) {
-                            lineSpacingAbs = parseInt(spcPts.getAttribute('val') ?? '0', 10) / 100;
-                        }
-                    }
-                }
-
-                const paraMarLAttr = pPr?.getAttribute('marL');
-                const paraMarRAttr = pPr?.getAttribute('marR');
-                const paraIndentAttr = pPr?.getAttribute('indent');
-                const paraMarL = paraMarLAttr ? parseInt(paraMarLAttr, 10) : 0;
-                const paraMarR = paraMarRAttr ? parseInt(paraMarRAttr, 10) : 0;
-                const paraIndent = paraIndentAttr ? parseInt(paraIndentAttr, 10) : 0;
-
-                const runs = [...para.querySelectorAll('*')].filter(e => e.localName === 'r');
-                for (const run of runs) {
-                    const rPr = [...run.querySelectorAll('*')].find(e => e.localName === 'rPr');
-                    const t = [...run.querySelectorAll('*')].find(e => e.localName === 't');
-                    const text = t?.textContent ?? '';
-                    if (!text) continue;
-
-                    const bold = rPr?.getAttribute('b') === '1' || rPr?.getAttribute('b') === 'true';
-                    const italic = rPr?.getAttribute('i') === '1' || rPr?.getAttribute('i') === 'true';
-                    const szAttr = rPr?.getAttribute('sz');
-                    const size = szAttr ? parseInt(szAttr, 10) / 100 : 18;
-
-                    let color = '#111111';
-                    if (rPr) {
-                        const solidFill = [...rPr.querySelectorAll('*')].find(e => e.localName === 'solidFill');
-                        if (solidFill) {
-                            const srgb = [...solidFill.querySelectorAll('*')].find(e => e.localName === 'srgbClr');
-                            if (srgb) color = ooColor(srgb.getAttribute('val'));
-                        }
-                    }
-
-                    const latin = rPr ? [...rPr.querySelectorAll('*')].find(e => e.localName === 'latin') : null;
-                    const fontFamily = latin?.getAttribute('typeface') ?? '';
-
-                    texts.push({ text, bold, italic, size, color, align, spcBefore, spcAfter, lineSpacing, fontFamily, paraMarL, paraMarR, paraIndent });
-                }
-
-                const brs = [...para.querySelectorAll('*')].filter(e => e.localName === 'br');
-                if (brs.length > 0 && runs.length === 0) {
-                    texts.push({ text: '\n', bold: false, italic: false, size: 12, color: '#000', align, spcBefore, spcAfter, lineSpacing, lineSpacingAbs, fontFamily: '', paraMarL, paraMarR, paraIndent });
-                }
+            for (const p of [...txBody.children].filter(e => e.localName === 'p')) {
+                paras.push(parsePara(p, 18));
             }
         }
 
         shapes.push({
-            x: xPct, y: yPct, w: wPct, h: hPct,
             xEmu, yEmu, wEmu, hEmu,
-            texts,
-            bgColor: shapeBg?.startsWith('__RID:') ? null : shapeBg,
-            type: txBody ? 'text' : imageData || el.localName === 'pic' ? 'image' : 'rect',
+            paras,
+            bgColor: finalBgColor,
+            type: txBody ? 'text' : (imageData ? 'image' : 'rect'),
             imageData,
             zIndex: zIndex++,
-            padding: bodyPadding,
-            vAnchor,
-            wrapNone,
+            padding, vAnchor, wrapNone,
+            outlineColor, outlineWidthPt,
         });
     }
 
-    for (const el of topElements) {
-        processShape(el, 0, 0);
+    // Process all direct children of spTree including graphicFrame (tables/charts)
+    for (const child of spTree.children) {
+        if (['sp','pic','cxnSp','grpSp','graphicFrame'].includes(child.localName)) {
+            processEl(child);
+        }
     }
 
-    // Sort by z-index
     shapes.sort((a, b) => a.zIndex - b.zIndex);
-
-    return { bgColor, shapes, slideWEmu, slideHEmu };
+    return { bgColor, shapes, slideWEmu, slideHEmu, bgImageData };
 }
 
-// ── Render slide → HTML string ────────────────────────────────────────────────
+// ── Canvas text helpers ───────────────────────────────────────────────────────
 
-// ── Direct pdf-lib rendering helpers ─────────────────────────────────────
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-    const s = hex.replace('#', '');
-    return {
-        r: parseInt(s.substring(0, 2), 16) / 255,
-        g: parseInt(s.substring(2, 4), 16) / 255,
-        b: parseInt(s.substring(4, 6), 16) / 255,
-    };
+function buildCanvasFont(run: RunData, dpi = RENDER_DPI): string {
+    const style = [run.italic ? 'italic' : '', run.bold ? 'bold' : ''].filter(Boolean).join(' ');
+    // px size on canvas — convert pt→px at render DPI
+    const pxSize = ptToPx(run.fontSize, dpi);
+    // font-family fallback chain
+    const family = run.fontFamily
+        ? `"${run.fontFamily}", Calibri, "Segoe UI", Arial, sans-serif`
+        : 'Calibri, "Segoe UI", Arial, sans-serif';
+    return `${style} ${pxSize}px ${family}`.trim();
 }
 
-const FONT_MAP: Record<string, string> = {
-    calibri: 'Helvetica',
-    arial: 'Helvetica',
-    helvetica: 'Helvetica',
-    'segoe ui': 'Helvetica',
-    verdana: 'Helvetica',
-    tahoma: 'Helvetica',
-    'times new roman': 'TimesRoman',
-    times: 'TimesRoman',
-    georgia: 'TimesRoman',
-    'courier new': 'Courier',
-    courier: 'Courier',
-    consolas: 'Courier',
-};
+/**
+ * Wrap runs into visual lines.
+ * Returns array of lines; each line is an array of {text, run} segments.
+ */
+function wrapParaToLines(
+    para: ParaData,
+    ctx: CanvasRenderingContext2D,
+    maxWidthPx: number,
+    dpi = RENDER_DPI,
+): { text: string; run: RunData }[][] {
+    const lines: { text: string; run: RunData }[][] = [];
+    let curLine: { text: string; run: RunData }[] = [];
+    let curLineW = 0;
 
-function pickFont(family: string | undefined, bold: boolean, italic: boolean): string {
-    const key = (family || '').toLowerCase().trim();
-    let base = 'Helvetica';
-    for (const [k, v] of Object.entries(FONT_MAP)) {
-        if (key.includes(k)) { base = v; break; }
-    }
-    if (bold && italic) return base + 'BoldOblique';
-    if (bold) return base + 'Bold';
-    if (italic) return base + 'Oblique';
-    return base;
-}
-
-function wrapTextToLines(text: string, font: any, fontSize: number, maxWidth: number): string[] {
-    if (maxWidth <= 0) return [text];
-    const lines: string[] = [];
-    const paragraphs = text.split('\n');
-    for (const para of paragraphs) {
-        if (!para) { lines.push(''); continue; }
-        const words = para.split(' ');
-        let line = '';
-        for (const word of words) {
-            const test = line ? line + ' ' + word : word;
-            const w = font.widthOfTextAtSize(test, fontSize);
-            if (w > maxWidth && line) {
-                lines.push(line);
-                line = word;
-            } else {
-                line = test;
-            }
-        }
-        if (line) lines.push(line);
-    }
-    return lines.length ? lines : [''];
-}
-
-async function renderSlideToPdfPage(
-    pdfDoc: any,
-    data: SlideRenderData,
-    images: Map<string, string>,
-): Promise<void> {
-    const { bgColor, shapes, slideWEmu, slideHEmu } = data;
-    const pdfW = slideWEmu / 12700;
-    const pdfH = slideHEmu / 12700;
-    const page = pdfDoc.addPage([pdfW, pdfH]);
-    const pdfLib = await import('pdf-lib');
-    const { rgb } = pdfLib;
-
-    const bg = hexToRgb(bgColor);
-    page.drawRectangle({ x: 0, y: 0, width: pdfW, height: pdfH, color: rgb(bg.r, bg.g, bg.b) });
-
-    const fontCache = new Map<string, any>();
-    async function fnt(name: string) {
-        if (!fontCache.has(name)) {
-            const std = (pdfLib as any)[name];
-            fontCache.set(name, await pdfDoc.embedFont(std ?? pdfLib.StandardFonts.Helvetica));
-        }
-        return fontCache.get(name);
-    }
-
-    for (const s of shapes) {
-        if (s.wEmu <= 0 || s.hEmu <= 0) continue;
-
-        const sx = s.xEmu / 12700, sy = pdfH - (s.yEmu + s.hEmu) / 12700;
-        const sw = s.wEmu / 12700, sh = s.hEmu / 12700;
-
-        if (s.bgColor && s.bgColor !== 'transparent') {
-            const c = hexToRgb(s.bgColor);
-            page.drawRectangle({ x: sx, y: sy, width: sw, height: sh, color: rgb(c.r, c.g, c.b) });
-        }
-
-        if (s.imageData) {
-            try {
-                const b64 = s.imageData.split(',')[1];
-                const mime = s.imageData.split(';')[0].split(':')[1];
-                let img;
-                if (mime === 'image/png') img = await pdfDoc.embedPng(b64);
-                else if (mime === 'image/jpeg' || mime === 'image/jpg') img = await pdfDoc.embedJpg(b64);
-                if (img) page.drawImage(img, { x: sx, y: sy, width: sw, height: sh });
-            } catch { /* skip */ }
+    for (const run of para.runs) {
+        if (run.text === '\n') {
+            lines.push(curLine);
+            curLine = [];
+            curLineW = 0;
             continue;
         }
 
-        if (!s.texts.length) continue;
+        ctx.font = buildCanvasFont(run, dpi);
 
-        const pl = s.padding.left / 12700, pr = s.padding.right / 12700;
-        const pt = s.padding.top / 12700, pb = s.padding.bottom / 12700;
-        const textW = Math.max(1, sw - pl - pr);
+        // Split into tokens preserving spaces
+        const tokens = run.text.split(/(?<=\s)|(?=\s)/);
+        for (const token of tokens) {
+            if (!token) continue;
+            const tokenW = ctx.measureText(token).width;
 
-        // Group runs into paragraphs
-        const paras: { runs: typeof s.texts; align: string; spcBefore: number; spcAfter: number; lh: number; marL: number; indent: number }[] = [];
-        let cur: any = null;
-        for (const r of s.texts) {
-            if (r.text === '\n') { if (cur) { paras.push(cur); cur = null; } continue; }
-            if (!cur) {
-                const maxFs = s.texts.reduce((a, b) => Math.max(a, b.size), 12);
-                const lh = r.lineSpacingAbs > 0 ? r.lineSpacingAbs : maxFs * r.lineSpacing;
-                cur = { runs: [], align: r.align, spcBefore: r.spcBefore, spcAfter: r.spcAfter, lh, marL: r.paraMarL, indent: r.paraIndent };
+            if (curLineW + tokenW > maxWidthPx && curLineW > 0 && token.trim() !== '') {
+                lines.push(curLine);
+                curLine = [];
+                curLineW = 0;
             }
-            cur.runs.push(r);
-        }
-        if (cur) paras.push(cur);
-        if (!paras.length) continue;
 
-        // Calculate total lines & height per paragraph
-        const phs: { lines: number; lh: number; spcB: number; spcA: number }[] = [];
-        let totalLines = 0;
-        for (const p of paras) {
-            let lines = 1;
-            for (const r of p.runs) {
-                if (!r.text) continue;
-                const fn = pickFont(r.fontFamily, r.bold, r.italic);
-                const f = await fnt(fn);
-                const wrapped = wrapTextToLines(r.text, f, r.size, textW);
-                lines = Math.max(lines, wrapped.length);
-            }
-            phs.push({ lines, lh: p.lh, spcB: p.spcBefore, spcA: p.spcAfter });
-            totalLines += lines;
-        }
-
-        if (!totalLines) totalLines = 1;
-
-        // Compute total text height and start Y based on vertical anchor
-        let totalH = 0;
-        for (const ph of phs) totalH += ph.spcB + ph.lines * ph.lh + ph.spcA;
-        const textH = sh - pt - pb;
-        let textTopY: number; // Y where the top of text (first line baseline + offset) should be
-        if (s.vAnchor === 'b') {
-            textTopY = sy + pb + totalH;
-        } else if (s.vAnchor === 'ctr') {
-            textTopY = sy + pt + (textH - totalH) / 2 + totalH;
-        } else {
-            textTopY = sy + sh - pt; // top anchor
-        }
-
-        // Render
-        let cy = textTopY;
-        for (let pi = 0; pi < paras.length; pi++) {
-            const p = paras[pi];
-            const pMarL = p.marL / 12700;
-            const pIndent = p.indent / 12700;
-            cy -= p.spcBefore;
-
-            const lh = p.lh;
-            let firstLine = true;
-            for (const run of p.runs) {
-                if (!run.text) continue;
-                const fn = pickFont(run.fontFamily, run.bold, run.italic);
-                const f = await fnt(fn);
-                const fs = run.size;
-                const lines = wrapTextToLines(run.text, f, fs, textW);
-                if (!lines.length) continue;
-
-                for (let li = 0; li < lines.length; li++) {
-                    const line = lines[li];
-                    if (firstLine && li === 0) {
-                        // first line: stays at cy
-                    } else {
-                        cy -= lh;
-                    }
-                    if (cy - fs < sy + pb) break;
-
-                    const indent = firstLine && li === 0 ? pMarL + pIndent : pMarL;
-                    const baseX = sx + pl + indent;
-                    const lineW = f.widthOfTextAtSize(line, fs);
-                    let drawX = baseX;
-                    if (p.align === 'center') drawX = sx + pl + (textW - lineW) / 2;
-                    else if (p.align === 'right') drawX = sx + pl + textW - lineW;
-
-                    const c = hexToRgb(run.color);
-                    page.drawText(line, { x: drawX, y: cy - fs * 0.15, size: fs, font: f, color: rgb(c.r, c.g, c.b) });
-                    firstLine = false;
-                }
-            }
-            cy -= p.spcAfter;
+            curLine.push({ text: token, run });
+            curLineW += tokenW;
         }
     }
+
+    if (curLine.length > 0 || lines.length === 0) lines.push(curLine);
+    return lines;
+}
+
+// ── Canvas slide renderer ─────────────────────────────────────────────────────
+
+async function renderSlideToCanvas(
+    data: SlideRenderData,
+    dpi = RENDER_DPI,
+): Promise<HTMLCanvasElement> {
+    const { bgColor, shapes, slideWEmu, slideHEmu, bgImageData } = data;
+    const W = Math.round(emuToPx(slideWEmu, dpi));
+    const H = Math.round(emuToPx(slideHEmu, dpi));
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d')!;
+
+    // Anti-aliasing
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // ── Background ──────────────────────────────────────────────────────────────
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, W, H);
+
+    if (bgImageData) {
+        try {
+            const img = await loadImg(bgImageData);
+            ctx.drawImage(img, 0, 0, W, H);
+        } catch { /* skip */ }
+    }
+
+    // ── Shapes ──────────────────────────────────────────────────────────────────
+    for (const s of shapes) {
+        const sx = emuToPx(s.xEmu, dpi);
+        const sy = emuToPx(s.yEmu, dpi);
+        const sw = emuToPx(s.wEmu, dpi);
+        const sh = emuToPx(s.hEmu, dpi);
+
+        // Background fill
+        if (s.bgColor && s.bgColor !== 'transparent') {
+            ctx.fillStyle = s.bgColor;
+            ctx.fillRect(sx, sy, sw, sh);
+        }
+
+        // Outline
+        if (s.outlineColor && s.outlineWidthPt && s.outlineWidthPt > 0) {
+            ctx.strokeStyle = s.outlineColor;
+            ctx.lineWidth = ptToPx(s.outlineWidthPt, dpi);
+            ctx.strokeRect(sx, sy, sw, sh);
+        }
+
+        // ── Table ──────────────────────────────────────────────────────────────
+        if (s.type === 'table' && s.table) {
+            const tbl = s.table;
+            const totalGridW = tbl.colWidths.reduce((a, b) => a + b, 0) || 1;
+            const scaleX = sw / emuToPx(totalGridW, dpi);
+            let rowY = sy;
+
+            let cellIdx = 0;
+            for (let ri = 0; ri < tbl.rows && cellIdx < tbl.cells.length; ri++) {
+                const rowH = emuToPx(tbl.rowHeights[ri] ?? 0, dpi) || sh / tbl.rows;
+                let cellX = sx;
+
+                for (let ci = 0; ci < tbl.cols && cellIdx < tbl.cells.length; ci++) {
+                    const cell = tbl.cells[cellIdx++];
+                    const cellW = emuToPx(tbl.colWidths[ci] ?? 0, dpi) || sw / tbl.cols;
+
+                    // Cell background
+                    if (cell.bgColor) {
+                        ctx.fillStyle = cell.bgColor;
+                        ctx.fillRect(cellX, rowY, cellW, rowH);
+                    }
+
+                    // Cell border
+                    ctx.strokeStyle = tbl.borderColor;
+                    ctx.lineWidth   = ptToPx(tbl.borderWidth, dpi);
+                    ctx.strokeRect(cellX, rowY, cellW, rowH);
+
+                    // Cell text
+                    const cellPadPx = ptToPx(4, dpi);
+                    const cellTextW = cellW - cellPadPx * 2;
+                    let textY = rowY + cellPadPx;
+
+                    for (const para of cell.paras) {
+                        if (!para.runs.length) continue;
+                        const fs = para.runs[0].fontSize;
+                        const lh = ptToPx(fs * 1.2, dpi);
+                        const lines = wrapParaToLines(para, ctx, cellTextW, dpi);
+                        for (const line of lines) {
+                            if (textY + lh > rowY + rowH) break;
+                            let lx = cellX + cellPadPx;
+                            for (const seg of line) {
+                                if (!seg.text) continue;
+                                ctx.font      = buildCanvasFont(seg.run, dpi);
+                                ctx.fillStyle = seg.run.color;
+                                ctx.fillText(seg.text, lx, textY + lh * 0.8);
+                                lx += ctx.measureText(seg.text).width;
+                            }
+                            textY += lh;
+                        }
+                    }
+                    cellX += cellW;
+                }
+                rowY += rowH;
+            }
+            continue;
+        }
+
+        // ── Line / connector ───────────────────────────────────────────────────
+        if (s.type === 'line' && s.lineData) {
+            const ld = s.lineData;
+            ctx.strokeStyle = ld.color;
+            ctx.lineWidth   = ptToPx(ld.widthPt, dpi);
+            ctx.beginPath();
+            if (ld.flipH && ld.flipV) {
+                ctx.moveTo(sx + sw, sy + sh); ctx.lineTo(sx, sy);
+            } else if (ld.flipH) {
+                ctx.moveTo(sx + sw, sy); ctx.lineTo(sx, sy + sh);
+            } else if (ld.flipV) {
+                ctx.moveTo(sx, sy + sh); ctx.lineTo(sx + sw, sy);
+            } else {
+                ctx.moveTo(sx, sy); ctx.lineTo(sx + sw, sy + sh);
+            }
+            ctx.stroke();
+            continue;
+        }
+
+        // ── Image ──────────────────────────────────────────────────────────────
+        if (s.imageData) {
+            try {
+                const img = await loadImg(s.imageData);
+                const imgAspect   = img.naturalWidth / img.naturalHeight;
+                const shapeAspect = sw / sh;
+                let drawW = sw, drawH = sh, drawX = sx, drawY = sy;
+                if (imgAspect > shapeAspect) {
+                    drawH = sw / imgAspect;
+                    drawY = sy + (sh - drawH) / 2;
+                } else {
+                    drawW = sh * imgAspect;
+                    drawX = sx + (sw - drawW) / 2;
+                }
+                ctx.drawImage(img, drawX, drawY, drawW, drawH);
+            } catch { /* skip bad images */ }
+            continue;
+        }
+
+        // ── Text shape ─────────────────────────────────────────────────────────
+        if (!s.paras.length) continue;
+
+        const plPx = emuToPx(s.padding.left,   dpi);
+        const prPx = emuToPx(s.padding.right,  dpi);
+        const ptPx = emuToPx(s.padding.top,    dpi);
+        const pbPx = emuToPx(s.padding.bottom, dpi);
+
+        // Clip to shape bounds
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(sx, sy, sw, sh);
+        ctx.clip();
+
+        // ── Measure all paragraphs ──────────────────────────────────────────────
+        interface MeasuredPara {
+            para: ParaData;
+            lines: { text: string; run: RunData }[][];
+            lhPx: number;
+            spcBPx: number;
+            spcAPx: number;
+            marLPx: number;
+            indentPx: number;
+            marRPx: number;
+        }
+
+        const measured: MeasuredPara[] = [];
+        for (const para of s.paras) {
+            const maxFs = para.runs
+                .filter(r => r.text !== '\n')
+                .reduce((m, r) => Math.max(m, r.fontSize), para.defaultFontSize) || 12;
+
+            // Resolve spc (negative = percent-based)
+            let spcBPx = para.spcBefore < 0
+                ? ptToPx((-para.spcBefore / 100) * maxFs, dpi)
+                : ptToPx(para.spcBefore, dpi);
+            let spcAPx = para.spcAfter < 0
+                ? ptToPx((-para.spcAfter / 100) * maxFs, dpi)
+                : ptToPx(para.spcAfter, dpi);
+            spcBPx = Math.max(0, spcBPx);
+            spcAPx = Math.max(0, spcAPx);
+
+            const lhPx = para.lineSpacingAbs > 0
+                ? ptToPx(para.lineSpacingAbs, dpi)
+                : ptToPx(maxFs, dpi) * Math.max(0.8, para.lineSpacing);
+
+            const marLPx   = emuToPx(para.marL,   dpi);
+            const marRPx   = emuToPx(para.marR,    dpi);
+            const indentPx = emuToPx(para.indent,  dpi);
+
+            const availW = Math.max(1, sw - plPx - prPx - marLPx - marRPx);
+            const lines = s.wrapNone
+                ? [para.runs.map(r => ({ text: r.text, run: r }))]
+                : wrapParaToLines(para, ctx, availW, dpi);
+
+            measured.push({ para, lines, lhPx, spcBPx, spcAPx, marLPx, indentPx, marRPx });
+        }
+
+        // ── Compute total block height ──────────────────────────────────────────
+        let totalH = 0;
+        for (const mp of measured) {
+            totalH += mp.spcBPx + mp.lines.length * mp.lhPx + mp.spcAPx;
+        }
+
+        // ── Starting Y ─────────────────────────────────────────────────────────
+        let curY: number;
+        const boxH = sh - ptPx - pbPx;
+        if (s.vAnchor === 'bottom') {
+            curY = sy + sh - pbPx - totalH;
+        } else if (s.vAnchor === 'mid') {
+            curY = sy + ptPx + (boxH - totalH) / 2;
+        } else {
+            curY = sy + ptPx;
+        }
+
+        // ── Render paragraphs ───────────────────────────────────────────────────
+        for (const mp of measured) {
+            curY += mp.spcBPx;
+            const { para, lines, lhPx } = mp;
+
+            for (let li = 0; li < lines.length; li++) {
+                const lineSegs = lines[li];
+
+                // Clip check
+                if (curY + lhPx > sy + sh - pbPx + 2) break;
+
+                // Effective left
+                const bodyLeft = sx + plPx + mp.marLPx;
+                const lineLeft = li === 0
+                    ? bodyLeft + Math.max(0, mp.indentPx)
+                    : bodyLeft;
+                const lineRight = sx + sw - prPx - mp.marRPx;
+                const lineWidthAvail = lineRight - lineLeft;
+
+                // Compute total line pixel width for alignment
+                let totalLineW = 0;
+                const segWs: number[] = [];
+                for (const seg of lineSegs) {
+                    if (!seg.text || seg.text === '\n') { segWs.push(0); continue; }
+                    ctx.font = buildCanvasFont(seg.run, dpi);
+                    const w = ctx.measureText(seg.text).width;
+                    segWs.push(w);
+                    totalLineW += w;
+                }
+
+                // Base X
+                let baseX: number;
+                if (para.align === 'center') {
+                    baseX = lineLeft + (lineWidthAvail - totalLineW) / 2;
+                } else if (para.align === 'right') {
+                    baseX = lineRight - totalLineW;
+                } else {
+                    baseX = lineLeft;
+                }
+
+                // Baseline: ~80% from top of line
+                const baselineY = curY + lhPx * 0.8;
+
+                // Bullet on first line
+                if (li === 0 && para.bulletChar) {
+                    const bFs = para.bulletSzPt ?? para.defaultFontSize;
+                    const bRun: RunData = {
+                        text: para.bulletChar,
+                        bold: false, italic: false, underline: false, strike: false,
+                        fontSize: bFs,
+                        color: para.bulletColor ?? lineSegs[0]?.run.color ?? '#000000',
+                        fontFamily: para.bulletFont ?? '',
+                    };
+                    ctx.font = buildCanvasFont(bRun, dpi);
+                    ctx.fillStyle = bRun.color;
+                    const bulletX = sx + plPx + mp.marLPx + mp.indentPx;
+                    ctx.fillText(para.bulletChar, bulletX, baselineY);
+                }
+
+                // Draw each segment
+                let drawX = baseX;
+                for (let si2 = 0; si2 < lineSegs.length; si2++) {
+                    const seg = lineSegs[si2];
+                    if (!seg.text || seg.text === '\n') continue;
+
+                    ctx.font = buildCanvasFont(seg.run, dpi);
+                    ctx.fillStyle = seg.run.color;
+                    ctx.fillText(seg.text, drawX, baselineY);
+
+                    const segW = segWs[si2];
+
+                    if (seg.run.underline) {
+                        ctx.strokeStyle = seg.run.color;
+                        ctx.lineWidth = Math.max(0.5, ptToPx(seg.run.fontSize * 0.05, dpi));
+                        const uy = baselineY + ptToPx(seg.run.fontSize * 0.1, dpi);
+                        ctx.beginPath();
+                        ctx.moveTo(drawX, uy);
+                        ctx.lineTo(drawX + segW, uy);
+                        ctx.stroke();
+                    }
+
+                    if (seg.run.strike) {
+                        ctx.strokeStyle = seg.run.color;
+                        ctx.lineWidth = Math.max(0.5, ptToPx(seg.run.fontSize * 0.05, dpi));
+                        const sy2 = baselineY - ptToPx(seg.run.fontSize * 0.3, dpi);
+                        ctx.beginPath();
+                        ctx.moveTo(drawX, sy2);
+                        ctx.lineTo(drawX + segW, sy2);
+                        ctx.stroke();
+                    }
+
+                    drawX += segW;
+                }
+
+                curY += lhPx;
+            }
+
+            curY += mp.spcAPx;
+        }
+
+        ctx.restore();
+    }
+
+    return canvas;
 }
 
 // ── Slide count/metadata pre-scan ─────────────────────────────────────────────
@@ -687,15 +1156,11 @@ export async function getPresentationSlides(file: File): Promise<SlideInfo[]> {
         throw new Error(`"${file.name}" is a legacy .ppt file. Save it as .pptx in PowerPoint and re-upload.`);
 
     const JSZip = (await import('jszip')).default;
-    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const zip   = await JSZip.loadAsync(await file.arrayBuffer());
 
     const slideKeys = Object.keys(zip.files)
         .filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k))
-        .sort((a, b) => {
-            const na = parseInt(a.match(/\d+/)?.[0] ?? '0');
-            const nb = parseInt(b.match(/\d+/)?.[0] ?? '0');
-            return na - nb;
-        });
+        .sort((a, b) => parseInt(a.match(/\d+/)?.[0] ?? '0') - parseInt(b.match(/\d+/)?.[0] ?? '0'));
 
     const slides: SlideInfo[] = [];
     for (let i = 0; i < slideKeys.length; i++) {
@@ -706,31 +1171,25 @@ export async function getPresentationSlides(file: File): Promise<SlideInfo[]> {
         let title = '';
         for (const sp of sps) {
             const ph = [...sp.querySelectorAll('*')].find(e => e.localName === 'ph');
-            const phTy = ph?.getAttribute('type') ?? '';
-            if (!phTy || phTy === 'title' || phTy === 'ctrTitle') {
-                const tEls = [...sp.querySelectorAll('*')].filter(e => e.localName === 't');
-                title = tEls.map(t => t.textContent ?? '').join('').trim();
+            const ty = ph?.getAttribute('type') ?? '';
+            if (!ty || ty === 'title' || ty === 'ctrTitle') {
+                title = [...sp.querySelectorAll('*')].filter(e => e.localName === 't')
+                    .map(t => t.textContent ?? '').join('').trim();
                 if (title) break;
             }
         }
-
         slides.push({ index: i, title: title || `Slide ${i + 1}`, shapeCount: sps.length });
     }
     return slides;
 }
 
-// ── Core conversion V2 ──────────────────────────────────────────────────────
+// ── Core conversion V6 ────────────────────────────────────────────────────────
 
 export async function convertPptToPDF(
     file: File,
     options: PptConversionOptions = {},
 ): Promise<PptConversionResult> {
-    const {
-        slideIndexes,
-        outputPrefix,
-        scale = 1.5,
-        onProgress,
-    } = options;
+    const { slideIndexes, outputPrefix, onProgress } = options;
 
     validateFile(file);
     if (file.name.toLowerCase().endsWith('.ppt'))
@@ -747,14 +1206,14 @@ export async function convertPptToPDF(
     }
     onProgress?.(12);
 
-    // 2. Read presentation dimensions
+    // 2. Read slide dimensions
     let slideWEmu = SLIDE_W_EMU;
     let slideHEmu = SLIDE_H_EMU;
     try {
         const presXml = await zip.files['ppt/presentation.xml']?.async('string');
         if (presXml) {
             const presDoc = new DOMParser().parseFromString(presXml, 'application/xml');
-            const sldSz = [...presDoc.querySelectorAll('*')].find(e => e.localName === 'sldSz');
+            const sldSz   = [...presDoc.querySelectorAll('*')].find(e => e.localName === 'sldSz');
             if (sldSz) {
                 slideWEmu = parseInt(sldSz.getAttribute('cx') ?? String(SLIDE_W_EMU), 10);
                 slideHEmu = parseInt(sldSz.getAttribute('cy') ?? String(SLIDE_H_EMU), 10);
@@ -763,17 +1222,13 @@ export async function convertPptToPDF(
     } catch { /* use defaults */ }
 
     // 3. Extract images
-    onProgress?.(15, 'Extracting images…');
+    onProgress?.(15);
     const images = await extractImages(zip);
 
     // 4. Enumerate slides
     const slideKeys = Object.keys(zip.files)
         .filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k))
-        .sort((a, b) => {
-            const na = parseInt(a.match(/\d+/)?.[0] ?? '0');
-            const nb = parseInt(b.match(/\d+/)?.[0] ?? '0');
-            return na - nb;
-        });
+        .sort((a, b) => parseInt(a.match(/\d+/)?.[0] ?? '0') - parseInt(b.match(/\d+/)?.[0] ?? '0'));
 
     if (slideKeys.length === 0)
         throw new Error(`"${file.name}" contains no slides or is not a valid .pptx file.`);
@@ -782,19 +1237,34 @@ export async function convertPptToPDF(
     const selected = slideIndexes ?? slideKeys.map((_, i) => i);
     const validIdx = selected.filter(i => i >= 0 && i < totalSlides);
     if (validIdx.length === 0) throw new Error('No valid slide indexes selected.');
-
     onProgress?.(20);
 
-    // 5. Parse + render each slide directly to PDF with pdf-lib
+    // 5. Build PDF — each slide → canvas → JPEG → pdf-lib page
     const { PDFDocument } = await import('pdf-lib');
     const pdfDoc = await PDFDocument.create();
 
+    // PDF page size matches slide aspect ratio (in points)
+    const pdfW = slideWEmu / EMU_PER_PT;
+    const pdfH = slideHEmu / EMU_PER_PT;
+
     for (let si = 0; si < validIdx.length; si++) {
-        const idx = validIdx[si];
-        const xml = await zip.files[slideKeys[idx]].async('string');
-        const relsMap = await parseSlideRels(zip, slideKeys[idx]);
-        const data = parseSlideXml(xml, slideWEmu, slideHEmu, relsMap, images);
-        await renderSlideToPdfPage(pdfDoc, data, images);
+        const idx    = validIdx[si];
+        const xml    = await zip.files[slideKeys[idx]].async('string');
+        const rels   = await parseSlideRels(zip, slideKeys[idx]);
+        const data   = parseSlideXml(xml, slideWEmu, slideHEmu, rels, images);
+
+        // Render to canvas
+        const canvas = await renderSlideToCanvas(data, RENDER_DPI);
+
+        // Export as JPEG (quality 0.94 — very high quality, reasonable file size)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.94);
+        const b64     = dataUrl.split(',')[1];
+
+        // Embed in PDF
+        const jpgImg  = await pdfDoc.embedJpg(b64);
+        const page    = pdfDoc.addPage([pdfW, pdfH]);
+        page.drawImage(jpgImg, { x: 0, y: 0, width: pdfW, height: pdfH });
+
         onProgress?.(20 + Math.round(((si + 1) / validIdx.length) * 70));
     }
 
@@ -804,13 +1274,13 @@ export async function convertPptToPDF(
 
     const base = sanitizeName(outputPrefix?.trim() || file.name.replace(/\.(pptx?|PPTX?)$/i, ''));
     return {
-        bytes: new Uint8Array(pdfBytes),
-        outputName: `${base}.pdf`,
+        bytes:           new Uint8Array(pdfBytes),
+        outputName:      `${base}.pdf`,
         totalSlides,
         convertedSlides: validIdx.length,
-        pageCount: validIdx.length,
-        originalSize: file.size,
-        outputSize: pdfBytes.byteLength,
+        pageCount:       validIdx.length,
+        originalSize:    file.size,
+        outputSize:      pdfBytes.byteLength,
     };
 }
 
@@ -821,19 +1291,19 @@ export async function batchConvertPptToPDF(
     options: Omit<PptConversionOptions, 'outputPrefix' | 'onProgress'> & {
         onFileProgress?: (fileName: string, p: number) => void;
         onFileComplete?: (result: PptConversionResult, index: number) => void;
-        onFileError?: (fileName: string, error: string, index: number) => void;
+        onFileError?:    (fileName: string, error: string, index: number) => void;
     } = {},
 ): Promise<BatchPptResult> {
     const { onFileProgress, onFileComplete, onFileError, ...convOpts } = options;
     const succeeded: PptConversionResult[] = [];
-    const failed: { fileName: string; error: string }[] = [];
+    const failed:    { fileName: string; error: string }[] = [];
 
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         try {
             const result = await convertPptToPDF(file, {
                 ...convOpts,
-                onProgress: (p) => onFileProgress?.(file.name, p),
+                onProgress: p => onFileProgress?.(file.name, p),
             });
             succeeded.push(result);
             onFileComplete?.(result, i);

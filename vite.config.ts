@@ -11,6 +11,9 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      fs: {
+        allow: ['.'],
+      },
     },
     plugins: [
       react(),
@@ -112,7 +115,8 @@ export default defineConfig(({ mode }) => {
       }
     },
     optimizeDeps: {
-      include: ['pdfjs-dist', 'node-forge', '@cantoo/pdf-lib'],
+      include: ['pdfjs-dist', 'node-forge', '@cantoo/pdf-lib', '@pdf-lib/fontkit'],
+      entries: ['index.html'],
     },
   };
 });
