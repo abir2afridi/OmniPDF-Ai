@@ -239,7 +239,7 @@ function parseShapeFill(spPr: Element | null): string | null {
 
 interface ShapeData {
     x: number; y: number; w: number; h: number;
-    texts: { text: string; bold: boolean; italic: boolean; size: number; color: string; align: string; spcBefore: number; spcAfter: number; lineSpacing: number }[];
+    texts: { text: string; bold: boolean; italic: boolean; size: number; color: string; align: string; spcBefore: number; spcAfter: number; lineSpacing: number; fontFamily?: string; paraMarL: number; paraMarR: number; paraIndent: number }[];
     bgColor: string | null;
     type: 'text' | 'rect' | 'image' | 'unknown';
     imageData?: string; // base64 data URL
@@ -401,6 +401,13 @@ function parseSlideXml(
                     }
                 }
 
+                const paraMarLAttr = pPr?.getAttribute('marL');
+                const paraMarRAttr = pPr?.getAttribute('marR');
+                const paraIndentAttr = pPr?.getAttribute('indent');
+                const paraMarL = paraMarLAttr ? parseInt(paraMarLAttr, 10) : 0;
+                const paraMarR = paraMarRAttr ? parseInt(paraMarRAttr, 10) : 0;
+                const paraIndent = paraIndentAttr ? parseInt(paraIndentAttr, 10) : 0;
+
                 const runs = [...para.querySelectorAll('*')].filter(e => e.localName === 'r');
                 for (const run of runs) {
                     const rPr = [...run.querySelectorAll('*')].find(e => e.localName === 'rPr');
@@ -422,12 +429,15 @@ function parseSlideXml(
                         }
                     }
 
-                    texts.push({ text, bold, italic, size, color, align, spcBefore, spcAfter, lineSpacing });
+                    const latin = rPr ? [...rPr.querySelectorAll('*')].find(e => e.localName === 'latin') : null;
+                    const fontFamily = latin?.getAttribute('typeface') ?? '';
+
+                    texts.push({ text, bold, italic, size, color, align, spcBefore, spcAfter, lineSpacing, fontFamily, paraMarL, paraMarR, paraIndent });
                 }
 
                 const brs = [...para.querySelectorAll('*')].filter(e => e.localName === 'br');
                 if (brs.length > 0 && runs.length === 0) {
-                    texts.push({ text: '\n', bold: false, italic: false, size: 12, color: '#000', align, spcBefore, spcAfter, lineSpacing });
+                    texts.push({ text: '\n', bold: false, italic: false, size: 12, color: '#000', align, spcBefore, spcAfter, lineSpacing, fontFamily: '', paraMarL, paraMarR, paraIndent });
                 }
             }
         }
@@ -503,14 +513,17 @@ function renderSlideToHtml(data: SlideRenderData, slideIndex: number): string {
             let lastSpcBefore = 0;
             let lastSpcAfter = 0;
             let lastLineSpacing = 1.0;
+            let lastParaMarL = 0;
+            let lastParaIndent = 0;
 
             const flushPara = () => {
                 if (paraBuffer.length === 0) return;
-                // spcBefore/spcAfter in pt → EMU (×12700) → px at render scale (×RENDER_W/slideWEmu)
                 const emuPerPx = slideWEmu / RENDER_W;
                 const mt = Math.round(lastSpcBefore * 12700 / emuPerPx);
                 const mb = Math.round(lastSpcAfter * 12700 / emuPerPx);
-                textHtml += `<div style="text-align:${lastAlign};line-height:${lastLineSpacing.toFixed(2)};margin:${mt}px 0 ${mb}px 0;padding:0;white-space:pre-wrap;">${paraBuffer.join('')}</div>`;
+                const pl = Math.round(lastParaMarL / emuPerPx);
+                const ti = Math.round(lastParaIndent / emuPerPx);
+                textHtml += `<div style="text-align:${lastAlign};line-height:${lastLineSpacing.toFixed(2)};margin:${mt}px 0 ${mb}px 0;padding-left:${pl}px;text-indent:${ti}px;white-space:pre-wrap;">${paraBuffer.join('')}</div>`;
                 paraBuffer = [];
             };
 
@@ -521,16 +534,18 @@ function renderSlideToHtml(data: SlideRenderData, slideIndex: number): string {
                     lastSpcBefore = run.spcBefore;
                     lastSpcAfter = run.spcAfter;
                     lastLineSpacing = run.lineSpacing;
+                    lastParaMarL = run.paraMarL;
+                    lastParaIndent = run.paraIndent;
                 }
-                // Font size in pt → EMU (×12700) → px at render scale
                 const emuPerPx = slideWEmu / RENDER_W;
                 const scaledSize = Math.max(8, run.size * 12700 / emuPerPx);
                 const fs = `font-size:${scaledSize.toFixed(1)}px;`;
                 const fw = run.bold ? 'font-weight:700;' : '';
                 const fi = run.italic ? 'font-style:italic;' : '';
                 const fc = `color:${run.color};`;
+                const ff = run.fontFamily ? `font-family:'${run.fontFamily}',Calibri,'Segoe UI',Arial,sans-serif;` : '';
                 const escaped = run.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                paraBuffer.push(`<span style="${fs}${fw}${fi}${fc}">${escaped}</span>`);
+                paraBuffer.push(`<span style="${fs}${fw}${fi}${fc}${ff}">${escaped}</span>`);
             }
             flushPara();
 
