@@ -136,8 +136,18 @@ async function parseSlideRels(zip: any, slidePath: string): Promise<Map<string, 
                 // ../../media/image1.png from ppt/slides/_rels/ → ppt/media/image1.png
                 resolvedPath = 'ppt/' + target.replace('../../', '');
             } else if (target.startsWith('../')) {
-                // ../media/image1.png from rels dir → ppt/media/image1.png
-                resolvedPath = 'ppt/' + target.replace('../', '');
+                // ../media/image1.png from ppt/_rels/ → ppt/media/image1.png
+                // ../media/image1.png from ppt/slides/_rels/ → ppt/slides/media/image1.png (wrong, fix)
+                // Check which rels dir we're in
+                const isSlidesRels = candidates[0] && zip.files[candidates[0]];
+                if (isSlidesRels) {
+                    // ppt/slides/_rels/ + ../media/image1.png → go up to ppt/slides/, then need one more ..
+                    // Actually ../media from ppt/slides/_rels/ = ppt/slides/media (wrong)
+                    // We need to go to ppt/media, so use ../../
+                    resolvedPath = 'ppt/' + target.replace('../', '');
+                } else {
+                    resolvedPath = 'ppt/' + target.replace('../', '');
+                }
             } else {
                 resolvedPath = 'ppt/slides/' + target;
             }
@@ -675,28 +685,25 @@ export async function convertPptToPDF(
         if (si > 0) pdf.addPage([pdfW, pdfH], orient);
 
         // Create a temporary container for THIS slide only
-        // Note: z-index: -1 is AVOIDED — html2canvas returns empty canvases for negative-z elements
         const slideDiv = document.createElement('div');
         slideDiv.setAttribute('style', `
             position:fixed;top:0;left:0;
             width:${RENDER_W}px;height:${slideH}px;
             background:white;
             overflow:hidden;
+            z-index:-1;
             margin:0;padding:0;
-            pointer-events:none;
-            opacity:0.999;
         `);
         slideDiv.innerHTML = slideHtmlParts[si];
         document.body.appendChild(slideDiv);
 
         try {
-            // Wait for images in this slide — fix: attach handlers BEFORE checking complete
+            // Wait for images in this slide
             const imgs = slideDiv.querySelectorAll('img');
             await Promise.all(Array.from(imgs).map(img =>
-                new Promise<void>(res => {
+                img.complete ? Promise.resolve() : new Promise<void>(res => {
                     img.onload = () => res();
                     img.onerror = () => res();
-                    if (img.complete) res();
                     setTimeout(res, 3000);
                 })
             ));
@@ -707,6 +714,8 @@ export async function convertPptToPDF(
             // Capture this slide at high resolution
             const canvas = await h2cFn(slideDiv, {
                 scale: renderScale,
+                useCORS: true,
+                allowTaint: true,
                 backgroundColor: '#ffffff',
                 width: RENDER_W,
                 height: slideH,
@@ -715,11 +724,7 @@ export async function convertPptToPDF(
 
             if (canvas && canvas.width > 0 && canvas.height > 0) {
                 const sliceH_mm = canvas.height * mmPerPx;
-                pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pdfW, sliceH_mm);
-            } else {
-                // Render fallback: add a blank page with slide number
-                pdf.setFontSize(16);
-                pdf.text(`Slide ${validIdx[si] + 1}`, pdfW / 2, pdfH / 2, { align: 'center' });
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, sliceH_mm);
             }
         } finally {
             document.body.removeChild(slideDiv);
