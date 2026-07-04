@@ -25,6 +25,8 @@
  *   - pdfjs-dist
  */
 
+import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
+
 async function loadPdfjs() {
     const pdfjsLib = await import('pdfjs-dist');
     if (pdfjsLib.GlobalWorkerOptions) {
@@ -163,43 +165,88 @@ async function extractFromPage(
 
         if (!imgData) continue;
 
-        // imgData is an ImageData-like object with width, height, data (Uint8ClampedArray)
-        const { width, height, data } = imgData;
-        if (!width || !height || !data) continue;
+        // Extract pixel data — pdfjs may store it in various formats
+        let pixelData: Uint8ClampedArray | Uint8Array | ArrayLike<number> | null = null;
+        let w = 0, h = 0;
+
+        // Case 1: imgData has data/width/height directly
+        if (imgData.data && typeof imgData.data === 'object' && imgData.width && imgData.height) {
+            pixelData = imgData.data;
+            w = imgData.width;
+            h = imgData.height;
+        }
+        // Case 2: imgData.imgData (nested)
+        else if (imgData.imgData?.data && typeof imgData.imgData?.data === 'object' && imgData.imgData?.width && imgData.imgData?.height) {
+            pixelData = imgData.imgData.data;
+            w = imgData.imgData.width;
+            h = imgData.imgData.height;
+        }
+        // Case 3: imgData.bitmap (ImageBitmap)
+        else if (imgData.bitmap instanceof ImageBitmap) {
+            w = imgData.bitmap.width;
+            h = imgData.bitmap.height;
+            const tmpCanvas = document.createElement('canvas');
+            tmpCanvas.width = w; tmpCanvas.height = h;
+            const ctx = tmpCanvas.getContext('2d')!;
+            ctx.drawImage(imgData.bitmap, 0, 0);
+            const id = ctx.getImageData(0, 0, w, h);
+            pixelData = id.data;
+        }
+        // Case 4: HTMLImageElement
+        else if (imgData instanceof HTMLImageElement || imgData?.tagName === 'IMG') {
+            w = imgData.naturalWidth || imgData.width;
+            h = imgData.naturalHeight || imgData.height;
+            if (w > 0 && h > 0) {
+                const tmpC = document.createElement('canvas');
+                tmpC.width = w; tmpC.height = h;
+                const ctx = tmpC.getContext('2d')!;
+                ctx.drawImage(imgData, 0, 0);
+                pixelData = ctx.getImageData(0, 0, w, h).data;
+            }
+        }
+        // Case 5: imgData has bytes/pixels getter (pdfjs internal stream)
+        else if (imgData.getBytes && typeof imgData.getWidth === 'function') {
+            w = imgData.getWidth();
+            h = imgData.getHeight();
+            const bytes = imgData.getBytes();
+            if (bytes && w > 0 && h > 0) {
+                pixelData = new Uint8Array(bytes);
+            }
+        }
+
+        if (!pixelData || w <= 0 || h <= 0) continue;
         // Skip 1×1 px images (color space markers, masks)
-        if (width <= 1 && height <= 1) continue;
+        if (w <= 1 && h <= 1) continue;
 
         // Paint onto a canvas
         let imgCanvas: HTMLCanvasElement;
         try {
             imgCanvas = document.createElement('canvas');
-            imgCanvas.width = width;
-            imgCanvas.height = height;
+            imgCanvas.width = w;
+            imgCanvas.height = h;
             const ctx = imgCanvas.getContext('2d')!;
-            // data may be Uint8ClampedArray (RGBA) or Uint8Array (RGB)
+            // pixelData may be Uint8ClampedArray (RGBA) or Uint8Array (RGB)
             let rgba: Uint8ClampedArray;
-            if (data.length === width * height * 4) {
-                rgba = data instanceof Uint8ClampedArray ? data : new Uint8ClampedArray(data);
-            } else if (data.length === width * height * 3) {
-                // Convert RGB → RGBA
-                rgba = new Uint8ClampedArray(width * height * 4);
-                for (let p = 0, q = 0; p < data.length; p += 3, q += 4) {
-                    rgba[q] = data[p];
-                    rgba[q + 1] = data[p + 1];
-                    rgba[q + 2] = data[p + 2];
+            if (pixelData.length === w * h * 4) {
+                rgba = pixelData instanceof Uint8ClampedArray ? pixelData : new Uint8ClampedArray(pixelData);
+            } else if (pixelData.length === w * h * 3) {
+                rgba = new Uint8ClampedArray(w * h * 4);
+                for (let p = 0, q = 0; p < pixelData.length; p += 3, q += 4) {
+                    rgba[q] = pixelData[p];
+                    rgba[q + 1] = pixelData[p + 1];
+                    rgba[q + 2] = pixelData[p + 2];
                     rgba[q + 3] = 255;
                 }
-            } else if (data.length === width * height) {
-                // Grayscale → RGBA
-                rgba = new Uint8ClampedArray(width * height * 4);
-                for (let p = 0, q = 0; p < data.length; p++, q += 4) {
-                    rgba[q] = rgba[q + 1] = rgba[q + 2] = data[p];
+            } else if (pixelData.length === w * h) {
+                rgba = new Uint8ClampedArray(w * h * 4);
+                for (let p = 0, q = 0; p < pixelData.length; p++, q += 4) {
+                    rgba[q] = rgba[q + 1] = rgba[q + 2] = pixelData[p];
                     rgba[q + 3] = 255;
                 }
             } else {
-                continue; // unexpected format
+                continue;
             }
-            ctx.putImageData(new ImageData(rgba, width, height), 0, 0);
+            ctx.putImageData(new ImageData(rgba, w, h), 0, 0);
         } catch { continue; }
 
         // Export to blob
@@ -223,8 +270,8 @@ async function extractFromPage(
             pageIndex: pageIdx,
             pageLabel: `Page ${pageIdx + 1}`,
             name,
-            width,
-            height,
+            width: w,
+            height: h,
             format,
             blobUrl: URL.createObjectURL(blob),
             blob,
