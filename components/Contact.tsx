@@ -76,7 +76,7 @@ export const Contact: React.FC = () => {
                     </div>
                     <h1 className="text-7xl md:text-9xl font-black tracking-tighter text-gray-900 dark:text-white leading-[0.8]">
                         Abir Hasan <br />
-                        <span className="text-transparent" style={{ WebkitTextStroke: '2px currentColor' }}>Siam.</span>
+                        <span className="text-brand-500">Siam.</span>
                     </h1>
                     <p className="text-xl text-gray-500 dark:text-gray-400 max-w-xl font-medium leading-relaxed">
                         Detail-oriented developer obsessed with efficient UI design and multi-platform orchestration.
