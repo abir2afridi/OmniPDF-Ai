@@ -15,7 +15,6 @@ import { About } from './components/About';
 import { Contact } from './components/Contact';
 import { Workspace } from './components/Workspace';
 import { AILab } from './components/AILab';
-import { Analytics } from './components/Analytics';
 import { Settings } from './components/Settings';
 import { History } from './components/History';
 import { Login } from './components/Login';
@@ -67,8 +66,6 @@ const translations: Record<string, Record<string, string>> = {
     'All Tools': 'All Tools',
     'Workspace': 'Workspace',
     'AI Lab': 'AI Lab',
-    'Analytics': 'Analytics',
-    'E-Sign': 'E-Sign',
     'Settings': 'Settings',
     'Logout': 'Log Out',
     'Premium Access': 'Premium Access',
@@ -1876,7 +1873,7 @@ const App: React.FC = () => {
     { id: 'openoffice-to-pdf', name: 'OpenOffice to PDF', description: 'Convert ODT, ODS, ODP to PDF.', icon: Monitor, imageUrl: 'https://img.icons8.com/?size=96&id=VVTnjccwbmPK&format=png', toImageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', category: ToolCategory.CONVERT, color: 'bg-gray-600' },
 
     // Automata Theory Tools
-    { id: 'automata-solver', name: 'Automata Theory Solver', description: 'DFA, NFA, Regex→NFA, NFA→DFA, DFA Minimize — all in one.', icon: Circle, imageUrl: 'https://img.icons8.com/fluency/96/abc.png', category: ToolCategory.AUTOMATA, color: 'bg-emerald-500' },
+    { id: 'automata-solver', name: 'Automata Theory Solver', description: 'DFA, NFA, Regex→NFA, NFA→DFA, DFA Minimize — all in one.', icon: Circle, imageUrl: 'https://img.icons8.com/?size=160&id=F42vf1fbOINM&format=png', category: ToolCategory.AUTOMATA, color: 'bg-emerald-500' },
   ], [t]);
 
   const handleToolSelect = (tool: PDFTool | null) => {
@@ -2205,10 +2202,6 @@ const App: React.FC = () => {
 
             {currentView === AppView.AI_SUMMARY && (
               <AISummary onBack={() => handleToolSelect(null)} activeTool={activeTool} />
-            )}
-
-            {currentView === AppView.ANALYTICS && (
-              <Analytics />
             )}
 
             {currentView === AppView.HISTORY && (

@@ -4,7 +4,7 @@ import { AppContext } from '../App';
 import { Sun, Moon } from 'lucide-react';
 
 interface HeaderProps {
-  icon: React.ElementType;
+  icon?: React.ElementType;
   title: string;
 }
 
@@ -18,11 +18,13 @@ export const Header: React.FC<HeaderProps> = ({ icon: Icon, title }) => {
   }, []);
 
   return (
-    <header className="hidden lg:flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-white/5 shrink-0">
+    <header className="hidden lg:flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-white/5 shrink-0 sticky top-0 z-50 bg-[#f3f1ea] dark:bg-[#020617]">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 bg-gray-900 dark:bg-white rounded-[5px] flex items-center justify-center text-white dark:text-gray-900 shadow-lg">
-          <Icon className="w-5 h-5" />
-        </div>
+        {Icon && (
+          <div className="w-9 h-9 bg-gray-900 dark:bg-white rounded-[5px] flex items-center justify-center text-white dark:text-gray-900 shadow-lg">
+            <Icon className="w-5 h-5" />
+          </div>
+        )}
         <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{title}</h1>
       </div>
       <div className="flex items-center gap-4">

@@ -128,10 +128,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f3f1ea] dark:bg-[#020617] relative scroll-smooth overflow-x-hidden">
-      <Header icon={LayoutGrid} title="All Tools" />
+      <Header title="OmniPDF AI" />
 
       {/* Premium Live Ticker */}
-      <div className="w-full bg-[#f3f1ea]/80 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-200/50 dark:border-white/5 py-2.5 overflow-hidden sticky top-0 z-50">
+      <div className="w-full bg-[#f3f1ea]/80 dark:bg-slate-900/50 backdrop-blur-md border-b border-gray-200/50 dark:border-white/5 py-2.5 overflow-hidden sticky top-14 z-40">
         <div className="max-w-[1600px] mx-auto flex items-center px-6 md:px-10">
           <div className="flex items-center gap-2 pr-4 bg-[#f3f1ea]/90 dark:bg-slate-900/80 backdrop-blur-xl z-10 shrink-0">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
