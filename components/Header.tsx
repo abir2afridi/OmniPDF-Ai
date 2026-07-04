@@ -25,7 +25,11 @@ export const Header: React.FC<HeaderProps> = ({ icon: Icon, title }) => {
             <Icon className="w-5 h-5" />
           </div>
         )}
-        <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{title}</h1>
+        <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
+          {title.split('AI').length > 1 ? (
+            <>{title.split('AI')[0]}<span className="text-brand-500">AI</span>{title.split('AI').slice(1).join('AI')}</>
+          ) : title}
+        </h1>
       </div>
       <div className="flex items-center gap-4">
         <span className="hidden sm:block text-xs font-mono text-gray-500 dark:text-gray-400 tabular-nums">

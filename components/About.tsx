@@ -6,7 +6,7 @@ import {
     Shield, Bot, Layers, Cpu, ArrowUpRight, CheckCircle2,
     FileText, Scissors, Minimize2, ShieldCheck, Wand2, Type,
     Languages, Download, Zap, PenTool, LayoutGrid, Search, Lock, UserCheck, TrendingUp,
-    Smartphone, Monitor, Apple, Globe, QrCode, Share2, ExternalLink
+    Globe, Smartphone, Monitor
 } from 'lucide-react';
 
 export const About: React.FC = () => {
@@ -244,31 +244,6 @@ export const About: React.FC = () => {
                         </p>
                     </div>
 
-                    {/* Install Button */}
-                    <div className="flex justify-center">
-                        {isInstalled ? (
-                            <div className="flex items-center gap-3 px-8 py-4 rounded-[5px] bg-emerald-500/10 border border-emerald-500/20">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">App Installed Successfully</span>
-                            </div>
-                        ) : deferredPrompt ? (
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={handleInstall}
-                                className="flex items-center gap-3 px-10 py-4 rounded-[5px] bg-brand-500 text-white font-bold text-lg shadow-xl shadow-brand-500/30 hover:bg-brand-600 transition-colors"
-                            >
-                                <Download className="w-5 h-5" />
-                                Install App on This Device
-                            </motion.button>
-                        ) : (
-                            <div className="flex items-center gap-3 px-8 py-4 rounded-[5px] bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-                                <Globe className="w-5 h-5 text-gray-400" />
-                                <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Open in browser to install</span>
-                            </div>
-                        )}
-                    </div>
-
                     {/* Platform Instructions */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {[
@@ -283,7 +258,7 @@ export const About: React.FC = () => {
                                 ]
                             },
                             {
-                                icon: Apple,
+                                icon: Globe,
                                 title: "iOS / iPhone",
                                 active: platform === 'ios',
                                 steps: [
@@ -340,6 +315,31 @@ export const About: React.FC = () => {
                                 </ol>
                             </motion.div>
                         ))}
+                    </div>
+
+                    {/* Install Button */}
+                    <div className="flex justify-center">
+                        {isInstalled ? (
+                            <div className="flex items-center gap-3 px-8 py-4 rounded-[5px] bg-emerald-500/10 border border-emerald-500/20">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">App Installed Successfully</span>
+                            </div>
+                        ) : deferredPrompt ? (
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={handleInstall}
+                                className="flex items-center gap-3 px-10 py-4 rounded-[5px] bg-brand-500 text-white font-bold text-lg shadow-xl shadow-brand-500/30 hover:bg-brand-600 transition-colors"
+                            >
+                                <Download className="w-5 h-5" />
+                                Install App on This Device
+                            </motion.button>
+                        ) : (
+                            <div className="flex items-center gap-3 px-8 py-4 rounded-[5px] bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                                <Globe className="w-5 h-5 text-gray-400" />
+                                <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Open in browser to install</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* App Features Strip */}
