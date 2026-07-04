@@ -23,6 +23,7 @@
  */
 
 import PptxGenJS from 'pptxgenjs';
+import type { PDFDocumentProxy } from 'pdfjs-dist';
 
 async function loadPdfjs() {
     const pdfjsLib = await import('pdfjs-dist');
@@ -88,6 +89,8 @@ export function validatePdfForPpt(file: File): string | null {
 // ── PDF Loading ───────────────────────────────────────────────────────────────
 
 async function openPdf(file: File): Promise<PDFDocumentProxy> {
+    const pdfjsLib = await loadPdfjs();
+    const { getDocument } = pdfjsLib;
     const buf = await file.arrayBuffer();
     return getDocument({ data: buf }).promise;
 }
@@ -203,9 +206,21 @@ export async function convertPdfToPpt(
 
     onProgress?.(4);
 
-    const dims = SLIDE_DIMS[slideSize];
+    // ── Detect PDF page size (preserve original dimensions) ──
+    const firstPage = await pdf.getPage(pageIndices[0] + 1);
+    const firstVp = firstPage.getViewport({ scale: 1 });
+    // PDF viewport is in points (1 pt = 1/72 inch). Convert to inches.
+    const pdfPageW = firstVp.width / 72;
+    const pdfPageH = firstVp.height / 72;
+    // Use PDF page dimensions as slide size (capped at reasonable max to avoid huge files)
+    const cappedW = Math.min(pdfPageW, 56);  // max ~56 inches (pptx limit)
+    const cappedH = Math.min(pdfPageH, 56);
+    const dims = { w: cappedW, h: cappedH };
+
     const pptx = new PptxGenJS();
-    pptx.layout = slideSize === 'widescreen' ? 'LAYOUT_WIDE' : 'LAYOUT_4x3';
+    // Define custom layout matching PDF page size
+    pptx.defineLayout({ name: 'PDF_PAGE', width: dims.w, height: dims.h });
+    pptx.layout = 'PDF_PAGE';
 
     // Slide metadata
     const base = sanitizeName(rawName ?? file.name.replace(/\.pdf$/i, ''));
