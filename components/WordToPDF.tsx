@@ -30,7 +30,7 @@ import {
     WORD_MAX_FILE_MB,
     type WordConversionResult,
 } from '../services/wordService';
-import { downloadBytes } from '../services/pdfService';
+import { downloadBytes, downloadBlob } from '../services/pdfService';
 import { PDFTool } from '../types';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -385,10 +385,7 @@ export const WordToPDF: React.FC<WordToPDFProps> = ({ onBack, activeTool }) => {
             zip.file(name, entry.result!.bytes);
         }
         const blob = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'word-to-pdf-bundle.zip'; a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+        downloadBlob(blob, 'word-to-pdf-bundle.zip');
         toast('success', `Downloaded ${done.length} PDFs as ZIP.`);
     }, [files, toast]);
 

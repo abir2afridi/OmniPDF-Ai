@@ -21,6 +21,7 @@ import {
     translatePdf, TranslationProgress, TranslationResult,
     LANGUAGES
 } from '../services/translateService';
+import { downloadBlob } from '../services/pdfService';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -86,12 +87,7 @@ export const TranslatePDF: React.FC<Props> = ({ onBack }) => {
 
     const downloadPdf = () => {
         if (!result?.pdfBlob) return;
-        const url = URL.createObjectURL(result.pdfBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = result.filename;
-        a.click();
-        URL.revokeObjectURL(url);
+        downloadBlob(result.pdfBlob, result.filename);
     };
 
     const copyText = () => {

@@ -16,6 +16,7 @@ import {
   updateProfile,
   User,
 } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB51bv_qDJwmPw3kKWrxXTk1T5xg_A2cqE",
@@ -33,6 +34,7 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
 setPersistence(auth, browserLocalPersistence).catch(() => {});
 
@@ -267,4 +269,4 @@ const supabase = {
   },
 };
 
-export { supabase };
+export { supabase, db };

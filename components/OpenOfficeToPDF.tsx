@@ -32,7 +32,7 @@ import {
     OO_MAX_FILE_MB,
     type OOConversionResult,
 } from '../services/openOfficeService';
-import { downloadBytes } from '../services/pdfService';
+import { downloadBytes, downloadBlob } from '../services/pdfService';
 import { PDFTool } from '../types';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -406,10 +406,7 @@ export const OpenOfficeToPDF: React.FC<OpenOfficeToPDFProps> = ({ onBack, active
             zip.file(name, entry.result!.bytes);
         }
         const blob = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'openoffice-to-pdf-bundle.zip'; a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+        downloadBlob(blob, 'openoffice-to-pdf-bundle.zip');
         toast('success', `Downloaded ${done.length} PDFs as ZIP.`);
     }, [files, toast]);
 

@@ -764,13 +764,8 @@ if (typeof window !== 'undefined') {
 
 // ── Download helper ──────────────────────────────────────────────────────────
 
+import { downloadBlob } from './pdfService';
+
 export const downloadEditedPdf = (blob: Blob, fileName: string) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName.replace(/\.pdf$/i, '') + '_edited.pdf';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    downloadBlob(blob, fileName.replace(/\.pdf$/i, '') + '_edited.pdf');
 };

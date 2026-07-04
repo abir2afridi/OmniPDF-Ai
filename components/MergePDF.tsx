@@ -20,6 +20,7 @@ import {
     generatePDFThumbnail,
     generatePDFPageThumbnails,
     mergePDFsAdvanced,
+    downloadBlob,
     type AdvancedMergeFileInput,
 } from '../services/pdfService';
 import { PDFTool } from '../types';
@@ -547,11 +548,8 @@ export const MergePDF: React.FC<MergePDFProps> = ({ onBack, activeTool }) => {
 
             // Auto-download
             const blob = new Blob([bytes], { type: 'application/pdf' });
+            downloadBlob(blob, filename);
             const blobUrl = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = filename;
-            a.click();
 
             setProgress(100);
             setProgressLabel('Done!');

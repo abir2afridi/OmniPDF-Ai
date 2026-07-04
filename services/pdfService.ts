@@ -7,6 +7,31 @@
 import { PDFDocument, PageSizes, StandardFonts, rgb, degrees } from 'pdf-lib';
 import JSZip from 'jszip';
 import { UploadedFile } from '../types';
+import { addHistoryEntry } from './historyService';
+
+// ─── History user tracking ────────────────────
+let _historyUserId: string | null = null;
+let _historyToolId = '';
+let _historyToolName = '';
+
+export function setHistoryUser(userId: string | null, toolId = '', toolName = '') {
+    _historyUserId = userId;
+    _historyToolId = toolId;
+    _historyToolName = toolName;
+}
+
+function saveHistory(filename: string, fileSize: number, status: 'completed' | 'failed') {
+    if (!_historyUserId) return;
+    addHistoryEntry({
+        userId: _historyUserId,
+        toolId: _historyToolId || 'unknown',
+        toolName: _historyToolName || 'Unknown Tool',
+        fileName: filename,
+        fileSize,
+        status,
+        timestamp: Date.now(),
+    });
+}
 
 /**
  * Dynamic import helper for pdfjs-dist.
@@ -56,6 +81,7 @@ export function downloadBytes(bytes: Uint8Array, filename: string, mimeType = 'a
     a.href = url;
     a.download = filename;
     a.click();
+    saveHistory(filename, bytes.byteLength, 'completed');
     setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
@@ -66,6 +92,7 @@ export function downloadBlob(blob: Blob, filename: string) {
     a.href = url;
     a.download = filename;
     a.click();
+    saveHistory(filename, blob.size, 'completed');
     setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 

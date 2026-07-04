@@ -19,6 +19,7 @@ import {
     generatePDFPageThumbnails,
     deletePagesAdvanced,
     downloadBytes,
+    downloadBlob,
     type DeletePagesResult,
 } from '../services/pdfService';
 import { PDFTool } from '../types';
@@ -386,11 +387,8 @@ export const DeletePages: React.FC<DeletePagesProps> = ({ onBack, activeTool }) 
 
             // Auto-download
             const blob = new Blob([result.bytes], { type: 'application/pdf' });
+            downloadBlob(blob, result.outputName);
             const blobUrl = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = result.outputName;
-            a.click();
             setResultBlobUrl(blobUrl);
 
             toast('success', `Deleted ${result.deletedIndices.length} page(s). ${result.keptPageCount} pages remain.`);

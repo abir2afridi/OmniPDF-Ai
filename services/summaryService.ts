@@ -751,6 +751,8 @@ export async function summariseDocument(
 
 // ── Download helpers ──────────────────────────────────────────────────────────
 
+import { downloadBlob } from './pdfService';
+
 export function downloadSummaryAsTxt(result: SummaryResult, filename = 'summary.txt'): void {
     const parts = [
         `AI SUMMARY — ${new Date().toLocaleDateString()}`,
@@ -774,11 +776,7 @@ export function downloadSummaryAsTxt(result: SummaryResult, filename = 'summary.
     }
 
     const blob = new Blob([parts.join('\n')], { type: 'text/plain;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    downloadBlob(blob, filename);
 }
 
 export async function downloadSummaryAsPdf(result: SummaryResult, filename = 'summary.pdf'): Promise<void> {
@@ -834,11 +832,7 @@ export async function downloadSummaryAsPdf(result: SummaryResult, filename = 'su
 
     const pdfBytes = await doc.save();
     const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
-    const anchor = document.createElement('a');
-    anchor.href = URL.createObjectURL(blob);
-    anchor.download = filename;
-    anchor.click();
-    URL.revokeObjectURL(anchor.href);
+    downloadBlob(blob, filename);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

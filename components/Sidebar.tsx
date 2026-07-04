@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { Settings, Bot, Layers, Command, LayoutGrid, TrendingUp, UserCheck, LogOut, ShieldCheck, Sparkles, History, ChevronDown, User, Info, PhoneCall, HelpCircle, CreditCard } from 'lucide-react';
+import { Settings, Bot, Layers, Command, LayoutGrid, TrendingUp, LogOut, ShieldCheck, Sparkles, History, ChevronDown, User, Info, PhoneCall, HelpCircle, CreditCard } from 'lucide-react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { AppView } from '../types';
 import { AppContext } from '../App';
@@ -76,7 +76,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isOpen, 
     { id: AppView.DASHBOARD, icon: LayoutGrid, label: t('All Tools'), color: 'text-indigo-500' },
     { id: AppView.AI_LAB, icon: Bot, label: t('AI Lab'), color: 'text-emerald-500' },
     { id: AppView.ANALYTICS, icon: TrendingUp, label: t('Analytics'), color: 'text-amber-500' },
-    { id: AppView.E_SIGN, icon: UserCheck, label: t('E-Sign'), color: 'text-rose-500' },
     { id: AppView.HISTORY, icon: History, label: t('History'), color: 'text-blue-500' },
     {
       id: 'USER_FEATURES',

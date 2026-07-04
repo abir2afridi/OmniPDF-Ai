@@ -27,3 +27,10 @@ Stirling-PDF-main/
 
 .vercel
 .env*.local
+
+# Firebase
+.firebase/
+*-debug.log
+firestore-debug.log
+ui-debug.log
+firestore.rules

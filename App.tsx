@@ -14,14 +14,13 @@ import { Dashboard } from './components/Dashboard';
 import { About } from './components/About';
 import { Contact } from './components/Contact';
 import { Workspace } from './components/Workspace';
-import { ESign } from './components/ESign';
 import { AILab } from './components/AILab';
 import { Analytics } from './components/Analytics';
 import { Settings } from './components/Settings';
 import { History } from './components/History';
 import { Login } from './components/Login';
 import { AppView, PDFTool, ToolCategory, UploadedFile } from './types';
-import { processFiles } from './services/pdfService';
+import { processFiles, setHistoryUser } from './services/pdfService';
 import { supabase } from './lib/supabase';
 import { MergePDF } from './components/MergePDF';
 import { ToastProvider } from './contexts/ToastContext';
@@ -1744,6 +1743,7 @@ const App: React.FC = () => {
   const [language, setLanguage] = useState('en');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loginToast, setLoginToast] = useState<string | null>(null);
 
   // State to bridge RightDock buttons with Workspace actions
@@ -1758,6 +1758,8 @@ const App: React.FC = () => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
       setIsAuthenticated(!!session);
+      setCurrentUser(session?.user ?? null);
+      setHistoryUser(session?.user?.id ?? null);
     });
 
     // Process any pending redirect result (subscription catches the sign-in event)
@@ -1880,12 +1882,14 @@ const App: React.FC = () => {
   const handleToolSelect = (tool: PDFTool | null) => {
     setActiveTool(tool);
     if (tool) {
+      setHistoryUser(currentUser?.id ?? null, tool.id, tool.name);
       if (tool.id === 'ai-summary') {
         setCurrentView(AppView.AI_SUMMARY);
       } else {
         setCurrentView(AppView.WORKSPACE);
       }
     } else {
+      setHistoryUser(currentUser?.id ?? null);
       setCurrentView(AppView.DASHBOARD);
     }
   };
@@ -2107,7 +2111,7 @@ const App: React.FC = () => {
               <ProtectPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} initialTab="unlock" />
             )}
 
-            {currentView === AppView.WORKSPACE && (activeTool?.id === 'sign' || activeTool?.id === 'esign') && (
+            {currentView === AppView.WORKSPACE && activeTool?.id === 'sign' && (
               <SignPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
@@ -2119,7 +2123,7 @@ const App: React.FC = () => {
               <AutomataTheorySolver onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
-            {currentView === AppView.WORKSPACE && activeTool?.id !== 'merge' && activeTool?.id !== 'split' && activeTool?.id !== 'delete-pages' && activeTool?.id !== 'rotate' && activeTool?.id !== 'word-to-pdf' && activeTool?.id !== 'excel-to-pdf' && activeTool?.id !== 'ppt-to-pdf' && activeTool?.id !== 'pdf-to-jpg' && activeTool?.id !== 'jpg-to-pdf' && activeTool?.id !== 'pdf-to-word' && activeTool?.id !== 'pdf-to-excel' && activeTool?.id !== 'pdf-to-ppt' && activeTool?.id !== 'extract-images' && activeTool?.id !== 'compress' && activeTool?.id !== 'ocr' && activeTool?.id !== 'protect' && activeTool?.id !== 'unlock' && activeTool?.id !== 'sign' && activeTool?.id !== 'esign' && activeTool?.id !== 'edit' && activeTool?.id !== 'automata-solver' && (
+            {currentView === AppView.WORKSPACE && activeTool?.id !== 'merge' && activeTool?.id !== 'split' && activeTool?.id !== 'delete-pages' && activeTool?.id !== 'rotate' && activeTool?.id !== 'word-to-pdf' && activeTool?.id !== 'excel-to-pdf' && activeTool?.id !== 'ppt-to-pdf' && activeTool?.id !== 'pdf-to-jpg' && activeTool?.id !== 'jpg-to-pdf' && activeTool?.id !== 'pdf-to-word' && activeTool?.id !== 'pdf-to-excel' && activeTool?.id !== 'pdf-to-ppt' && activeTool?.id !== 'extract-images' && activeTool?.id !== 'compress' && activeTool?.id !== 'ocr' && activeTool?.id !== 'protect' && activeTool?.id !== 'unlock' && activeTool?.id !== 'sign' && activeTool?.id !== 'edit' && activeTool?.id !== 'automata-solver' && (
               <div className="flex flex-1 overflow-hidden">
                 <Workspace
                   activeTool={activeTool}
@@ -2207,12 +2211,8 @@ const App: React.FC = () => {
               <Analytics />
             )}
 
-            {currentView === AppView.E_SIGN && (
-              <ESign />
-            )}
-
             {currentView === AppView.HISTORY && (
-              <History />
+              <History userId={currentUser?.id} />
             )}
 
             {(currentView === AppView.SETTINGS || currentView.startsWith('SETTINGS_')) && (
