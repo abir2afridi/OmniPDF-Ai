@@ -4,7 +4,7 @@ import {
     Send, Copy, Volume2, RefreshCw, ArrowRight, Check, Sparkles, BrainCircuit, Zap, Globe2, Ear,
 
 } from 'lucide-react';
-import { chatWithAIStreaming, translateText, generateRefinedFilename, generateAudioOverview, chatWithPDF } from '../services/aiService';
+import { chatWithAIStreaming, chatWithAI, translateText, generateRefinedFilename, generateAudioOverview, chatWithPDF } from '../services/aiService';
 import { AppContext } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import { Header } from './Header';
@@ -169,7 +169,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
             console.error('Chat error:', err);
             setChatHistory(prev => prev.map(msg =>
                 msg.id === aiMsgId
-                    ? { ...msg, content: msg.content || `Error: ${err.message || "Network error in the lab. Please check your connection and try again."}`, isStreaming: false }
+                    ? { ...msg, content: msg.content || `Error: ${(err as Error).message || "Network error in the lab. Please check your connection and try again."}`, isStreaming: false }
                     : msg
             ));
         } finally {
@@ -193,18 +193,9 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
             
             const result = await translateText(translateInput, targetLang, modelToUse);
             setTranslateOutput(result);
-            
-            // Reset display after completion
-            if (isAutoMode) {
-                setCurrentModel('Auto mode active');
-            } else {
-                const selectedOption = modelOptions.find(m => m.id === selectedModel);
-                setCurrentModel(`${selectedOption?.name || 'GLM (Fast)'} (${selectedModel === 'stepfun' ? 'reasoning' : 'fast'})`);
-            }
         } catch (err) {
             console.error('Translation error:', err);
             setTranslateOutput('Translation service temporarily unavailable. Please try again in a few minutes.');
-            setCurrentModel('Service unavailable');
         } finally {
             setIsLoading(false);
         }
@@ -342,18 +333,18 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                     </p>
 
                     {/* Integrated Tab Bar */}
-                    <nav className="flex items-center gap-1 bg-gray-100/50 dark:bg-white/5 p-1 rounded-[5px]">
+                    <nav className="flex items-center gap-1 bg-gray-100/50 dark:bg-white/5 p-1 rounded-[5px] overflow-x-auto scrollbar-none">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center gap-2 px-5 py-2.5 rounded-[5px] text-[10px] font-black uppercase tracking-widest transition-all
+                                className={`flex items-center gap-1.5 px-3 sm:px-5 py-2.5 rounded-[5px] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0
                                 ${activeTab === tab.id
                                         ? 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm'
                                         : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'}`}
                             >
                                 <tab.icon className={`w-3.5 h-3.5 ${activeTab === tab.id ? tab.color : ''}`} />
-                                {t(tab.label)}
+                                <span className="hidden sm:inline">{t(tab.label)}</span>
                             </button>
                         ))}
                     </nav>
@@ -453,11 +444,11 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                     </button>
                                 </motion.div>
 
-                                <div className="flex items-center justify-center gap-6 mb-8">
-                                    <div className="flex items-center gap-3 px-4 py-2 bg-[#f3f1ea] dark:bg-white/5 rounded-[5px] text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mb-6 sm:mb-8">
+                                    <div className="flex items-center gap-3 px-3 sm:px-4 py-2 bg-[#f3f1ea] dark:bg-white/5 rounded-[5px] text-[10px] font-black uppercase tracking-widest text-gray-500">
                                         Source: Detect
                                     </div>
-                                    <div className="w-10 h-px bg-gray-100 dark:bg-white/10" />
+                                    <div className="w-10 h-px bg-gray-100 dark:bg-white/10 hidden sm:block" />
                                     <div className="relative group">
                                         <Globe2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-500 group-hover:scale-110 transition-transform" />
                                         <select
@@ -470,9 +461,9 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                     </div>
                                 </div>
 
-                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 min-h-0">
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 min-h-0">
                                     <div className="flex flex-col">
-                                        <div className="px-5 py-3 bg-[#f3f1ea] dark:bg-white/5 border border-b-0 border-gray-100 dark:border-white/10 rounded-t-3xl flex items-center gap-2">
+                                        <div className="px-4 sm:px-5 py-3 bg-[#f3f1ea] dark:bg-white/5 border border-b-0 border-gray-100 dark:border-white/10 rounded-t-xl sm:rounded-t-3xl flex items-center gap-2">
                                             <div className="w-2 h-2 rounded-full bg-gray-300 animate-pulse" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Input Stream</span>
                                         </div>
@@ -480,11 +471,11 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                             value={translateInput}
                                             onChange={(e) => setTranslateInput(e.target.value)}
                                             placeholder="Paste document text here..."
-                                            className="flex-1 resize-none bg-[#f3f1ea] dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-b-3xl p-8 text-sm font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/5 transition-all custom-scrollbar"
+                                            className="flex-1 resize-none bg-[#f3f1ea] dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-b-xl sm:rounded-b-3xl p-4 sm:p-8 text-sm font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/5 transition-all custom-scrollbar"
                                         />
                                     </div>
                                     <div className="flex flex-col relative">
-                                        <div className="px-5 py-3 bg-brand-500/5 border border-b-0 border-brand-500/20 rounded-t-3xl flex items-center justify-between">
+                                        <div className="px-4 sm:px-5 py-3 bg-brand-500/5 border border-b-0 border-brand-500/20 rounded-t-xl sm:rounded-t-3xl flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-2 h-2 rounded-full bg-brand-500" />
                                                 <span className="text-[10px] font-black uppercase tracking-widest text-brand-600 dark:text-brand-400">Processed Output</span>
@@ -500,7 +491,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                                 readOnly
                                                 value={translateOutput}
                                                 placeholder="Result will appear here..."
-                                                className="w-full h-full resize-none bg-[#f3f1ea] dark:bg-slate-900 border border-brand-500/20 rounded-b-3xl p-8 text-sm font-medium text-gray-900 dark:text-gray-300 outline-none custom-scrollbar"
+                                                className="w-full h-full resize-none bg-[#f3f1ea] dark:bg-slate-900 border border-brand-500/20 rounded-b-xl sm:rounded-b-3xl p-4 sm:p-8 text-sm font-medium text-gray-900 dark:text-gray-300 outline-none custom-scrollbar"
                                             />
                                             {isLoading && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-slate-900/60 backdrop-blur-[1px] rounded-b-3xl">
@@ -529,11 +520,11 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="absolute inset-0 p-10 flex flex-col items-center justify-center"
+                                className="absolute inset-0 p-4 sm:p-10 flex flex-col items-center justify-center"
                             >
-                                <div className="w-full max-w-3xl space-y-10">
+                                <div className="w-full max-w-3xl space-y-6 sm:space-y-10">
                                     <div className="flex flex-col">
-                                        <div className="px-6 py-3 bg-[#f3f1ea] dark:bg-white/5 border border-b-0 border-gray-100 dark:border-white/10 rounded-t-[2.5rem] flex items-center justify-between">
+                                        <div className="px-4 sm:px-6 py-3 bg-[#f3f1ea] dark:bg-white/5 border border-b-0 border-gray-100 dark:border-white/10 rounded-t-xl sm:rounded-t-[2.5rem] flex items-center justify-between">
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Voice Synthesis Input</span>
                                             <Ear className="w-4 h-4 text-gray-400" />
                                         </div>
@@ -541,7 +532,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                             value={ttsInput}
                                             onChange={(e) => setTtsInput(e.target.value)}
                                             placeholder="Paste the target text for AI synthesis..."
-                                            className="w-full h-56 resize-none bg-[#f3f1ea] dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-b-[2.5rem] p-10 text-sm font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/5 transition-all custom-scrollbar"
+                                            className="w-full h-40 sm:h-56 resize-none bg-[#f3f1ea] dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-b-xl sm:rounded-b-[2.5rem] p-4 sm:p-10 text-sm font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/5 transition-all custom-scrollbar"
                                         />
                                     </div>
 
@@ -576,10 +567,10 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                         <motion.div
                                             initial={{ opacity: 0, y: 15 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="bg-gray-900 dark:bg-slate-800 rounded-[3rem] p-8 flex items-center gap-8 shadow-2xl"
+                                            className="bg-gray-900 dark:bg-slate-800 rounded-2xl sm:rounded-[3rem] p-4 sm:p-8 flex items-center gap-4 sm:gap-8 shadow-2xl"
                                         >
-                                            <div className="w-20 h-20 rounded-full bg-white text-gray-900 flex items-center justify-center shadow-2xl shrink-0">
-                                                <Play className="w-8 h-8 fill-current ml-1" />
+                                            <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-white text-gray-900 flex items-center justify-center shadow-2xl shrink-0">
+                                                <Play className="w-6 h-6 sm:w-8 sm:h-8 fill-current ml-1" />
                                             </div>
                                             <div className="flex-1">
                                                 <div className="flex items-center justify-between mb-4">
@@ -602,29 +593,29 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="absolute inset-0 p-10 flex flex-col items-center justify-center"
+                                className="absolute inset-0 p-4 sm:p-10 flex flex-col items-center justify-center overflow-y-auto"
                             >
-                                <div className="w-full max-w-2xl bg-[#f3f1ea] dark:bg-slate-900/50 p-12 rounded-[3.5rem] border border-gray-100 dark:border-white/10 shadow-2xl shadow-gray-200/20 dark:shadow-none">
-                                    <div className="flex items-center gap-5 mb-10">
-                                        <div className="w-14 h-14 bg-gray-900 dark:bg-white rounded-[5px] flex items-center justify-center text-white dark:text-gray-900 shadow-xl">
-                                            <RefreshCw className="w-7 h-7" />
+                                <div className="w-full max-w-2xl bg-[#f3f1ea] dark:bg-slate-900/50 p-6 sm:p-12 rounded-2xl sm:rounded-[3.5rem] border border-gray-100 dark:border-white/10 shadow-2xl shadow-gray-200/20 dark:shadow-none">
+                                    <div className="flex items-center gap-3 sm:gap-5 mb-6 sm:mb-10">
+                                        <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gray-900 dark:bg-white rounded-[5px] flex items-center justify-center text-white dark:text-gray-900 shadow-xl">
+                                            <RefreshCw className="w-5 h-5 sm:w-7 sm:h-7" />
                                         </div>
                                         <div>
-                                            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter leading-none">Smart Renamer</h2>
+                                            <h2 className="text-xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tighter leading-none">Smart Renamer</h2>
                                             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Semantic Filename Optimization</p>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-8 mb-10">
+                                    <div className="space-y-5 sm:space-y-8 mb-6 sm:mb-10">
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Original Identifier</label>
                                             <div className="relative">
-                                                <FileText className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                                                <FileText className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />
                                                 <input
                                                     type="text"
                                                     value={renameOriginal}
                                                     onChange={(e) => setRenameOriginal(e.target.value)}
-                                                    className="w-full bg-[#f3f1ea] dark:bg-slate-900 border border-gray-100 dark:border-white/5 rounded-[1.5rem] pl-14 pr-6 py-4 text-sm font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gray-900/5 transition-all"
+                                                    className="w-full bg-[#f3f1ea] dark:bg-slate-900 border border-gray-100 dark:border-white/5 rounded-xl sm:rounded-[1.5rem] pl-10 sm:pl-14 pr-4 sm:pr-6 py-3 sm:py-4 text-sm font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gray-900/5 transition-all"
                                                 />
                                             </div>
                                         </div>
@@ -634,7 +625,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                                 value={renameContext}
                                                 onChange={(e) => setRenameContext(e.target.value)}
                                                 placeholder="Provide brief context or summary of the PDF contents..."
-                                                className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-white/5 rounded-[1.5rem] px-6 py-5 text-sm font-medium text-gray-900 dark:text-white h-28 resize-none outline-none focus:ring-2 focus:ring-gray-900/5 transition-all custom-scrollbar"
+                                                className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-white/5 rounded-xl sm:rounded-[1.5rem] px-4 sm:px-6 py-3 sm:py-5 text-sm font-medium text-gray-900 dark:text-white h-24 sm:h-28 resize-none outline-none focus:ring-2 focus:ring-gray-900/5 transition-all custom-scrollbar"
                                             />
                                         </div>
                                     </div>
@@ -642,7 +633,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                     <button
                                         onClick={handleRename}
                                         disabled={isLoading || !renameOriginal.trim()}
-                                        className="w-full py-5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-20"
+                                        className="w-full py-4 sm:py-5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl sm:rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-20"
                                     >
                                         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
                                         Initialize Optimization
@@ -653,19 +644,19 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                             <motion.div
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                className="mt-12 p-8 bg-gray-50 dark:bg-white/5 rounded-[2.5rem] border border-gray-100 dark:border-white/10"
+                                                className="mt-6 sm:mt-12 p-4 sm:p-8 bg-gray-50 dark:bg-white/5 rounded-xl sm:rounded-[2.5rem] border border-gray-100 dark:border-white/10"
                                             >
                                                 <div className="flex items-center justify-between mb-4 px-1">
                                                     <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600">Optimization Success</span>
                                                     <span className="text-[8px] font-bold text-gray-400">MD5: {Math.random().toString(36).substring(7)}</span>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    <div className="flex-1 font-mono text-sm font-bold text-gray-700 dark:text-gray-200 break-all bg-white dark:bg-slate-900 p-4 rounded-[5px] shadow-inner-sm">
+                                                <div className="flex items-center gap-3 sm:gap-4">
+                                                    <div className="flex-1 font-mono text-sm font-bold text-gray-700 dark:text-gray-200 break-all bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-[5px] shadow-inner-sm">
                                                         {renameOutput}
                                                     </div>
                                                     <button
                                                         onClick={() => copyToClipboard(renameOutput)}
-                                                        className="w-14 h-14 bg-white dark:bg-slate-800 rounded-[5px] shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+                                                        className="w-11 h-11 sm:w-14 sm:h-14 bg-white dark:bg-slate-800 rounded-[5px] shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shrink-0"
                                                     >
                                                         {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Copy className="w-6 h-6 text-gray-400" />}
                                                     </button>
@@ -683,11 +674,11 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="absolute inset-0 p-8 flex flex-col gap-8"
+                                className="absolute inset-0 p-4 sm:p-8 flex flex-col gap-4 sm:gap-8"
                             >
-                                <div className="max-w-4xl mx-auto w-full flex flex-col md:flex-row items-center justify-between gap-6 bg-gray-900 dark:bg-white p-5 rounded-[2rem] shadow-2xl">
-                                    <div className="flex items-center gap-8">
-                                        <div className="flex flex-col gap-1 px-4">
+                                <div className="max-w-4xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 bg-gray-900 dark:bg-white p-4 sm:p-5 rounded-xl sm:rounded-[2rem] shadow-2xl">
+                                    <div className="flex items-center gap-4 sm:gap-8">
+                                        <div className="flex flex-col gap-1 px-3 sm:px-4">
                                             <span className="text-[8px] font-black uppercase tracking-widest text-white/50 dark:text-gray-400">Target Tone</span>
                                             <select
                                                 value={rewriteTone}
@@ -702,7 +693,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                             </select>
                                         </div>
                                         <div className="w-px h-8 bg-white/10 dark:bg-gray-200" />
-                                        <div className="flex flex-col gap-1 px-4">
+                                        <div className="flex flex-col gap-1 px-3 sm:px-4">
                                             <span className="text-[8px] font-black uppercase tracking-widest text-white/50 dark:text-gray-400">Scale</span>
                                             <select
                                                 value={rewriteLength}
@@ -719,16 +710,16 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                     <button
                                         onClick={handleRewrite}
                                         disabled={isLoading || !rewriteInput.trim()}
-                                        className="h-14 px-10 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-[1.2rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all active:scale-95 flex items-center gap-3 disabled:opacity-20"
+                                        className="h-12 sm:h-14 px-6 sm:px-10 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-xl sm:rounded-[1.2rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all active:scale-95 flex items-center gap-3 disabled:opacity-20 shrink-0"
                                     >
                                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                                         Execute Process
                                     </button>
                                 </div>
 
-                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 min-h-0 container mx-auto px-4">
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 min-h-0 container mx-auto px-0 sm:px-4">
                                     <div className="flex flex-col group">
-                                        <div className="px-6 py-3 bg-gray-50/80 dark:bg-white/5 border border-b-0 border-gray-100 dark:border-white/5 rounded-t-[2.5rem] flex items-center justify-between">
+                                        <div className="px-4 sm:px-6 py-3 bg-gray-50/80 dark:bg-white/5 border border-b-0 border-gray-100 dark:border-white/5 rounded-t-xl sm:rounded-t-[2.5rem] flex items-center justify-between">
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Input Sequence</span>
                                             <div className="w-2 h-2 rounded-full bg-gray-200" />
                                         </div>
@@ -736,11 +727,11 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                             value={rewriteInput}
                                             onChange={(e) => setRewriteInput(e.target.value)}
                                             placeholder="Paste document fragments here..."
-                                            className="flex-1 resize-none bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-b-[2.5rem] p-10 text-sm font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/5 transition-all custom-scrollbar"
+                                            className="flex-1 resize-none bg-white dark:bg-slate-900 border border-gray-100 dark:border-white/10 rounded-b-xl sm:rounded-b-[2.5rem] p-4 sm:p-10 text-sm font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/5 transition-all custom-scrollbar"
                                         />
                                     </div>
                                     <div className="flex flex-col group">
-                                        <div className="px-6 py-3 bg-brand-500/5 border border-b-0 border-brand-500/10 rounded-t-[2.5rem] flex items-center justify-between">
+                                        <div className="px-4 sm:px-6 py-3 bg-brand-500/5 border border-b-0 border-brand-500/10 rounded-t-xl sm:rounded-t-[2.5rem] flex items-center justify-between">
                                             <span className="text-[10px] font-black uppercase tracking-widest text-brand-500">Optimized Stream</span>
                                             <Sparkles className="w-3.5 h-3.5 text-brand-500 animate-pulse" />
                                         </div>
@@ -749,12 +740,12 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                                 readOnly
                                                 value={rewriteOutput}
                                                 placeholder="Optimized text will appear here..."
-                                                className="w-full h-full resize-none bg-white dark:bg-slate-900 border border-brand-500/10 rounded-b-[2.5rem] p-10 text-sm font-medium text-gray-900 dark:text-gray-300 outline-none custom-scrollbar"
+                                                className="w-full h-full resize-none bg-white dark:bg-slate-900 border border-brand-500/10 rounded-b-xl sm:rounded-b-[2.5rem] p-4 sm:p-10 text-sm font-medium text-gray-900 dark:text-gray-300 outline-none custom-scrollbar"
                                             />
                                             {rewriteOutput && (
                                                 <button
                                                     onClick={() => copyToClipboard(rewriteOutput)}
-                                                    className="absolute bottom-6 right-6 p-5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[5px] shadow-xl hover:scale-110 active:scale-95 transition-all"
+                                                    className="absolute bottom-4 sm:bottom-6 right-4 sm:right-6 p-4 sm:p-5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[5px] shadow-xl hover:scale-110 active:scale-95 transition-all"
                                                 >
                                                     {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                                                 </button>

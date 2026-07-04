@@ -117,6 +117,14 @@ body {
   background: var(--brand-primary);
 }
 
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* =============================================
    Tool Card Shimmer Glow
    ============================================= */
