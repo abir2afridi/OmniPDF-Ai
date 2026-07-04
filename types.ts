@@ -25,7 +25,8 @@ export enum ToolCategory {
   CONVERT = 'Convert',
   EDIT = 'Edit',
   SECURITY = 'Security',
-  AI = 'AI Magic'
+  AI = 'AI Magic',
+  AUTOMATA = 'Automata Theory'
 }
 
 export interface PDFTool {

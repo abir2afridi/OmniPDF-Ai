@@ -3,7 +3,8 @@ import {
   Files, Scissors, ArrowRightLeft, FileText, Image,
   Lock, Wand2, PenTool, Search, Type, Grid, Shield,
   Unlock, Eraser, RotateCw, Hammer, Layers, FileSpreadsheet,
-  Presentation, FileJson, FileCode, BookOpen, Printer, Monitor, Loader2, Menu, X, Sparkles, Sun, Moon
+  Presentation, FileJson, FileCode, BookOpen, Printer, Monitor, Loader2, Menu, X, Sparkles, Sun, Moon,
+  Circle, Zap, Code
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
@@ -42,6 +43,7 @@ import { ProtectPDF } from './components/ProtectPDF';
 import { SignPDF } from './components/SignPDF';
 import { EditPDF } from './components/EditPDF';
 import { AISummary } from './components/AISummary';
+import { AutomataTheorySolver } from './components/AutomataSolver';
 
 // --- Context Setup ---
 interface AppContextType {
@@ -130,7 +132,9 @@ const translations: Record<string, Record<string, string>> = {
     'Edit PDF': 'Edit PDF',
     'OCR PDF': 'OCR PDF',
     'Flatten PDF': 'Flatten PDF',
-    'AI Summary': 'AI Summary'
+    'AI Summary': 'AI Summary',
+    'Automata Theory': 'Automata Theory',
+    'Automata Theory Solver': 'Automata Theory Solver'
   },
   'es': {
     'All Tools': 'Herramientas',
@@ -256,7 +260,9 @@ const translations: Record<string, Record<string, string>> = {
     'Edit PDF': 'PDF এডিট',
     'OCR PDF': 'OCR টেক্সট',
     'Flatten PDF': 'ফ্ল্যাটেন PDF',
-    'AI Summary': 'এআই সারাংশ'
+    'AI Summary': 'এআই সারাংশ',
+    'Automata Theory': 'অটোমেটা তত্ত্ব',
+    'Automata Theory Solver': 'অটোমেটা তত্ত্ব সলভার'
   },
   'de': {
     'All Tools': 'Alle Tools',
@@ -1866,6 +1872,9 @@ const App: React.FC = () => {
     { id: 'rotate', name: 'Rotate PDF', description: 'Rotate your PDF pages permanently.', icon: RotateCw, imageUrl: 'https://img.icons8.com/fluency/96/refresh.png', category: ToolCategory.ORGANIZE, color: 'bg-red-500' },
     { id: 'extract-images', name: 'Extract PDF Images', description: 'Scrape all images from a PDF file.', icon: Image, imageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', toImageUrl: 'https://img.icons8.com/?size=160&id=TA1dhLHUqFQV&format=png', category: ToolCategory.CONVERT, color: 'bg-purple-500' },
     { id: 'openoffice-to-pdf', name: 'OpenOffice to PDF', description: 'Convert ODT, ODS, ODP to PDF.', icon: Monitor, imageUrl: 'https://img.icons8.com/?size=96&id=VVTnjccwbmPK&format=png', toImageUrl: 'https://img.icons8.com/fluency/96/pdf-2.png', category: ToolCategory.CONVERT, color: 'bg-gray-600' },
+
+    // Automata Theory Tools
+    { id: 'automata-solver', name: 'Automata Theory Solver', description: 'DFA, NFA, Regex→NFA, NFA→DFA, DFA Minimize — all in one.', icon: Circle, imageUrl: 'https://img.icons8.com/fluency/96/abc.png', category: ToolCategory.AUTOMATA, color: 'bg-emerald-500' },
   ], [t]);
 
   const handleToolSelect = (tool: PDFTool | null) => {
@@ -2106,7 +2115,11 @@ const App: React.FC = () => {
               <EditPDF onBack={() => handleToolSelect(null)} activeTool={activeTool} />
             )}
 
-            {currentView === AppView.WORKSPACE && activeTool?.id !== 'merge' && activeTool?.id !== 'split' && activeTool?.id !== 'delete-pages' && activeTool?.id !== 'rotate' && activeTool?.id !== 'word-to-pdf' && activeTool?.id !== 'excel-to-pdf' && activeTool?.id !== 'ppt-to-pdf' && activeTool?.id !== 'pdf-to-jpg' && activeTool?.id !== 'jpg-to-pdf' && activeTool?.id !== 'pdf-to-word' && activeTool?.id !== 'pdf-to-excel' && activeTool?.id !== 'pdf-to-ppt' && activeTool?.id !== 'extract-images' && activeTool?.id !== 'compress' && activeTool?.id !== 'ocr' && activeTool?.id !== 'protect' && activeTool?.id !== 'unlock' && activeTool?.id !== 'sign' && activeTool?.id !== 'esign' && activeTool?.id !== 'edit' && (
+            {currentView === AppView.WORKSPACE && activeTool?.id === 'automata-solver' && (
+              <AutomataTheorySolver onBack={() => handleToolSelect(null)} activeTool={activeTool} />
+            )}
+
+            {currentView === AppView.WORKSPACE && activeTool?.id !== 'merge' && activeTool?.id !== 'split' && activeTool?.id !== 'delete-pages' && activeTool?.id !== 'rotate' && activeTool?.id !== 'word-to-pdf' && activeTool?.id !== 'excel-to-pdf' && activeTool?.id !== 'ppt-to-pdf' && activeTool?.id !== 'pdf-to-jpg' && activeTool?.id !== 'jpg-to-pdf' && activeTool?.id !== 'pdf-to-word' && activeTool?.id !== 'pdf-to-excel' && activeTool?.id !== 'pdf-to-ppt' && activeTool?.id !== 'extract-images' && activeTool?.id !== 'compress' && activeTool?.id !== 'ocr' && activeTool?.id !== 'protect' && activeTool?.id !== 'unlock' && activeTool?.id !== 'sign' && activeTool?.id !== 'esign' && activeTool?.id !== 'edit' && activeTool?.id !== 'automata-solver' && (
               <div className="flex flex-1 overflow-hidden">
                 <Workspace
                   activeTool={activeTool}

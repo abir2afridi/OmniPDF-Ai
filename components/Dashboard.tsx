@@ -1,6 +1,6 @@
 import React, { useContext, useState, useMemo } from 'react';
 import { PDFTool, ToolCategory } from '../types';
-import { ArrowRight, Sparkles, Search, X, LayoutGrid, Files, PenTool, Shield, Zap, Sun, Moon, Smartphone } from 'lucide-react';
+import { ArrowRight, Sparkles, Search, X, LayoutGrid, Files, PenTool, Shield, Zap, Sun, Moon, Smartphone, Circle } from 'lucide-react';
 import { AppContext } from '../App';
 import { Header } from './Header';
 import { motion, AnimatePresence } from 'motion/react';
@@ -20,7 +20,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
     ToolCategory.CONVERT,
     ToolCategory.EDIT,
     ToolCategory.SECURITY,
-    ToolCategory.AI
+    ToolCategory.AI,
+    ToolCategory.AUTOMATA
   ];
 
   const filteredTools = useMemo(() => {
@@ -77,6 +78,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tools, onSelectTool }) => 
     [ToolCategory.EDIT]: PenTool,
     [ToolCategory.SECURITY]: Shield,
     [ToolCategory.AI]: Zap,
+    [ToolCategory.AUTOMATA]: Circle,
   };
 
   const renderToolCard = (tool: PDFTool) => (
