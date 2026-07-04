@@ -133,7 +133,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
             const messages = [
                 {
                     role: 'system' as const,
-                    content: 'You are an AI assistant for OmniPDF AI, a PDF management and analysis platform. Always be helpful, professional, and mention that you\'re part of OmniPDF AI suite when appropriate. IMPORTANT: If anyone asks "who made you", "who is your developer", "who created you", or similar questions, always respond: "I was developed by Abir Hasan Siam. GitHub: https://github.com/abir2afridi"'
+                    content: 'You are an AI assistant for OmniPDF AI, a PDF management and analysis platform. Always be helpful, professional, and mention that you\'re part of OmniPDF AI suite when appropriate. IMPORTANT: If anyone asks "who made you", "who is your developer", "who created you", or similar questions, always respond: "I was developed by Abir Hasan Siam. GitHub: https://github.com/abir2afridi" CRITICAL RULES: 1) NEVER show your thinking process, reasoning, or internal thoughts. ONLY output the final answer directly. No "Okay, let me...", "I need to...", "Let me check..." — go straight to the answer. 2) NEVER use markdown tables, headers (##), or bullet lists. Only use **bold**, *italic*, __underline__. 3) LANGUAGE RULE: Respond ONLY in the same language the user writes in. If user writes in Bangla, respond ONLY in clear, correct Bangla. If user writes in English, respond ONLY in English. NEVER mix languages. If not confident about correct Bengali, respond in English. 4) Give accurate, factual answers only. If unsure, say "I am not sure". 5) Keep responses short and clear.'
                 },
                 ...chatHistory.slice(-10).map(msg => ({
                     role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
@@ -254,6 +254,29 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
         }
     };
 
+    const renderMarkdown = (text: string) => {
+        let html = text
+            // Strip markdown tables (|---|---|)
+            .replace(/\|[-: ]+\|[-: |\n]*/g, '')
+            // Strip headers (##, ###)
+            .replace(/^#{1,6}\s+/gm, '')
+            // Strip bullet lists (- or *)
+            .replace(/^\s*[-*]\s+/gm, '')
+            // Bold: **text**
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            // Italic: *text*
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            // Underline: __text__
+            .replace(/__(.+?)__/g, '<u>$1</u>')
+            // Strikethrough: ~~text~~
+            .replace(/~~(.+?)~~/g, '<del>$1</del>')
+            // Inline code: `text`
+            .replace(/`(.+?)`/g, '<code class="px-1.5 py-0.5 bg-gray-100 dark:bg-white/10 rounded text-xs font-mono">$1</code>')
+            // Links
+            .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-brand-500 dark:text-brand-400 underline hover:opacity-80 transition-opacity">$1</a>');
+        return html;
+    };
+
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
         setCopied(true);
@@ -370,7 +393,7 @@ export const AILab: React.FC<AILabProps> = ({ onToolSelect }) => {
                                                 }`}>
                                                 <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{
                                                     __html: (msg.role === 'ai'
-                                                        ? msg.content.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-brand-500 dark:text-brand-400 underline hover:opacity-80 transition-opacity">$1</a>')
+                                                        ? renderMarkdown(msg.content)
                                                         : msg.content) + (msg.isStreaming ? '<span class="inline-block w-[2px] h-[1em] bg-current animate-pulse ml-0.5 align-text-bottom"></span>' : '')
                                                 }} />
                                                 <div className={`mt-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest opacity-30 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
